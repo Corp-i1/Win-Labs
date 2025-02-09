@@ -547,7 +547,6 @@ namespace Win_Labs
                     if (nextCue != null && !nextCue.AutoFollow)
                     {
                         CueListView.SelectedIndex = currentIndex;
-                        foundNextCue = true;
                         break;
                     }
                 }

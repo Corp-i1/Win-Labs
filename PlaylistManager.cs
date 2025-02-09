@@ -77,7 +77,6 @@ namespace Win_Labs
             // Add protection for cancelation of window
             try
             {
-
                 if (!Directory.EnumerateFiles(playlistFolderPath, "cue_*.json").Any())
                 {
                     Log.Error("No cue files found in the selected folder: " + playlistFolderPath);

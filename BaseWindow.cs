@@ -24,6 +24,5 @@ namespace Win_Labs
                 ThemeManager.ApplyTheme("DefaultTheme");
             }
         }
-
     }
 }
