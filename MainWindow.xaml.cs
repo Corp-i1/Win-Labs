@@ -537,18 +537,28 @@ namespace Win_Labs
 
                 CurrentTrack.Text = $"Playing: {cue.FileName}";
 
-                // Move to the next cue in the list
+                // Move to next cue without auto follow
                 int currentIndex = CueListView.Items.IndexOf(cue);
-                if (currentIndex + 1 < CueListView.Items.Count)
+                bool foundNextCue = false;
+                while (currentIndex + 1 < CueListView.Items.Count)
                 {
-                    CueListView.SelectedIndex = currentIndex + 1;
+                    currentIndex++;
+                    var nextCue = CueListView.Items[currentIndex] as Cue;
+                    if (nextCue != null && !nextCue.AutoFollow)
+                    {
+                        CueListView.SelectedIndex = currentIndex;
+                        foundNextCue = true;
+                        break;
+                    }
                 }
-                else
+
+                if (!foundNextCue)
                 {
-                    Log.Info("Reached the end of the cue list.");
+                    Log.Info("Reached the end of the cue list or no non-auto-follow cue found.");
                     // Optionally, reset to the first item
                     // CueListView.SelectedIndex = 0;
                 }
+
 
             }
             catch (Exception ex)

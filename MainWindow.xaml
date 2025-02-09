@@ -15,6 +15,7 @@
         WindowStartupLocation="CenterScreen">
     <local:BaseWindow.Resources>
         <localConverters:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
+
     </local:BaseWindow.Resources>
 
     <Grid ShowGridLines="False">
@@ -109,7 +110,7 @@
 
         <!-- Cue List -->
         <DockPanel Grid.Row="3" Grid.Column="0" LastChildFill="True" DockPanel.Dock="Left" SelectiveScrollingGrid.SelectiveScrollingOrientation="Vertical">
-            <ListView x:Name="CueListView" SelectionChanged="CueListView_SelectionChanged" SelectiveScrollingGrid.SelectiveScrollingOrientation="Vertical" SelectedIndex="0">
+            <ListView x:Name="CueListView" SelectionChanged="CueListView_SelectionChanged" SelectiveScrollingGrid.SelectiveScrollingOrientation="Vertical" SelectedIndex="0" >
 
                 <ListView.ContextMenu>
                     <ContextMenu>
@@ -180,7 +181,7 @@
 
                 <!-- Auto Follow -->
                 <TextBlock Grid.Column="0" Grid.Row="5" VerticalAlignment="Center" Text="Auto Follow:" />
-                <CheckBox Grid.Column="1" Grid.Row="5" IsChecked="{Binding AutoFollow, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="10,0,0,0" />
+                <CheckBox Style="{DynamicResource CheckBoxStyle1}" Grid.Column="1" Grid.Row="5" IsChecked="{Binding AutoFollow, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="10,0,0,0" />
 
                 <!-- File Name -->
                 <TextBlock Grid.Column="0" Grid.Row="6" VerticalAlignment="Center" Text="File Name:" />
