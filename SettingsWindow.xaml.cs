@@ -63,7 +63,7 @@ namespace Win_Labs
             catch (Exception ex)
             {
                 Log.Error($"Failed to apply theme: {ex.Message}");
-                MessageBox.Show("Failed to apply theme. Settings were saved.", 
+                System.Windows.MessageBox.Show("Failed to apply theme. Settings were saved.", 
                     "Theme Error", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
 

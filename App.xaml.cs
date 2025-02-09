@@ -1,5 +1,4 @@
-﻿using Microsoft.VisualBasic.Logging;
-using System.Windows;
+﻿using System.Windows;
 
 namespace Win_Labs
 {

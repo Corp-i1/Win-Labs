@@ -8,12 +8,21 @@ namespace Win_Labs
 
         public BaseWindow()
         {
-            // Load settings
-            settings = AppSettingsManager.Settings;
-            Console.WriteLine($"Theme: {settings.Theme}, Language: {settings.Language}");
+            try
+            {
+                // Load settings
+                settings = AppSettingsManager.Settings;
+                Console.WriteLine($"Theme: {settings.Theme}, Language: {settings.Language}");
 
-            // Apply theme
-            ThemeManager.ApplyTheme(settings.Theme);
+                // Apply theme
+                ThemeManager.ApplyTheme(settings.Theme);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error initializing BaseWindow: {ex.Message}");
+                // Optionally, set a default theme
+                ThemeManager.ApplyTheme("DefaultTheme");
+            }
         }
     }
 }

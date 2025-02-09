@@ -1,7 +1,7 @@
 ﻿<local:BaseWindow 
+        x:Class="Win_Labs.MainWindow"
         xmlns:local="clr-namespace:Win_Labs"
         xmlns:localConverters="clr-namespace:Win_Labs.Converters"
-        x:Class="Win_Labs.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -15,6 +15,7 @@
         WindowStartupLocation="CenterScreen">
     <local:BaseWindow.Resources>
         <localConverters:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
+
     </local:BaseWindow.Resources>
 
     <Grid ShowGridLines="False">
@@ -28,7 +29,7 @@
             <!-- Toolbar row:2 -->
             <RowDefinition Height="*" />
             <!-- CueList row:3 -->
-            <RowDefinition Height="225" />
+            <RowDefinition Height="Auto" />
             <!-- Inspector row:4 -->
             <RowDefinition Height="30" />
             <!-- Footer row:5 -->
@@ -95,21 +96,21 @@
         </DockPanel>
 
         <!-- Toolbar -->
-            <Grid Grid.Row="2" Grid.Column="0" Height="60" >
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="5"/>
-                    <ColumnDefinition Width="55"/>
-                    <ColumnDefinition Width="55"/>
-                    <ColumnDefinition Width="55"/>
-                </Grid.ColumnDefinitions>
+        <Grid Grid.Row="2" Grid.Column="0" Height="60" >
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2.5"/>
+                <ColumnDefinition Width="55"/>
+                <ColumnDefinition Width="55"/>
+                <ColumnDefinition Width="55"/>
+            </Grid.ColumnDefinitions>
             <Button Name="RefreshButton" Width="50" Height="50" Content="Refresh" Click="RefreshButton_Click" Grid.Column="1"/>
             <Button Content="New Cue" Width="50" Height="50" Click="CreateNewCue_Click" Grid.Column="2"/>
             <Button Content="Delete Cue" Width="50" Height="50" Click="DeleteCue_Click" Grid.Column="3"/>
-            </Grid>
+        </Grid>
 
         <!-- Cue List -->
         <DockPanel Grid.Row="3" Grid.Column="0" LastChildFill="True" DockPanel.Dock="Left" SelectiveScrollingGrid.SelectiveScrollingOrientation="Vertical">
-            <ListView x:Name="CueListView" SelectionChanged="CueListView_SelectionChanged" SelectiveScrollingGrid.SelectiveScrollingOrientation="Vertical" SelectedIndex="0">
+            <ListView x:Name="CueListView" SelectionChanged="CueListView_SelectionChanged" SelectiveScrollingGrid.SelectiveScrollingOrientation="Vertical" SelectedIndex="0" >
 
                 <ListView.ContextMenu>
                     <ContextMenu>
@@ -180,7 +181,7 @@
 
                 <!-- Auto Follow -->
                 <TextBlock Grid.Column="0" Grid.Row="5" VerticalAlignment="Center" Text="Auto Follow:" />
-                <CheckBox Grid.Column="1" Grid.Row="5" IsChecked="{Binding AutoFollow, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="10,0,0,0" />
+                <CheckBox Style="{DynamicResource CheckBoxStyle1}" Grid.Column="1" Grid.Row="5" IsChecked="{Binding AutoFollow, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="10,0,0,0" />
 
                 <!-- File Name -->
                 <TextBlock Grid.Column="0" Grid.Row="6" VerticalAlignment="Center" Text="File Name:" />
@@ -203,9 +204,20 @@
             </Grid>
         </StackPanel>
 
+
         <!-- Footer -->
-        <TextBlock Grid.Row="5" Grid.Column="0" Text="GitHub: https://github.com/Corp-i1/Win-Labs" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10,0,0,0" />
-        <Button Grid.Row="5" Grid.Column="0" HorizontalAlignment="Right" Content="Settings" Height="24" Width="100" Click="Settings_Click"/>
-        <ToggleButton Grid.Row="5" Grid.Column="0" x:Name="EditModeToggle" Content="Edit Mode" Height="24"  Width="100" Click="EditModeToggle_Click" />
+        <Grid Grid.Row="5" Grid.Column="0" HorizontalAlignment="Stretch" VerticalAlignment="Center" Height="30" >
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="255"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="155"/>
+                <ColumnDefinition Width="105" />
+            </Grid.ColumnDefinitions>
+        <TextBlock Grid.Column="0" Text="GitHub: https://github.com/Corp-i1/Win-Labs" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10,0,0,0" />
+        <ToggleButton Grid.Column="1" x:Name="EditModeToggle" Content="Edit Mode" Height="24"  Width="100" Click="EditModeToggle_Click" />
+        <Button Grid.Column="2" HorizontalAlignment="Right" Content="Pop Out Inspector" Height="24" Width="150" Click="Pop_Out_Inspector_Click"/>
+        <Button Grid.Column="3" HorizontalAlignment="Right" Content="Settings" Height="24" Width="100" Click="Settings_Click"/>
+
+        </Grid>
     </Grid>
 </local:BaseWindow>

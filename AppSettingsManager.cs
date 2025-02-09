@@ -26,7 +26,11 @@ namespace Win_Labs
             if (!File.Exists(SettingsFilePath))
             {
                 // Create default settings if the file doesn't exist
-                _settings = new AppSettings {};
+                _settings = new AppSettings 
+                {
+                    Theme = "Dark",
+                    Language = "en-UK"
+                };
                 SaveSettings();
                 Log.Info("Default settings created and saved.");
             }
@@ -45,7 +49,11 @@ namespace Win_Labs
                 catch (Exception ex)
                 {
                     Log.Error($"Failed to load settings: {ex.Message}");
-                    _settings = new AppSettings();
+                    _settings = new AppSettings
+                    {
+                        Theme = "Dark",
+                        Language = "en-UK"
+                    };
                     SaveSettings();
                 }
             }

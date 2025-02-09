@@ -33,10 +33,13 @@ namespace Win_Labs
         private Cue _currentCue = new();
         public string _currentCueFilePath;
         public event RoutedEventHandler GotFocus;
+        private InspectorWindow _inspectorWindow;
+
         public MainWindow(string playlistFolderPath)
         {
             PlaylistManager.playlistFolderPath = playlistFolderPath;
             InitializeComponent();
+            DataContext = this;
             playlistManager = new PlaylistManager(this);
             _playlistFolderPath = PlaylistManager.playlistFolderPath;
             CueListView.ItemsSource = _cues;
@@ -106,25 +109,19 @@ namespace Win_Labs
             Cue.IsInitializing = false;
         }
 
-        private void BindCue(Cue cue)
-        {
-            DataContext = cue;
-            _currentCue = cue;
-        }
-
         private void SetupCueChangeHandler()
         {
             _currentCue.PropertyChanged += OnCurrentCuePropertyChanged;
         }
 
-        private void Duration_GotFocus(object sender, RoutedEventArgs e)
+        internal void Duration_GotFocus(object sender, RoutedEventArgs e)
         {
             if (sender is TextBox textBox && textBox.DataContext is Cue cue)
             {
                 cue.Duration_GotFocus();
             }
         }
-        private void Duration_LostFocus(object sender, RoutedEventArgs e)
+        internal void Duration_LostFocus(object sender, RoutedEventArgs e)
         {
             if (sender is TextBox textBox && textBox.DataContext is Cue cue)
             {
@@ -151,8 +148,86 @@ namespace Win_Labs
             if (CueListView.SelectedItem is Cue selectedCue)
             {
                 BindCue(selectedCue);
+                ShowInspector();
+            }
+            else
+            {
+                HideInspector();
             }
             RefreshCueList();
+        }
+
+        private void BindCue(Cue cue)
+        {
+            DataContext = cue;
+            _currentCue = cue;
+
+            // Update the DataContext of the InspectorWindow if it is open
+            if (_inspectorWindow != null)
+            {
+                _inspectorWindow.DataContext = cue;
+            }
+        }
+
+
+        private void ShowInspector()
+        {
+            if (_inspectorWindow != null)
+            {
+                _inspectorWindow.DataContext = _currentCue;
+            }
+        }
+
+        private void HideInspector()
+        {
+            if (_inspectorWindow != null)
+            {
+                _inspectorWindow.DataContext = null;
+            }
+        }
+
+        private void Pop_Out_Inspector_Click(object sender, RoutedEventArgs e)
+        {
+            if (_inspectorWindow == null)
+            {
+                _inspectorWindow = new InspectorWindow
+                {
+                    Owner = this,
+                    DataContext = _currentCue
+                };
+                _inspectorWindow.Closed += (s, args) =>
+                {
+                    _inspectorWindow = null;
+                    IsInspectorVisible = true; // Show Inspector when window is closed
+                };
+                _inspectorWindow.Show();
+                IsInspectorVisible = false; // Hide Inspector in MainWindow
+            }
+            else
+            {
+                _inspectorWindow.Focus();
+            }
+        }
+
+        private bool _isInspectorVisible = true;
+        public bool IsInspectorVisible
+        {
+            get => _isInspectorVisible;
+            set
+            {
+                if (_isInspectorVisible != value)
+                {
+                    _isInspectorVisible = value;
+                    OnPropertyChanged(nameof(IsInspectorVisible));
+                }
+            }
+        }
+
+        // Implement INotifyPropertyChanged
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
         private void CreateNewCue_Click(object sender, RoutedEventArgs e)
@@ -229,7 +304,7 @@ namespace Win_Labs
             RefreshCueList();
         }
 
-        private void SelectTargetFile_Click(object sender, RoutedEventArgs e)
+        internal void SelectTargetFile_Click(object sender, RoutedEventArgs e)
         {
             Log.Info("Selecting target file...");
             var openFileDialog = new Microsoft.Win32.OpenFileDialog
@@ -381,18 +456,23 @@ namespace Win_Labs
                 return;
             }
 
+            PlayCue(selectedCue);
+        }
+
+        private void PlayCue(Cue cue)
+        {
             try
             {
                 // Ensure TargetFile exists
-                if (!File.Exists(selectedCue.TargetFile))
+                if (!File.Exists(cue.TargetFile))
                 {
-                    Log.Error($"Target file does not exist: {selectedCue.TargetFile}");
-                    MessageBox.Show($"The file {selectedCue.TargetFile} could not be found.", "File Not Found", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Log.Error($"Target file does not exist: {cue.TargetFile}");
+                    MessageBox.Show($"The file {cue.TargetFile} could not be found.", "File Not Found", MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
 
                 // Initialize playback components
-                var audioReader = new AudioFileReader(selectedCue.TargetFile);
+                var audioReader = new AudioFileReader(cue.TargetFile);
                 var newWaveOut = new WaveOutEvent();
                 newWaveOut.Init(audioReader);
 
@@ -407,15 +487,15 @@ namespace Win_Labs
                 bool isDurationValid = false;
                 TimeSpan limitDuration = TimeSpan.Zero;
 
-                if (!string.IsNullOrWhiteSpace(selectedCue.Duration))
+                if (!string.IsNullOrWhiteSpace(cue.Duration))
                 {
                     // Try to parse duration as a TimeSpan (e.g., "mm:ss.ff")
-                    if (TimeSpan.TryParseExact(selectedCue.Duration, @"mm\:ss\.ff", null, out limitDuration) && limitDuration.TotalMilliseconds > 0)
+                    if (TimeSpan.TryParseExact(cue.Duration, @"mm\:ss\.ff", null, out limitDuration) && limitDuration.TotalMilliseconds > 0)
                     {
                         isDurationValid = true;
                     }
                     // If not, try to parse as plain milliseconds (e.g., "120000")
-                    else if (double.TryParse(selectedCue.Duration, out double durationInMilliseconds) && durationInMilliseconds > 0)
+                    else if (double.TryParse(cue.Duration, out double durationInMilliseconds) && durationInMilliseconds > 0)
                     {
                         limitDuration = TimeSpan.FromMilliseconds(durationInMilliseconds);
                         isDurationValid = true;
@@ -424,7 +504,7 @@ namespace Win_Labs
 
                 if (isDurationValid)
                 {
-                    Log.Info($"Playing Cue {selectedCue.CueNumber}: {selectedCue.TargetFile} for {limitDuration.TotalSeconds} seconds.");
+                    Log.Info($"Playing Cue {cue.CueNumber}: {cue.TargetFile} for {limitDuration.TotalSeconds} seconds.");
 
                     var playbackTimer = new System.Timers.Timer(limitDuration.TotalMilliseconds)
                     {
@@ -436,6 +516,7 @@ namespace Win_Labs
                         playbackTimer.Stop();
                         playbackTimer.Dispose();
                         Dispatcher.Invoke(() => StopPlayback(newWaveOut));
+                        Dispatcher.Invoke(() => PlayNextCueIfAutoFollow(cue));
                     };
 
                     _playbackTimers[newWaveOut] = playbackTimer;
@@ -443,18 +524,41 @@ namespace Win_Labs
                 }
                 else
                 {
-                    Log.Warning($"Invalid or zero duration specified for cue {selectedCue.CueNumber}. Playing the full track.");
-                    MessageBox.Show($"The duration '{selectedCue.Duration}' is invalid. The full track will be played.",
+                    Log.Warning($"Invalid or zero duration specified for cue {cue.CueNumber}. Playing the full track.");
+                    MessageBox.Show($"The duration '{cue.Duration}' is invalid. The full track will be played.",
                                     "Invalid Duration", MessageBoxButton.OK, MessageBoxImage.Warning);
 
                     // Set the duration back to the audio file's length
-                    selectedCue.Duration = audioReader.TotalTime.ToString(@"mm\:ss\.ff");
+                    cue.Duration = audioReader.TotalTime.ToString(@"mm\:ss\.ff");
                 }
 
                 newWaveOut.Play();
                 _activeWaveOuts.Add(newWaveOut);
 
-                CurrentTrack.Text = $"Playing: {selectedCue.FileName}";
+                CurrentTrack.Text = $"Playing: {cue.FileName}";
+
+                // Move to next cue without auto follow
+                int currentIndex = CueListView.Items.IndexOf(cue);
+                bool foundNextCue = false;
+                while (currentIndex + 1 < CueListView.Items.Count)
+                {
+                    currentIndex++;
+                    var nextCue = CueListView.Items[currentIndex] as Cue;
+                    if (nextCue != null && !nextCue.AutoFollow)
+                    {
+                        CueListView.SelectedIndex = currentIndex;
+                        break;
+                    }
+                }
+
+                if (!foundNextCue)
+                {
+                    Log.Info("Reached the end of the cue list or no non-auto-follow cue found.");
+                    // Optionally, reset to the first item
+                    // CueListView.SelectedIndex = 0;
+                }
+
+
             }
             catch (Exception ex)
             {
@@ -462,6 +566,20 @@ namespace Win_Labs
                 MessageBox.Show($"Failed to play the cue: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
+        private void PlayNextCueIfAutoFollow(Cue currentCue)
+        {
+            int currentIndex = _cues.IndexOf(currentCue);
+            if (currentIndex + 1 < _cues.Count)
+            {
+                Cue nextCue = _cues[currentIndex + 1];
+                if (nextCue.AutoFollow)
+                {
+                    PlayCue(nextCue);
+                }
+            }
+        }
+
 
 
 

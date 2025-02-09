@@ -37,7 +37,7 @@ namespace Win_Labs
             {
                 Log.Info("StartupWindow.Close.Detected");
 
-                var result = MessageBox.Show(
+                var result = System.Windows.MessageBox.Show(
                     "Are you sure you want to close?",
                     "",
                     MessageBoxButton.YesNo,
@@ -89,7 +89,7 @@ namespace Win_Labs
         }
         private void TitleBarIcon_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
-            MessageBox.Show("Hi there.", "!!EasterEgg!!", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+            System.Windows.MessageBox.Show("Hi there.", "!!EasterEgg!!", MessageBoxButton.OK, MessageBoxImage.Exclamation);
         }
 
         private void Settings_Click(object sender, RoutedEventArgs e)

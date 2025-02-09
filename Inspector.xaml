@@ -1,0 +1,77 @@
+﻿<Window 
+        x:Class="Win_Labs.InspectorWindow"
+        xmlns:local="clr-namespace:Win_Labs"
+        xmlns:localConverters="clr-namespace:Win_Labs.Converters"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        Title="Inspector" Height="290" Width="700">
+
+
+    <Grid>
+        <Grid ShowGridLines="False">
+            <!-- Define rows for horizontal Layout -->
+            <Grid.RowDefinitions>
+                <RowDefinition Height="25" />
+                <RowDefinition Height="25" />
+                <RowDefinition Height="25" />
+                <RowDefinition Height="25" />
+                <RowDefinition Height="25" />
+                <RowDefinition Height="25" />
+                <RowDefinition Height="25" />
+                <RowDefinition Height="25" />
+                <RowDefinition Height="Auto" MinHeight="25"/>
+            </Grid.RowDefinitions>
+
+            <!-- Define columns for vertical layout -->
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="75" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Cue Name -->
+            <TextBlock Grid.Column="0" Grid.Row="0" VerticalAlignment="Center" Text="Cue Name:" />
+            <TextBox Grid.Column="1" Grid.Row="0" Text="{Binding CueName, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False" />
+
+            <!-- Cue Number -->
+            <TextBlock Grid.Column="0" Grid.Row="1" VerticalAlignment="Center" Text="Cue Number:" />
+            <TextBox Grid.Column="1" Grid.Row="1" Text="{Binding CueNumber, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False" />
+
+            <!-- Duration -->
+            <TextBlock Grid.Column="0" Grid.Row="2" VerticalAlignment="Center" Text="Duration:" />
+            <TextBox Grid.Column="1" Grid.Row="2" Text="{Binding Duration, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False" GotFocus="Duration_GotFocus" LostFocus="Duration_LostFocus"/>
+
+            <!-- Pre Wait -->
+            <TextBlock Grid.Column="0" Grid.Row="3" VerticalAlignment="Center" Text="Pre Wait:" />
+            <TextBox Grid.Column="1" Grid.Row="3" Text="{Binding PreWait, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False" />
+
+            <!-- Post Wait -->
+            <TextBlock Grid.Column="0" Grid.Row="4" VerticalAlignment="Center" Text="Post Wait:" />
+            <TextBox Grid.Column="1" Grid.Row="4" Text="{Binding PostWait, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False" />
+
+            <!-- Auto Follow -->
+            <TextBlock Grid.Column="0" Grid.Row="5" VerticalAlignment="Center" Text="Auto Follow:" />
+            <CheckBox Grid.Column="1" Grid.Row="5" IsChecked="{Binding AutoFollow, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="10,0,0,0" />
+
+            <!-- File Name -->
+            <TextBlock Grid.Column="0" Grid.Row="6" VerticalAlignment="Center" Text="File Name:" />
+            <TextBox Grid.Column="1" Grid.Row="6" Text="{Binding FileName, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" />
+
+            <!-- Target File -->
+            <TextBlock Grid.Column="0" Grid.Row="7" VerticalAlignment="Center" Text="Target File:" />
+            <TextBox Grid.Column="1" Grid.Row="7" Text="{Binding TargetFile, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" />
+
+            <!-- Button with a folder icon -->
+            <Button Grid.Column="1" Grid.Row="7" HorizontalAlignment="Right" Click="SelectTargetFile_Click">
+                <Button.Content>
+                    <Image Source="pack://application:,,,/Resources/jpgs/Folder.jpg" Width="16" Height="16" />
+                </Button.Content>
+            </Button>
+
+            <!-- Notes -->
+            <TextBlock Grid.Column="0" Grid.Row="8" VerticalAlignment="Center" Text="Notes:" />
+            <TextBox Grid.Column="1" Grid.Row="8" Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" Height="Auto" />
+        </Grid>
+    </Grid>
+</Window>

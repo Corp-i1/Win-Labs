@@ -7,7 +7,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="LoadingWindow" Height="200" Width="200"
-        WindowStartupLocation="CenterOwner">
+        WindowStartupLocation="CenterScreen">
     
     
     <Grid>

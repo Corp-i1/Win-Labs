@@ -29,7 +29,7 @@ namespace Win_Labs
             {
                 if (File.Exists(zipFile))
                 {
-                    var result = MessageBox.Show(
+                    var result = System.Windows.MessageBox.Show(
                         "File with the same name detected. Overwrite?",
                         "Overwrite File?",
                         MessageBoxButton.OKCancel,
@@ -47,12 +47,12 @@ namespace Win_Labs
 
                 System.IO.Compression.ZipFile.CreateFromDirectory(playlistFolderPath, zipFile, CompressionLevel.Fastest, false);
                 Log.Info($"File created: {zipFile}");
-                MessageBox.Show("Playlist exported successfully.", "Export Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+                System.Windows.MessageBox.Show("Playlist exported successfully.", "Export Complete", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
                 Log.Error($"Error creating ZIP file: {ex.Message}");
-                MessageBox.Show($"Could not create file {zipFile}. Please check the location or file permissions.",
+                System.Windows.MessageBox.Show($"Could not create file {zipFile}. Please check the location or file permissions.",
                     "File Creation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
