@@ -57,7 +57,7 @@ namespace Win_Labs
                 AutoFollow = false,
                 FileName = "",
                 TargetFile = "",
-                Notes = ""
+                Notes = "Default Cue"
             };
         }
 
@@ -146,7 +146,7 @@ namespace Win_Labs
                     Log.Warning($"Cue file not found: {MaskFilePath(filePath)}");
 
                     // Ask the user whether they want to abort or create a default cue
-                    var result = MessageBox.Show("Cue file not found. Do you want to create a default cue?", "Cue File Missing", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                    var result = System.Windows.MessageBox.Show("Cue file not found. Do you want to create a default cue?", "Cue File Missing", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
                     if (result == MessageBoxResult.No)
                     {

@@ -73,12 +73,24 @@ namespace Win_Labs
         {
             string playlistFolderPath = OpenFolderDialog("Select a playlist folder.");
             Log.Info($"Opening existing playlist folder: {playlistFolderPath}");
-            if (!Directory.EnumerateFiles(playlistFolderPath, "cue_*.json").Any())
+
+            // Add protection for cancelation of window
+            try
             {
-                Log.Error("No cue files found in the selected folder: " + playlistFolderPath);
-                System.Windows.MessageBox.Show("The selected folder does not contain any cue files.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+
+                if (!Directory.EnumerateFiles(playlistFolderPath, "cue_*.json").Any())
+                {
+                    Log.Error("No cue files found in the selected folder: " + playlistFolderPath);
+                    System.Windows.MessageBox.Show("The selected folder does not contain any cue files.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+            }
+            catch
+            {
+                Log.Error("No folder selected.");
                 return;
             }
+
 
             try
             {
