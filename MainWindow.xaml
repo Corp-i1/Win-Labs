@@ -219,6 +219,5 @@
         <Button Grid.Column="3" HorizontalAlignment="Right" Content="Settings" Height="24" Width="100" Click="Settings_Click"/>
 
         </Grid>
-
     </Grid>
 </local:BaseWindow>
