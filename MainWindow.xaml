@@ -1,18 +1,19 @@
 ﻿<local:BaseWindow 
-        x:Class="Win_Labs.MainWindow"
-        xmlns:local="clr-namespace:Win_Labs"
-        xmlns:localConverters="clr-namespace:Win_Labs.Converters"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d"
-        Title="Win-Labs" Height="600" Width="857"
-        Background="{DynamicResource WindowBackgroundBrush}"
-        ShowInTaskbar="True"
-        BorderBrush="{DynamicResource WindowBackgroundBrush}"
-        BorderThickness="0"
-        WindowStartupLocation="CenterScreen">
+     x:Class="Win_Labs.MainWindow"
+     xmlns:local="clr-namespace:Win_Labs"
+     xmlns:localConverters="clr-namespace:Win_Labs.Converters"
+     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+     mc:Ignorable="d"
+     Title="Win-Labs" Height="600" Width="857"
+     Background="{DynamicResource WindowBackgroundBrush}"
+     ShowInTaskbar="True"
+     BorderBrush="{DynamicResource WindowBackgroundBrush}"
+     BorderThickness="0"
+     WindowStartupLocation="CenterScreen"
+     Icon="{Binding IconIcoPath, RelativeSource={RelativeSource AncestorType=local:BaseWindow}}">
     <local:BaseWindow.Resources>
         <localConverters:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
 

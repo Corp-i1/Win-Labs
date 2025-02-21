@@ -5,6 +5,9 @@ namespace Win_Labs
     public class BaseWindow : Window
     {
         protected AppSettings settings;
+        private const string DefaultSplashScreenPath = @"\resources\Win-Labs_Logo_Splash.png";
+        private const string DefaultIcon_ico = @"\resources\Icons\Win-Labs_Logo-256x256.ico";
+        private const string DefaultIcon_png = @"\resources\Icons\Win-Labs_Logo-256x256.png";
 
         public BaseWindow()
         {

@@ -12,7 +12,7 @@
         ResizeMode="NoResize"
         AllowsTransparency="True"
         MouseDown="Window_MouseDown"
-        >
+        Icon="{Binding IconIcoPath, RelativeSource={RelativeSource AncestorType=local:BaseWindow}}">
 
     <Grid ShowGridLines="False">
 
@@ -32,8 +32,8 @@
         <!-- Title Bar -->
         <DockPanel Grid.Row="0" >
             <Image x:Name="TitleBarIcon" MouseDown="TitleBarIcon_Click" Width="25" Height="25" Source="\resources\Icons\Win-Labs_Logo-256x256.ico" />
-            <Menu>
-                <MenuItem Header="Window" Height="25" Width="56" HorizontalAlignment="Left" VerticalAlignment="Center" BorderThickness="0" Foreground="LightGray">
+            <Menu VerticalContentAlignment="Center">
+                <MenuItem Header="Window" Height="25" Width="56" HorizontalAlignment="Left" VerticalContentAlignment="Center" BorderThickness="0" Foreground="LightGray">
                     <MenuItem Header="Close" Click="CloseMenuItem_Click" Foreground="LightGray"/>
                     <Separator Background="DarkSlateBlue"/>
                     <MenuItem Header="Other" Foreground="LightGray"/>

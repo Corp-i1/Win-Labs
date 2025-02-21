@@ -8,7 +8,7 @@ namespace Win_Labs
 {
     public static class CueManager
     {
-        public static bool StartupFinished { get; private set; }
+         internal static bool StartupFinished { get; private set; }
 
         public static void MarkStartupAsFinished()
         {
