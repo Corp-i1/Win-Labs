@@ -337,17 +337,17 @@
         <Setter Property="Background" Value="{StaticResource WindowBackgroundBrush}"/>
         <Setter Property="Foreground" Value="{StaticResource WindowForegroundBrush}"/>
         <Setter Property="BorderBrush" Value="{StaticResource WindowBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Padding" Value="0"/>
     </Style>
 
-    <!-- Style for ListViewItem -->
     <Style TargetType="ListViewItem">
         <Setter Property="SnapsToDevicePixels" Value="true" />
         <Setter Property="OverridesDefaultStyle" Value="true" />
-        <Setter Property="Background" Value="{StaticResource WindowBackgroundBrush}" />
+        <Setter Property="Background" Value="{DynamicResource WindowBackgroundBrush}" />
         <Setter Property="Foreground" Value="{StaticResource WindowForegroundBrush}" />
         <Setter Property="BorderBrush" Value="{StaticResource WindowBorderBrush}" />
-        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Padding" Value="5" />
         <Setter Property="Margin" Value="2" />
         <Setter Property="HorizontalContentAlignment" Value="Left" />
@@ -358,23 +358,25 @@
                     <Border x:Name="Border"
                         Padding="2"
                         SnapsToDevicePixels="true"
-                        Background="Transparent">
+                        Background="{TemplateBinding Background}"
+                        BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}">
                         <VisualStateManager.VisualStateGroups>
                             <VisualStateGroup x:Name="CommonStates">
                                 <VisualState x:Name="Normal" />
                                 <VisualState x:Name="MouseOver">
                                     <Storyboard>
-                                        <ColorAnimationUsingKeyFrames Storyboard.TargetName="Border"
-                                                                  Storyboard.TargetProperty="(Panel.Background).(SolidColorBrush.Color)">
-                                            <EasingColorKeyFrame KeyTime="0" Value="{Binding Color, Source={StaticResource WindowBorderBrush}}"/>
-                                        </ColorAnimationUsingKeyFrames>
+                                        <ThicknessAnimation Storyboard.TargetName="Border"
+                                                        Storyboard.TargetProperty="BorderThickness"
+                                                        To="1"
+                                                        Duration="0" />
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="Disabled">
                                     <Storyboard>
                                         <DoubleAnimation Storyboard.TargetName="Border"
                                                      Storyboard.TargetProperty="Opacity"
-                                                     To="0.5"
+                                                     To="0"
                                                      Duration="0" />
                                     </Storyboard>
                                 </VisualState>
@@ -383,17 +385,22 @@
                                 <VisualState x:Name="Unselected" />
                                 <VisualState x:Name="Selected">
                                     <Storyboard>
+                                        <ThicknessAnimation Storyboard.TargetName="Border"
+                                                        Storyboard.TargetProperty="BorderThickness"
+                                                        To="1"
+                                                        Duration="0" />
                                         <ColorAnimationUsingKeyFrames Storyboard.TargetName="Border"
-                                                                  Storyboard.TargetProperty="(Panel.Background).(SolidColorBrush.Color)">
-                                            <EasingColorKeyFrame KeyTime="0" Value="{Binding Color, Source={StaticResource WindowBorderBrush}}"/>
+                                                                Storyboard.TargetProperty="(Panel.Background).(SolidColorBrush.Color)">
+                                        <EasingColorKeyFrame KeyTime="0" Value="{Binding Color, Source={StaticResource WindowBorderBrush}}"/>
                                         </ColorAnimationUsingKeyFrames>
                                     </Storyboard>
                                 </VisualState>
                                 <VisualState x:Name="SelectedUnfocused">
                                     <Storyboard>
                                         <ColorAnimationUsingKeyFrames Storyboard.TargetName="Border"
-                                                                  Storyboard.TargetProperty="(Panel.Background).(SolidColorBrush.Color)">
-                                            <EasingColorKeyFrame KeyTime="0" Value="{Binding Color, Source={StaticResource WindowBorderBrush}}"/>
+                                        Storyboard.TargetProperty="(Background).(SolidColorBrush.Color)">
+                                            <EasingColorKeyFrame KeyTime="0"
+                                            Value="{Binding Color, Source={StaticResource WindowBorderBrush}}" />
                                         </ColorAnimationUsingKeyFrames>
                                     </Storyboard>
                                 </VisualState>
@@ -405,6 +412,8 @@
             </Setter.Value>
         </Setter>
     </Style>
+
+
 
     <!-- Style for ContextMenu -->
     <Style TargetType="{x:Type ContextMenu}">
