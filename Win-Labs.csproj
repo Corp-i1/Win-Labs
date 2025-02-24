@@ -52,12 +52,12 @@
 	  <Generator>MSBuild:Compile</Generator>
 	  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	</Content>
-	<Content Include="resources\Icons\Win-Labs_Logo-256x256.ico">
+	<Resource Include="resources\Icons\Win-Labs_Logo-256x256.ico">
 	  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	</Content>
-	<Content Include="resources\Icons\Win-Labs_Logo.ico">
+	</Resource>
+	<Resource Include="resources\Icons\Win-Labs_Logo.ico">
 	  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	</Content>
+	</Resource>
   </ItemGroup>
 
   <ItemGroup>
@@ -66,17 +66,17 @@
   </ItemGroup>
 
   <ItemGroup>
-	<Content Include="resources\Icons\Close_Icon.png">
+	<Resource Include="resources\Icons\Close_Icon.png">
 	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	</Content>
-	<Content Include="resources\Icons\Close_Icon_White.png">
+	</Resource>
+	<Resource Include="resources\Icons\Close_Icon_White.png">
 	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	</Content>
+	</Resource>
 	<Resource Include="resources\Icons\Maximize_Icon.png" />
 	<Resource Include="resources\Icons\Minimize_Icon.png" />
-	<Content Include="resources\Icons\Win-Labs_Logo.png">
+	<Resource Include="resources\Icons\Win-Labs_Logo.png">
 	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-	</Content>
+	</Resource>
 	<Resource Include="resources\Icons\Win-Labs_Logo-256x256.png" />
 	<Resource Include="resources\jpgs\Folder.jpg" />
 	<Resource Include="resources\pngs\Blank Paper.png" />
