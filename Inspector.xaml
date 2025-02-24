@@ -1,4 +1,4 @@
-﻿<local:BaseWindow 
+﻿<Window 
         x:Class="Win_Labs.InspectorWindow"
         xmlns:local="clr-namespace:Win_Labs"
         xmlns:localConverters="clr-namespace:Win_Labs.Converters"
@@ -75,4 +75,4 @@
             <TextBox Grid.Column="1" Grid.Row="8" Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" Height="Auto" />
         </Grid>
     </Grid>
-</local:BaseWindow>
+</Window>

@@ -3,7 +3,7 @@ using Win_Labs.Properties;
 
 namespace Win_Labs
 {
-    public partial class InspectorWindow : BaseWindow
+    public partial class InspectorWindow : Window
     {
         public InspectorWindow()
         {
