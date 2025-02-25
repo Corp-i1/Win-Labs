@@ -149,10 +149,12 @@ namespace Win_Labs
             {
                 BindCue(selectedCue);
                 ShowInspector();
+                CurrentCue.Text = $"Selected: {selectedCue.CueName}";
             }
             else
             {
                 HideInspector();
+                CurrentCue.Text = "No Cue Selected";
             }
             RefreshCueList();
         }
