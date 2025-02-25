@@ -7,7 +7,13 @@ namespace Win_Labs
     {
         public InspectorWindow()
         {
+            Log.Info("Popout Inspector Opened.");
             InitializeComponent();
+        }
+
+        protected override void OnClosing(CancelEventArgs e)
+        {
+            Log.Info("Popout Inspector Closing.");
         }
 
         private void Duration_GotFocus(object sender, RoutedEventArgs e)

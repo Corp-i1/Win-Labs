@@ -13,10 +13,9 @@
      BorderBrush="{DynamicResource WindowBackgroundBrush}"
      BorderThickness="0"
      WindowStartupLocation="CenterScreen"
-     Icon="{Binding IconIcoPath, RelativeSource={RelativeSource AncestorType=local:BaseWindow}}">
+     Icon="{Binding IconIcoPath, RelativeSource={RelativeSource AncestorType={x:Type local:BaseWindow}}}">
     <local:BaseWindow.Resources>
         <localConverters:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
-
     </local:BaseWindow.Resources>
 
     <Grid ShowGridLines="False">
@@ -29,8 +28,7 @@
             <RowDefinition Height="60" />
             <!-- Toolbar row:2 -->
             <RowDefinition Height="*" />
-            <!-- CueList row:3 -->
-            <RowDefinition Height="Auto" />
+            <!-- CueList row:4 -->
             <!-- Inspector row:4 -->
             <RowDefinition Height="30" />
             <!-- Footer row:5 -->
@@ -92,7 +90,7 @@
                           />
                 <Button Content="Stop" Width="50" Height="40" Click="StopButton_Click" Grid.Column="0" Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Center" />
                 <TextBlock x:Name="CurrentCue" Text="No Cue Selected" Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0" HorizontalAlignment="Left" />
-                <TextBlock x:Name="CurrentTrack" Text="No Track Selected" Grid.Column="1" Grid.Row="1" VerticalAlignment="Center" Margin="10,0,0,0" />
+                <TextBlock x:Name="CurrentTrack" Text="No Track Playing" Grid.Column="1" Grid.Row="1" VerticalAlignment="Center" Margin="10,0,0,0" />
             </Grid>
         </DockPanel>
 
@@ -110,8 +108,8 @@
         </Grid>
 
         <!-- Cue List -->
-        <DockPanel Grid.Row="3" Grid.Column="0" LastChildFill="True" DockPanel.Dock="Left" SelectiveScrollingGrid.SelectiveScrollingOrientation="Vertical">
-            <ListView x:Name="CueListView" SelectionChanged="CueListView_SelectionChanged" SelectiveScrollingGrid.SelectiveScrollingOrientation="Vertical" SelectedIndex="0" >
+        <DockPanel Grid.Row="3" Grid.Column="0" LastChildFill="True" DockPanel.Dock="Left" SelectiveScrollingGrid.SelectiveScrollingOrientation="Vertical" VerticalAlignment="Top">
+            <ListView x:Name="CueListView" SelectionChanged="CueListView_SelectionChanged" SelectiveScrollingGrid.SelectiveScrollingOrientation="Vertical" SelectedIndex="0" KeyDown="CueListView_KeyDown">
 
                 <ListView.ContextMenu>
                     <ContextMenu>
@@ -139,7 +137,7 @@
         </DockPanel>
 
         <!-- Inspector -->
-        <StackPanel Grid.Row="4" Grid.Column="0">
+        <StackPanel Grid.Row="3" Grid.Column="0" VerticalAlignment="Bottom" Visibility="{Binding MainInspectorVisibility, RelativeSource={RelativeSource AncestorType={x:Type local:MainWindow}}}">
             <Grid ShowGridLines="False">
                 <!-- Define rows for horizontal Layout -->
                 <Grid.RowDefinitions>
@@ -205,20 +203,18 @@
             </Grid>
         </StackPanel>
 
-
         <!-- Footer -->
-        <Grid Grid.Row="5" Grid.Column="0" HorizontalAlignment="Stretch" VerticalAlignment="Center" Height="30" >
+        <Grid Grid.Row="4" Grid.Column="0" HorizontalAlignment="Stretch" VerticalAlignment="Center" Height="30" >
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="255"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="155"/>
                 <ColumnDefinition Width="105" />
             </Grid.ColumnDefinitions>
-        <TextBlock Grid.Column="0" Text="GitHub: https://github.com/Corp-i1/Win-Labs" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10,0,0,0" />
-        <ToggleButton Grid.Column="1" x:Name="EditModeToggle" Content="Edit Mode" Height="24"  Width="100" Click="EditModeToggle_Click" />
-        <Button Grid.Column="2" HorizontalAlignment="Right" Content="Pop Out Inspector" Height="24" Width="150" Click="Pop_Out_Inspector_Click"/>
-        <Button Grid.Column="3" HorizontalAlignment="Right" Content="Settings" Height="24" Width="100" Click="Settings_Click"/>
-
+            <TextBlock Grid.Column="0" Text="GitHub: https://github.com/Corp-i1/Win-Labs" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10,0,0,0" />
+            <ToggleButton Grid.Column="1" x:Name="EditModeToggle" Content="Edit Mode" Height="24"  Width="100" Click="EditModeToggle_Click" ToolTip="Show mode minimizes distruptions."/>
+            <Button Grid.Column="2" HorizontalAlignment="Right" Content="Pop Out Inspector" Height="24" Width="150" Click="Pop_Out_Inspector_Click"/>
+            <Button Grid.Column="3" HorizontalAlignment="Right" Content="Settings" Height="24" Width="100" Click="Settings_Click"/>
         </Grid>
     </Grid>
 </local:BaseWindow>
