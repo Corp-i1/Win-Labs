@@ -21,11 +21,13 @@ using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
 using System.Runtime.InteropServices;
 using System.Printing;
+using System.Windows.Input;
+using System.Text.RegularExpressions;
 
 
 namespace Win_Labs
 {
-    public partial class MainWindow : BaseWindow
+    public partial class MainWindow : BaseWindow, INotifyPropertyChanged
     {
         private PlaylistManager playlistManager;
         private string _playlistFolderPath;
@@ -39,13 +41,14 @@ namespace Win_Labs
         {
             PlaylistManager.playlistFolderPath = playlistFolderPath;
             InitializeComponent();
-            DataContext = this;
+            DataContext = this; // Ensure DataContext is set to the MainWindow instance
             playlistManager = new PlaylistManager(this);
             _playlistFolderPath = PlaylistManager.playlistFolderPath;
             CueListView.ItemsSource = _cues;
             Initialize();
             Log.Info("Application started.");
         }
+
 
         private void Initialize()
         {
@@ -148,14 +151,41 @@ namespace Win_Labs
             if (CueListView.SelectedItem is Cue selectedCue)
             {
                 BindCue(selectedCue);
-                ShowInspector();
+                CurrentCue.Text = $"Selected: {selectedCue.CueName}";
             }
             else
             {
-                HideInspector();
+                CurrentCue.Text = "No Cue Selected";
             }
             RefreshCueList();
         }
+
+        private void CueListView_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (CueListView.Items.Count == 0)
+                return;
+
+            int selectedIndex = CueListView.SelectedIndex;
+
+            switch (e.Key)
+            {
+                case Key.Up:
+                    if (selectedIndex > 0)
+                    {
+                        CueListView.SelectedIndex = selectedIndex - 1;
+                        CueListView.ScrollIntoView(CueListView.SelectedItem);
+                    }
+                    break;
+                case Key.Down:
+                    if (selectedIndex < CueListView.Items.Count - 1)
+                    {
+                        CueListView.SelectedIndex = selectedIndex + 1;
+                        CueListView.ScrollIntoView(CueListView.SelectedItem);
+                    }
+                    break;
+            }
+        }
+
 
         private void BindCue(Cue cue)
         {
@@ -168,22 +198,37 @@ namespace Win_Labs
                 _inspectorWindow.DataContext = cue;
             }
         }
-
-
-        private void ShowInspector()
+        private Visibility _mainInspectorVisibility = Visibility.Visible;
+        public Visibility MainInspectorVisibility
         {
-            if (_inspectorWindow != null)
+            get => _mainInspectorVisibility;
+            set
             {
-                _inspectorWindow.DataContext = _currentCue;
+                if (_mainInspectorVisibility != value)
+                {
+                    _mainInspectorVisibility = value;
+                    OnPropertyChanged(nameof(MainInspectorVisibility));
+                }
             }
         }
 
-        private void HideInspector()
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        private void OnPropertyChanged(string propertyName)
         {
-            if (_inspectorWindow != null)
-            {
-                _inspectorWindow.DataContext = null;
-            }
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        private void ShowMainInspector()
+        {
+            Log.Info("Showing main inspector.");
+            MainInspectorVisibility = Visibility.Visible; // Show Inspector when window is closed
+        }
+
+        private void HideMainInspector()
+        {
+            Log.Info("Hiding main inspector.");
+            MainInspectorVisibility = Visibility.Hidden; // Hide Inspector in MainWindow
         }
 
         private void Pop_Out_Inspector_Click(object sender, RoutedEventArgs e)
@@ -198,38 +243,16 @@ namespace Win_Labs
                 _inspectorWindow.Closed += (s, args) =>
                 {
                     _inspectorWindow = null;
-                    IsInspectorVisible = true; // Show Inspector when window is closed
+                    ShowMainInspector(); // Ensure the main inspector is shown
                 };
                 _inspectorWindow.Show();
-                IsInspectorVisible = false; // Hide Inspector in MainWindow
+                HideMainInspector(); // Ensure the main inspector is hidden
             }
             else
             {
                 _inspectorWindow.Focus();
             }
         }
-
-        private bool _isInspectorVisible = true;
-        public bool IsInspectorVisible
-        {
-            get => _isInspectorVisible;
-            set
-            {
-                if (_isInspectorVisible != value)
-                {
-                    _isInspectorVisible = value;
-                    OnPropertyChanged(nameof(IsInspectorVisible));
-                }
-            }
-        }
-
-        // Implement INotifyPropertyChanged
-        public event PropertyChangedEventHandler? PropertyChanged;
-        protected void OnPropertyChanged(string propertyName)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
-
         private void CreateNewCue_Click(object sender, RoutedEventArgs e)
         {
             // Calculate the next cue number based on the current count of cues
@@ -287,18 +310,21 @@ namespace Win_Labs
             InitializeCueData();
             RefreshCueList();
         }
-
+        internal bool EditMode = true;
         private void EditModeToggle_Click(object sender, RoutedEventArgs e)
         {
             // Toggle edit mode
-            if (EditModeToggle.IsChecked == true)
+            if (!EditModeToggle.IsChecked == true)
             {
                 EditModeToggle.Content = "Show Mode";
+                EditMode = false;
                 Log.Info("Switched to Show Mode");
+                Log.Info("!Some Error and Warning message box will be skiped!");
             }
             else
             {
                 EditModeToggle.Content = "Edit Mode";
+                EditMode = true;
                 Log.Info("Switched to Edit Mode");
             }
             RefreshCueList();
@@ -466,9 +492,18 @@ namespace Win_Labs
                 // Ensure TargetFile exists
                 if (!File.Exists(cue.TargetFile))
                 {
-                    Log.Error($"Target file does not exist: {cue.TargetFile}");
-                    MessageBox.Show($"The file {cue.TargetFile} could not be found.", "File Not Found", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
+                    if (EditMode == true)
+                    {
+                        Log.Error($"Target file does not exist: {cue.TargetFile}");
+                        MessageBox.Show($"The file {cue.TargetFile} could not be found.", "File Not Found", MessageBoxButton.OK, MessageBoxImage.Error);
+                        return;
+                    }
+                    else
+                    {
+                        Log.Error($"Target file does not exist: {cue.TargetFile}");
+                        Log.Warning("Message box skipped as in show mode.");
+                        return;
+                    }
                 }
 
                 // Initialize playback components
@@ -579,10 +614,6 @@ namespace Win_Labs
                 }
             }
         }
-
-
-
-
         private void StopPlayback(WaveOutEvent waveOut)
         {
             try
@@ -600,9 +631,7 @@ namespace Win_Labs
                     _audioFileReaders.Remove(waveOut);
                 }
 
-                waveOut?.Stop();
-                _activeWaveOuts.Remove(waveOut);
-                waveOut?.Dispose();
+                CleanupAudio();
 
                 Log.Info("Playback stopped for the specified track.");
             }
@@ -637,7 +666,7 @@ namespace Win_Labs
 
             waveOut = null;
             audioFileReader = null;
-            CurrentTrack.Text = "No Track Selected";
+            CurrentTrack.Text = "No Track Playing";
             Log.Info("Audio resources cleaned up.");
         }
 
@@ -716,5 +745,6 @@ namespace Win_Labs
             settingsWindow.Owner = this;
             settingsWindow.ShowDialog();
         }
+        
     }
 }

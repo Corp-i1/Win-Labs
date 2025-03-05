@@ -1,5 +1,7 @@
 # License
 
+# To clarify i dont know how all this licencing works and just dont want anyone to take my work and say its theres  without giving me credit so this this the licence that ChatGPT recomended for that. : )
+
 ## Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0)
 
 This work is licensed under the Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License. To view a copy of this license, visit [http://creativecommons.org/licenses/by-nc-nd/4.0/](http://creativecommons.org/licenses/by-nc-nd/4.0/) or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
