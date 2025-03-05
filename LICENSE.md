@@ -1,6 +1,6 @@
 # License
 
-# To clarify i dont know how all this licencing works and just dont want anyone to take my work and say its theres  without giving me credit so this this the licence that chat got recomended for that
+# To clarify i dont know how all this licencing works and just dont want anyone to take my work and say its theres  without giving me credit so this this the licence that ChatGPT recomended for that. : )
 
 ## Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0)
 
