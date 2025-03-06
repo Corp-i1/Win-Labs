@@ -1,26 +1,56 @@
 # License
 
-# To clarify i dont know how all this licencing works and just dont want anyone to take my work and say its theres  without giving me credit so this this the licence that ChatGPT recomended for that. : )
+## Corpi1 Software License (Based on Mozilla Public License 2.0)
 
-## Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0)
+### 1. Definitions
 
-This work is licensed under the Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International License. To view a copy of this license, visit [http://creativecommons.org/licenses/by-nc-nd/4.0/](http://creativecommons.org/licenses/by-nc-nd/4.0/) or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
+  This License applies to any software project released under this license ("Software"). The original author ("Licensor") retains all rights not explicitly granted herein.
 
-### You are free to:
+### 2. Grant of License
 
-- **Share** — copy and redistribute the material in any medium or format
+  Subject to the terms of this License, the Licensor grants you a worldwide, royalty-free, non-exclusive license to:
+  
+  Use, copy, modify, and distribute the Software.
+  
+  Use the Software in personal, educational, and commercial settings, including in businesses, provided the Software itself is not sold.
+  
+  Modify and distribute modified versions under the same terms as this License.
 
-### Under the following terms:
+### 3. Attribution Requirement
 
-- **Attribution** — You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use.
-- **NonCommercial** — You may not use the material for commercial purposes.
-- **NoDerivatives** — If you remix, transform, or build upon the material, you may not distribute the modified material.
+  All copies, modifications, or distributions of the Software must include a clear and visible attribution to the Licensor, such as:
 
-### No additional restrictions
+  ```
+  Software by Corpi1 (https://corpi1.uk)
+  ```
+OR
+```
+Software by Corpi1 (https://github.com/Corp-i1/Win-Labs)
+```
 
-You may not apply legal terms or technological measures that legally restrict others from doing anything the license permits.
+### 4. No Resale or Monetization of the Software
 
-For more information, please refer to the full license text at [http://creativecommons.org/licenses/by-nc-nd/4.0/legalcode](http://creativecommons.org/licenses/by-nc-nd/4.0/legalcode).
+  You may not sell, license, sublicense, or otherwise monetize the Software itself, whether in original or modified form. This includes:
+  
+  Selling copies of the Software.
+  
+  Bundling the Software as part of a paid product or service.
+  
+  Repackaging the Software for sale.
+
+### 5. Compliance with MPL-2.0
+
+  Except where overridden by this License, the terms of the Mozilla Public License 2.0 (MPL-2.0) apply. If any conflict exists between this License and MPL-2.0, the terms of this License take precedence.
+
+### 6. Disclaimer of Warranty
+
+  THE SOFTWARE IS PROVIDED "AS IS," WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. IN NO EVENT SHALL THE LICENSOR BE LIABLE FOR ANY DAMAGES ARISING FROM THE USE OF THIS SOFTWARE.
+
+### 7. Termination
+
+  If you violate the terms of this License, your rights to use the Software are immediately revoked.
+
+  For full terms, refer to the Mozilla Public License 2.0 (https://www.mozilla.org/en-US/MPL/2.0/).
 
 
 ---
