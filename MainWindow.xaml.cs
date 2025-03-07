@@ -160,7 +160,7 @@ namespace Win_Labs
             RefreshCueList();
         }
 
-        private void CueListView_KeyDown(object sender, KeyEventArgs e)
+        private void KeyDownManager(object sender, KeyEventArgs e)
         {
             if (CueListView.Items.Count == 0)
                 return;
@@ -182,6 +182,12 @@ namespace Win_Labs
                         CueListView.SelectedIndex = selectedIndex + 1;
                         CueListView.ScrollIntoView(CueListView.SelectedItem);
                     }
+                    break;
+                case Key.Escape:
+                    CleanupAudio();
+                    break;
+                case Key.Space:
+
                     break;
             }
         }
@@ -489,6 +495,7 @@ namespace Win_Labs
         {
             try
             {
+                _currentCue = cue;
                 // Ensure TargetFile exists
                 if (!File.Exists(cue.TargetFile))
                 {
@@ -575,18 +582,21 @@ namespace Win_Labs
                 // Move to next cue without auto follow
                 int currentIndex = CueListView.Items.IndexOf(cue);
                 bool foundNextCue = false;
+                bool Breakout = false;
                 while (currentIndex + 1 < CueListView.Items.Count)
                 {
                     currentIndex++;
                     var nextCue = CueListView.Items[currentIndex] as Cue;
                     if (nextCue != null && !nextCue.AutoFollow)
                     {
+                        foundNextCue = true;
                         CueListView.SelectedIndex = currentIndex;
-                        break;
+
                     }
+
                 }
 
-                if (!foundNextCue)
+                if (foundNextCue == false)
                 {
                     Log.Info("Reached the end of the cue list or no non-auto-follow cue found.");
                     // Optionally, reset to the first item
@@ -633,7 +643,7 @@ namespace Win_Labs
 
                 CleanupAudio();
 
-                Log.Info("Playback stopped for the specified track.");
+                Log.Info($"Playback stopped for {_currentCue.TargetFile}."); //not working TODO
             }
             catch (Exception ex)
             {
