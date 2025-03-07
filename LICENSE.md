@@ -20,9 +20,9 @@
 
   All copies, modifications, or distributions of the Software must include a clear and visible attribution to the Licensor, such as:
 
-  ```
-  Software by Corpi1 (https://corpi1.uk)
-  ```
+```
+Software by Corpi1 (https://corpi1.uk)
+```
 OR
 ```
 Software by Corpi1 (https://github.com/Corp-i1/Win-Labs)
