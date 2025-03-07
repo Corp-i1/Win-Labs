@@ -13,7 +13,8 @@
      BorderBrush="{DynamicResource WindowBackgroundBrush}"
      BorderThickness="0"
      WindowStartupLocation="CenterScreen"
-     Icon="{Binding IconIcoPath, RelativeSource={RelativeSource AncestorType={x:Type local:BaseWindow}}}">
+     Icon="{Binding IconIcoPath, RelativeSource={RelativeSource AncestorType={x:Type local:BaseWindow}}}"
+     KeyDown="KeyDownManager">
     <local:BaseWindow.Resources>
         <localConverters:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
     </local:BaseWindow.Resources>
@@ -81,7 +82,8 @@
                 <Button Content="Go" FontSize="50" Width="200" Height="80" 
                 Grid.Column="0" Grid.RowSpan="2" 
                 Click="GoButton_Click" HorizontalAlignment="Left" Margin="10,0,0,0"
-                IsEnabled="{Binding IsChecked, ElementName=PauseButtonToggle, Converter={StaticResource InverseBooleanConverter}}">
+                IsEnabled="{Binding IsChecked, ElementName=PauseButtonToggle, Converter={StaticResource InverseBooleanConverter}}"
+                >
                 </Button>
                 <ToggleButton Content="Pause" Width="50" Height="40"
                           x:Name="PauseButtonToggle"
@@ -109,7 +111,7 @@
 
         <!-- Cue List -->
         <DockPanel Grid.Row="3" Grid.Column="0" LastChildFill="True" DockPanel.Dock="Left" SelectiveScrollingGrid.SelectiveScrollingOrientation="Vertical" VerticalAlignment="Top">
-            <ListView x:Name="CueListView" SelectionChanged="CueListView_SelectionChanged" SelectiveScrollingGrid.SelectiveScrollingOrientation="Vertical" SelectedIndex="0" KeyDown="CueListView_KeyDown">
+            <ListView x:Name="CueListView" SelectionChanged="CueListView_SelectionChanged" SelectiveScrollingGrid.SelectiveScrollingOrientation="Vertical" SelectedIndex="0">
 
                 <ListView.ContextMenu>
                     <ContextMenu>
