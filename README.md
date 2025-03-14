@@ -1,5 +1,4 @@
 # Win-Labs
-Discord Intergration test
 ### My Website: [Corpi1.uk](https://Corpi1.uk)
 This project is my window alternative for Q-Labs for Sound Technictions its bad but it might work.
 
