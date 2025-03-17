@@ -2,7 +2,7 @@
 using System.IO;
 using System.Windows;
 
-namespace Win_Labs
+namespace Win_Labs.ZIPManagement
 {
     internal class import
     {
@@ -27,10 +27,15 @@ namespace Win_Labs
                 bool overwriteAll = false;
                 bool skipAll = false;
                 var CuePath = "";
+                var directoryPath = Path.GetDirectoryName(CuePath);
+                if (directoryPath != null)
+                {
+                    Directory.CreateDirectory(directoryPath);
+                }
 
                 // Extract files with overwrite handling
                 Log.Info("Opening file: " + playlistImportFilePath);
-                using (var archive = System.IO.Compression.ZipFile.OpenRead(playlistImportFilePath))
+                using (var archive = ZipFile.OpenRead(playlistImportFilePath))
                 {
                     foreach (var entry in archive.Entries)
                     {
@@ -41,18 +46,6 @@ namespace Win_Labs
                             throw new InvalidOperationException("Entry is outside the target dir: " + CuePath);
                         }
 
-                        if (entry.FullName.EndsWith("/"))
-                        {
-                            Log.Info($"Skipped directory: {entry.FullName}");
-                            // Ensure the directory exists
-                            var directoryPath = Path.GetDirectoryName(CuePath);
-                            if (directoryPath != null)
-                            {
-                                Directory.CreateDirectory(directoryPath);
-                            }
-                            continue; // Skip directories
-
-                        }
 
                         // Check if the file already exists
                         if (File.Exists(CuePath))
@@ -113,6 +106,7 @@ namespace Win_Labs
                         Log.Info($"Extracted file: {entry.FullName}");
                     }
                 }
+
 
                 Log.Info($"{destinationPath} successfully populated with files from the ZIP archive.");
                 return destinationPath;

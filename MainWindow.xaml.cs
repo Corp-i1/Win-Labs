@@ -23,6 +23,7 @@ using System.Runtime.InteropServices;
 using System.Printing;
 using System.Windows.Input;
 using System.Text.RegularExpressions;
+using Win_Labs.ZIPManagement;
 
 
 namespace Win_Labs

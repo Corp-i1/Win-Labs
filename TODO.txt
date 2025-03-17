@@ -1,0 +1,1 @@
+﻿Make audio file paths relative to folder directory.

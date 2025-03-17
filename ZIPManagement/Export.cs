@@ -2,7 +2,7 @@
 using System.IO.Compression;
 using System.Windows;
 
-namespace Win_Labs
+namespace Win_Labs.ZIPManagement
 {
     internal class export
     {
@@ -29,7 +29,7 @@ namespace Win_Labs
             {
                 if (File.Exists(zipFile))
                 {
-                    var result = System.Windows.MessageBox.Show(
+                    var result = MessageBox.Show(
                         "File with the same name detected. Overwrite?",
                         "Overwrite File?",
                         MessageBoxButton.OKCancel,
@@ -45,14 +45,14 @@ namespace Win_Labs
                     Log.Info("Existing file deleted.");
                 }
 
-                System.IO.Compression.ZipFile.CreateFromDirectory(playlistFolderPath, zipFile, CompressionLevel.Fastest, false);
+                ZipFile.CreateFromDirectory(playlistFolderPath, zipFile, CompressionLevel.Fastest, false);
                 Log.Info($"File created: {zipFile}");
-                System.Windows.MessageBox.Show("Playlist exported successfully.", "Export Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("Playlist exported successfully.", "Export Complete", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
                 Log.Error($"Error creating ZIP file: {ex.Message}");
-                System.Windows.MessageBox.Show($"Could not create file {zipFile}. Please check the location or file permissions.",
+                MessageBox.Show($"Could not create file {zipFile}. Please check the location or file permissions.",
                     "File Creation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
         }
