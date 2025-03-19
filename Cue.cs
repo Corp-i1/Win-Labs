@@ -28,7 +28,12 @@ namespace Win_Labs
         internal string PlaylistFolderPath = PlaylistManager.playlistFolderPath;
 
         private static readonly object _lock = new object();
+        public Cue(string playlistFolderPath)
+        {
+            PlaylistFolderPath = PlaylistManager.playlistFolderPath;
+        }
 
+        public Cue() : this(string.Empty) { }
         public int CueNumber
         {
             get => _cueNumber;
@@ -68,12 +73,7 @@ namespace Win_Labs
         private TimeSpan _totalDuration;
         public event PropertyChangedEventHandler PropertyChanged;
 
-        public Cue(string playlistFolderPath)
-        {
-            PlaylistFolderPath = PlaylistManager.playlistFolderPath;
-        }
 
-        public Cue() : this(string.Empty) { }
 
 
         public string CueName

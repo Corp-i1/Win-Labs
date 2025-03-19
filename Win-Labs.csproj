@@ -91,6 +91,7 @@
 
   <ItemGroup>
 	<Folder Include="resources\SaveData\" />
+	<Folder Include="Templates\" />
   </ItemGroup>
 
   <ItemGroup>
