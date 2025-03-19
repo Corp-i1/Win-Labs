@@ -1,6 +1,7 @@
 ﻿using System.IO.Compression;
 using System.IO;
 using System.Windows;
+using Newtonsoft.Json;
 
 namespace Win_Labs.ZIPManagement
 {
@@ -45,7 +46,6 @@ namespace Win_Labs.ZIPManagement
                         {
                             throw new InvalidOperationException("Entry is outside the target dir: " + CuePath);
                         }
-
 
                         // Check if the file already exists
                         if (File.Exists(CuePath))
@@ -107,6 +107,8 @@ namespace Win_Labs.ZIPManagement
                     }
                 }
 
+                // Ensure paths in cue files are absolute
+                MakePathsAbsolute(destinationPath);
 
                 Log.Info($"{destinationPath} successfully populated with files from the ZIP archive.");
                 return destinationPath;
@@ -121,5 +123,18 @@ namespace Win_Labs.ZIPManagement
             }
         }
 
+        private static void MakePathsAbsolute(string playlistFolderPath)
+        {
+            var cueFiles = Directory.GetFiles(playlistFolderPath, "cue_*.json");
+            foreach (var file in cueFiles)
+            {
+                var cue = JsonConvert.DeserializeObject<Cue>(File.ReadAllText(file));
+                if (cue != null)
+                {
+                    cue.TargetFile = cue.GetAbsolutePath(cue.TargetFile);
+                    File.WriteAllText(file, JsonConvert.SerializeObject(cue));
+                }
+            }
+        }
     }
 }

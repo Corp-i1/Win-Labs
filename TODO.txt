@@ -22,7 +22,7 @@ TTTTTT  T:::::T  TTTTTTooooooooooo          D:::::D    D:::::D O::::::O   O:::::
 
 SHORT TERM:
 
-- Make audio file paths relative to folder directory.
+- 
 - Make Tabs for the inspector window both the pop out and the main window. 
    - Potentialaly to have multiple tabs open at once as separate windows. 
 - Centralise programing for the inspector element

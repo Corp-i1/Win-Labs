@@ -194,7 +194,6 @@ namespace Win_Labs
                 }
             }
         }
-
         public string TargetFile
         {
             get => _targetFile;
@@ -203,12 +202,54 @@ namespace Win_Labs
                 if (_targetFile != value)
                 {
                     Log.Info("PropertyChange.TargetFile");
-                    _targetFile = value;
+                    _targetFile = GetRelativePath(value);
                     OnPropertyChanged(nameof(TargetFile));
                     UpdateDuration();
                 }
             }
         }
+
+
+        internal string GetRelativePath(string filePath)
+        {
+            if (string.IsNullOrEmpty(filePath) || string.IsNullOrEmpty(PlaylistFolderPath))
+            {
+                return filePath;
+            }
+
+            // Ensure filePath is an absolute path
+            if (!Path.IsPathRooted(filePath))
+            {
+                filePath = Path.GetFullPath(Path.Combine(PlaylistFolderPath, filePath));
+            }
+
+            var playlistFolderUri = new Uri(PlaylistFolderPath);
+            var fileUri = new Uri(filePath);
+
+            if (playlistFolderUri.IsBaseOf(fileUri))
+            {
+                return Uri.UnescapeDataString(playlistFolderUri.MakeRelativeUri(fileUri).ToString().Replace('/', Path.DirectorySeparatorChar));
+            }
+
+            return filePath;
+        }
+
+
+        internal string GetAbsolutePath(string relativePath)
+        {
+            if (string.IsNullOrEmpty(relativePath) || string.IsNullOrEmpty(PlaylistFolderPath))
+            {
+                return relativePath;
+            }
+
+            // Ensure relativePath is correctly combined with PlaylistFolderPath
+            var playlistFolderUri = new Uri(PlaylistFolderPath);
+            var fileUri = new Uri(playlistFolderUri, relativePath);
+
+            return fileUri.LocalPath;
+        }
+
+
 
         public string Notes
         {
@@ -279,7 +320,9 @@ namespace Win_Labs
                 return;
             }
 
-            if (string.IsNullOrEmpty(_targetFile) || !File.Exists(_targetFile))
+            var absoluteTargetFile = GetAbsolutePath(_targetFile);
+
+            if (string.IsNullOrEmpty(absoluteTargetFile) || !File.Exists(absoluteTargetFile))
             {
                 SetDuration(TimeSpan.Zero);
                 Log.Warning("TargetFile is invalid or does not exist. Duration set to 00:00.00");
@@ -288,17 +331,17 @@ namespace Win_Labs
 
             try
             {
-                using (var audioFileReader = new AudioFileReader(_targetFile))
+                using (var audioFileReader = new AudioFileReader(absoluteTargetFile))
                 {
                     var totalDuration = audioFileReader.TotalTime;
-                    Log.Info($"Duration updated for TargetFile {_targetFile}: {totalDuration}");
+                    Log.Info($"Duration updated for TargetFile {absoluteTargetFile}: {totalDuration}");
                     SetDuration(totalDuration);
                 }
             }
             catch (Exception ex)
             {
                 SetDuration(TimeSpan.Zero);
-                Log.Error($"Error calculating duration for file '{_targetFile}': {ex.Message}");
+                Log.Error($"Error calculating duration for file '{absoluteTargetFile}': {ex.Message}");
             }
         }
 

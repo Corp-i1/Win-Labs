@@ -32,6 +32,7 @@ namespace Win_Labs
                 {
                     var cue = JsonConvert.DeserializeObject<Cue>(File.ReadAllText(file));
                     cue.PlaylistFolderPath = playlistFolderPath;
+                    cue.TargetFile = cue.GetAbsolutePath(cue.TargetFile); // Resolve to absolute path
                     cues.Add(cue);
                 }
             }
@@ -42,7 +43,6 @@ namespace Win_Labs
             MarkStartupAsFinished();
             return cues;
         }
-
 
         public static Cue CreateNewCue(int cueNumber, string playlistFolderPath)
         {

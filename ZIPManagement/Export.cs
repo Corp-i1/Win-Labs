@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.IO.Compression;
 using System.Windows;
+using Newtonsoft.Json;
 
 namespace Win_Labs.ZIPManagement
 {
@@ -45,6 +46,9 @@ namespace Win_Labs.ZIPManagement
                     Log.Info("Existing file deleted.");
                 }
 
+                // Ensure paths in cue files are relative
+                MakePathsRelative(playlistFolderPath);
+
                 ZipFile.CreateFromDirectory(playlistFolderPath, zipFile, CompressionLevel.Fastest, false);
                 Log.Info($"File created: {zipFile}");
                 MessageBox.Show("Playlist exported successfully.", "Export Complete", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -54,6 +58,20 @@ namespace Win_Labs.ZIPManagement
                 Log.Error($"Error creating ZIP file: {ex.Message}");
                 MessageBox.Show($"Could not create file {zipFile}. Please check the location or file permissions.",
                     "File Creation Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        private static void MakePathsRelative(string playlistFolderPath)
+        {
+            var cueFiles = Directory.GetFiles(playlistFolderPath, "cue_*.json");
+            foreach (var file in cueFiles)
+            {
+                var cue = JsonConvert.DeserializeObject<Cue>(File.ReadAllText(file));
+                if (cue != null)
+                {
+                    cue.TargetFile = cue.GetRelativePath(cue.TargetFile);
+                    File.WriteAllText(file, JsonConvert.SerializeObject(cue));
+                }
             }
         }
     }
