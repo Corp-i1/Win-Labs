@@ -21,6 +21,7 @@ TTTTTT  T:::::T  TTTTTTooooooooooo          D:::::D    D:::::D O::::::O   O:::::
 
 
 SHORT TERM:
+
 - Make audio file paths relative to folder directory.
 - Make Tabs for the inspector window both the pop out and the main window. 
    - Potentialaly to have multiple tabs open at once as separate windows. 
@@ -32,12 +33,15 @@ SHORT TERM:
 
 
 LONG TERM:
+
+- Database to store playlists online
 - My own FFT package
 - My own audio package
 
 
 
 FFT Goals:
+
 - Made in a c++ for speed and performace with wrapers for c# and eventualy python
 - Make my own Fast Fourier Transform package
 - Demo FFT Project
@@ -53,6 +57,7 @@ FFT Goals:
 
 
 Audio Goals:
+
 - play audio from files mp3, wav, FLAC, OGG
 - record audio
 - add effects to audio e.g. reverb, echo, distortion, pitch shift, time stretch

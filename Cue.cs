@@ -26,14 +26,17 @@ namespace Win_Labs
 
         internal static bool IsInitializing { get; set; }
         internal string PlaylistFolderPath = PlaylistManager.playlistFolderPath;
-
+        private TimeSpan _totalDuration;
+        public event PropertyChangedEventHandler PropertyChanged;
         private static readonly object _lock = new object();
+
         public Cue(string playlistFolderPath)
         {
             PlaylistFolderPath = PlaylistManager.playlistFolderPath;
         }
 
         public Cue() : this(string.Empty) { }
+
         public int CueNumber
         {
             get => _cueNumber;
@@ -69,13 +72,6 @@ namespace Win_Labs
                 }
             }
         }
-
-        private TimeSpan _totalDuration;
-        public event PropertyChangedEventHandler PropertyChanged;
-
-
-
-
         public string CueName
         {
             get => _cueName;
@@ -236,6 +232,7 @@ namespace Win_Labs
                 if (!normalizedPath.StartsWith(Path.GetFullPath(AppDomain.CurrentDomain.BaseDirectory)))
                 {
                     Log.Warning("Attempted path traversal detected.");
+                    MainWindow.CloseMainWindow();
                     return string.Empty;
                 }
                 var json = File.ReadAllText(normalizedPath);

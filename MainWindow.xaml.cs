@@ -583,7 +583,6 @@ namespace Win_Labs
                 // Move to next cue without auto follow
                 int currentIndex = CueListView.Items.IndexOf(cue);
                 bool foundNextCue = false;
-                bool Breakout = false;
                 while (currentIndex + 1 < CueListView.Items.Count)
                 {
                     currentIndex++;
@@ -600,8 +599,6 @@ namespace Win_Labs
                 if (foundNextCue == false)
                 {
                     Log.Info("Reached the end of the cue list or no non-auto-follow cue found.");
-                    // Optionally, reset to the first item
-                    // CueListView.SelectedIndex = 0;
                 }
 
 
