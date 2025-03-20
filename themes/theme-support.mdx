@@ -1,0 +1,95 @@
+---
+title: Theme Support
+description: Learn how to utilize and extend theme support within your Win_Labs applications.
+---
+
+## Introduction
+
+Win_Labs now supports a dynamic theming system, allowing developers to customize and apply themes across their applications. This feature enhances the visual consistency and allows for a more personalized user experience. The `ThemeManager` class, located within the `Win_Labs.Themes` namespace, is central to managing these themes.
+
+## How to Apply Themes
+
+Applying themes to your application is a straightforward process with the `ThemeManager`. Follow the steps below to apply a built-in theme.
+
+### Applying a Built-in Theme
+
+To apply a built-in theme, you simply need to call the appropriate method on the `ThemeManager`. Here's an example of how to switch to a dark theme:
+
+```csharp
+using Win_Labs.Themes;
+
+public class MyApp
+{
+    public void ApplyDarkTheme()
+    {
+        ThemeManager.ApplyTheme("Dark");
+    }
+}
+```
+
+This method looks for a theme with the specified name and applies it to the entire application. Ensure that the theme name matches one of the built-in themes.
+
+## Creating Custom Themes
+
+Creating custom themes allows for greater flexibility and branding within your applications. Follow the steps below to create and apply a custom theme.
+
+### Creating and Applying a Custom Theme
+
+1. **Define Your Theme**: Create a new XAML file within your project that defines the styles and resources for your theme.
+
+2. **Load Your Theme**: Use the `ThemeManager` to load and apply your theme at runtime.
+
+Here's an example of how to load a custom theme named "MyCustomTheme":
+
+```csharp
+using Win_Labs.Themes;
+
+public class MyApp
+{
+    public void ApplyCustomTheme()
+    {
+        ThemeManager.ApplyTheme("MyCustomTheme");
+    }
+}
+```
+
+Ensure that your theme's resources are properly referenced within your application for the theme to load correctly.
+
+## Theme API Reference
+
+The `ThemeManager` class provides several methods to manage themes within your application. Below is a reference for the most commonly used methods:
+
+- **ApplyTheme(string themeName)**: Applies the specified theme to the application. If the theme does not exist, it falls back to the default theme.
+
+- **GetAvailableThemes()**: Returns a list of all available themes, including both built-in and custom themes.
+
+- **GetCurrentTheme()**: Retrieves the name of the currently applied theme.
+
+### Usage Example
+
+Here's how you can list all available themes and apply a selected theme:
+
+```csharp
+using Win_Labs.Themes;
+using System;
+
+public class MyApp
+{
+    public void ChooseAndApplyTheme()
+    {
+        var themes = ThemeManager.GetAvailableThemes();
+        Console.WriteLine("Available themes:");
+        foreach (var theme in themes)
+        {
+            Console.WriteLine(theme);
+        }
+
+        // Assume user selects a theme
+        string selectedTheme = "Dark";
+        ThemeManager.ApplyTheme(selectedTheme);
+        Console.WriteLine($"Applied theme: {selectedTheme}");
+    }
+}
+```
+
+This documentation should provide you with a comprehensive understanding of how to utilize and extend the theme support within your Win_Labs applications. For further customization and advanced usage, refer to the `ThemeManager` class documentation within the Win_Labs.Themes namespace.
