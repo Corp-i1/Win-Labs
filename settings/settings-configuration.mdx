@@ -1,0 +1,57 @@
+---
+title: Configuring Application Settings
+description: Learn how to access and modify your application's settings following the latest structure changes.
+---
+
+## Updated Settings Structure
+
+The structure and management of application settings have undergone significant changes to improve flexibility and maintainability. Previously, settings were managed through individual classes and JSON files, which have now been consolidated into a more streamlined and centralized approach.
+
+### New Structure Overview
+
+The settings are now managed within a unified settings framework, which involves:
+
+- A single JSON file (`appsettings.json`) that stores all configuration settings.
+- A central class (`AppSettings`) that represents the settings stored in the JSON file.
+- A management class (`AppSettingsManager`) responsible for accessing and updating the settings.
+
+This new structure simplifies the configuration process, making it easier to access and modify settings across the application.
+
+## Accessing and Modifying Settings
+
+With the updated settings structure, accessing and modifying settings programmatically has become more straightforward. Below are examples demonstrating how to work with the new settings framework.
+
+### Accessing Modified Settings
+
+To access the application settings, you can use the `AppSettingsManager` class, which provides methods to retrieve and update settings.
+
+```typescript
+// Example: Accessing application settings
+const appSettingsManager = new AppSettingsManager();
+const appSettings = appSettingsManager.GetSettings();
+
+console.log(appSettings.Theme); // Outputs the current theme setting
+```
+
+This example demonstrates how to retrieve the current settings using the `AppSettingsManager`. The `GetSettings` method returns an instance of `AppSettings`, from which you can access all the available settings.
+
+### Modifying Settings Programmatically
+
+Modifying settings is just as straightforward. The `AppSettingsManager` class provides methods to update settings, which are then reflected in the `appsettings.json` file.
+
+```typescript
+// Example: Modifying application settings
+const appSettingsManager = new AppSettingsManager();
+let appSettings = appSettingsManager.GetSettings();
+
+appSettings.Theme = "Dark";
+appSettingsManager.SaveSettings(appSettings);
+
+console.log("Settings updated successfully.");
+```
+
+In this example, the theme setting is changed to "Dark", and the updated settings are saved using the `SaveSettings` method of the `AppSettingsManager`. This method ensures that changes are not only applied in the current instance but also persisted in the `appsettings.json` file.
+
+## Conclusion
+
+The updated settings structure offers a more centralized and streamlined approach to managing application settings. By utilizing the `AppSettings` and `AppSettingsManager` classes, developers can easily access and modify settings, ensuring that applications remain flexible and maintainable.
