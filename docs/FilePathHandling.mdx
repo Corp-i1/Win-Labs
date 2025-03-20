@@ -1,0 +1,89 @@
+---
+title: File Path Handling in Cue Class
+description: Learn how the Cue class manages file paths, including converting between relative and absolute paths.
+---
+
+## Overview
+
+The `Cue` class in our application has been enhanced to better handle file paths, crucial for developers working with file-based operations such as loading and saving playlist items. These enhancements ensure that file paths are correctly managed, whether they are stored as absolute or relative paths, thereby increasing the robustness and security of the application.
+
+## Handling Relative Paths
+
+The `Cue` class now includes a method `GetRelativePath` that converts an absolute file path to a relative path, based on the playlist folder path. This is particularly useful when saving playlists, as storing paths relatively reduces issues when moving the application or its data between different machines or directories.
+
+```typescript
+internal string GetRelativePath(string filePath)
+{
+    if (string.IsNullOrEmpty(filePath) || string.IsNullOrEmpty(PlaylistFolderPath))
+    {
+        return filePath;
+    }
+
+    // Ensure filePath is an absolute path
+    if (!Path.IsPathRooted(filePath))
+    {
+        filePath = Path.GetFullPath(Path.Combine(PlaylistFolderPath, filePath));
+    }
+
+    var playlistFolderUri = new Uri(PlaylistFolderPath);
+    var fileUri = new Uri(filePath);
+
+    if (playlistFolderUri.IsBaseOf(fileUri))
+    {
+        return Uri.UnescapeDataString(playlistFolderUri.MakeRelativeUri(fileUri).ToString().Replace('/', Path.DirectorySeparatorChar));
+    }
+
+    return filePath;
+}
+```
+
+## Handling Absolute Paths
+
+Conversely, the `Cue` class also provides a `GetAbsolutePath` method to convert any given relative path back to an absolute path, using the playlist folder path as the base. This ensures that file operations such as loading audio files can be performed without errors related to incorrect file paths.
+
+```typescript
+internal string GetAbsolutePath(string relativePath)
+{
+    if (string.IsNullOrEmpty(relativePath) || string.IsNullOrEmpty(PlaylistFolderPath))
+    {
+        return relativePath;
+    }
+
+    // Ensure relativePath is correctly combined with PlaylistFolderPath
+    var playlistFolderUri = new Uri(PlaylistFolderPath);
+    var fileUri = new Uri(playlistFolderUri, relativePath);
+
+    return fileUri.LocalPath;
+}
+```
+
+## Use Cases
+
+### Converting paths within Cue instances
+
+When a `Cue` instance is created or updated with a new target file path, the class automatically handles the conversion between absolute and relative paths. This ensures that all file paths stored within `Cue` instances are relative to the playlist folder path, enhancing portability and security.
+
+```typescript
+public string TargetFile
+{
+    get => _targetFile;
+    set
+    {
+        if (_targetFile != value)
+        {
+            Log.Info("PropertyChange.TargetFile");
+            _targetFile = GetRelativePath(value);
+            OnPropertyChanged(nameof(TargetFile));
+            UpdateDuration();
+        }
+    }
+}
+```
+
+### Integrating with ZIP Management
+
+For applications that need to export or import playlists and their associated media files as ZIP archives, the improved path handling in the `Cue` class simplifies the process. By converting all paths to relative paths, it becomes straightforward to package a playlist and its media files into a ZIP archive without worrying about absolute paths that may not be valid on another system.
+
+Refer to the upcoming documentation on ZIP Management for examples of how to integrate the `Cue` class's file path handling capabilities with ZIP file creation and extraction.
+
+These enhancements to the `Cue` class are part of our ongoing efforts to make our application more robust, secure, and easy to use, especially when dealing with file-based operations.
