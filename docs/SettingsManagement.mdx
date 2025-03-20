@@ -1,0 +1,45 @@
+---
+title: Managing Application Settings
+description: Learn how to update and manage application settings, including theme customization and understanding the renamed settings files.
+---
+
+## Updating Theme Settings
+
+The application now supports theme customization, allowing users to personalize the appearance according to their preferences. To adjust theme settings, navigate to the `ThemeSettings` section within the settings file. Here, you can modify various aspects such as colors, fonts, and other UI elements to match your desired theme.
+
+### Example: Changing the Theme Color
+
+To change the primary color of the application theme, locate the `PrimaryColor` setting under `ThemeSettings` and update its value with the desired color code.
+
+```json
+{
+  "ThemeSettings": {
+    "PrimaryColor": "#3498db"
+  }
+}
+```
+
+This change will update the primary color used throughout the application's user interface.
+
+## Renamed Settings Files
+
+As part of the recent updates, several settings files have been renamed to better reflect their purpose and content. Below is a summary of the renamed files:
+
+- **AppSettings.cs** has been renamed to **ApplicationSettings.cs**. This file contains core application settings.
+- **AppSettingsManager.cs** has been renamed to **SettingsManager.cs**. This class is responsible for loading and saving application settings.
+- **settings.json** has been renamed to **appsettings.json**. This JSON file stores the actual settings values.
+
+### Adjusting to the Renamed Files
+
+When working with the updated settings management system, ensure that you reference the new file names in your code and configuration. For instance, when accessing the settings file, use `appsettings.json` instead of `settings.json`.
+
+```typescript
+import { SettingsManager } from './SettingsManager';
+
+const settings = SettingsManager.loadSettings('appsettings.json');
+console.log(settings.ThemeSettings.PrimaryColor);
+```
+
+This adjustment ensures that your application correctly locates and utilizes the settings files, allowing for smooth operation and customization.
+
+For more detailed information on theme management and customization, refer to the upcoming documentation in `docs/ThemeManagement.mdx`.
