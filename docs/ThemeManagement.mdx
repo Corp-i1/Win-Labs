@@ -1,0 +1,50 @@
+---
+title: Theme Management
+description: Learn how to manage and apply themes in Win_Labs applications using the ThemeManager.
+---
+
+## Introduction
+
+The `ThemeManager` class in the `Win_Labs.Themes` namespace provides a straightforward way to manage and apply themes across Win_Labs applications. This functionality is crucial for creating applications that can adapt to different user preferences and accessibility needs. This document outlines how to use the `ThemeManager` to apply themes, create custom themes, and implement best practices for theme management.
+
+## Applying Themes
+
+To apply a theme using the `ThemeManager`, you need to call the appropriate method and pass in the desired theme. The themes are typically defined in XAML files and included in the application resources. Here's a basic example of how to switch themes at runtime:
+
+```csharp
+using Win_Labs.Themes;
+
+public class ThemeSwitcher
+{
+    public static void SwitchTheme(Uri themeUri)
+    {
+        ThemeManager.ApplyTheme(themeUri);
+    }
+}
+```
+
+In this example, `themeUri` is the URI of the XAML file that defines the theme you want to apply. You can call `SwitchTheme` with the URI of the new theme whenever you need to change the theme.
+
+## Creating Custom Themes
+
+Creating custom themes involves defining your styles, colors, and other resources in XAML files. These resources can then be applied using the `ThemeManager`. Here's a simplified example of what a custom theme XAML might look like:
+
+```xml
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <SolidColorBrush x:Key="PrimaryColor" Color="#FF6200EE"/>
+    <!-- Define other styles and resources -->
+</ResourceDictionary>
+```
+
+Once you have defined your custom theme, you can apply it using the method shown in the "Applying Themes" section by passing the URI of your custom theme XAML file.
+
+## Best Practices
+
+When managing themes in your application, consider the following best practices:
+
+- **Consistency:** Ensure that your themes are consistent across the application. This includes using a consistent color palette, font sizes, and control styles.
+- **Accessibility:** Design your themes with accessibility in mind. Provide high-contrast themes for users with visual impairments and ensure that your application's UI is navigable and usable under different themes.
+- **Performance:** Be mindful of the impact of switching themes on your application's performance. Test your application to ensure that theme switching is smooth and does not cause noticeable delays or memory issues.
+
+By following these guidelines and utilizing the `ThemeManager`, you can create a flexible and user-friendly theming system for your Win_Labs applications.
