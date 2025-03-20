@@ -1,0 +1,62 @@
+---
+title: Enhancements in Cue Handling
+description: Documentation on the latest enhancements in cue handling, including support for relative and absolute paths and a new constructor for cue initialization.
+---
+
+## Handling Relative and Absolute Paths
+
+The latest update introduces significant improvements in how cues handle file paths, specifically adding support for both relative and absolute paths. This enhancement ensures that cues can be more flexibly managed within playlists, allowing for easier relocation of playlist folders and their associated media files.
+
+### Converting Paths
+
+Two new internal methods, `GetRelativePath` and `GetAbsolutePath`, have been added to the `Cue` class to facilitate the conversion between relative and absolute paths.
+
+- `GetRelativePath` converts an absolute file path to a relative path based on the playlist folder path.
+- `GetAbsolutePath` converts a relative path back to an absolute path using the playlist folder path as the base.
+
+These methods ensure that the `Cue` class can handle file paths in a way that is transparent and efficient, regardless of how the files are referenced within the playlist.
+
+```typescript
+internal string GetRelativePath(string filePath)
+{
+    // Implementation details
+}
+
+internal string GetAbsolutePath(string relativePath)
+{
+    // Implementation details
+}
+```
+
+### Usage in Cue Initialization
+
+When cues are loaded from a playlist, the `TargetFile` property is now automatically resolved to an absolute path using the `GetAbsolutePath` method. This change ensures that all file references within a cue are accurate and accessible, even when the playlist folder is moved or accessed from a different location.
+
+```typescript
+cue.TargetFile = cue.GetAbsolutePath(cue.TargetFile); // Resolve to absolute path
+```
+
+## New Constructor for Cue Initialization
+
+A new constructor has been added to the `Cue` class to streamline the initialization of new cue instances. This constructor allows for the optional specification of a playlist folder path upon creation of a cue, setting the groundwork for relative path handling.
+
+### Initializing a Cue with a Playlist Folder Path
+
+The new constructor simplifies the creation of a cue with a direct reference to its playlist folder. This is particularly useful for ensuring that all file paths within the cue can be managed relative to the playlist location from the outset.
+
+```typescript
+public Cue(string playlistFolderPath)
+{
+    PlaylistFolderPath = playlistFolderPath;
+}
+```
+
+### Default Constructor
+
+For scenarios where the playlist folder path is not immediately available at the time of cue creation, the default constructor initializes the cue with an empty playlist folder path. This allows for the cue to be configured with a playlist folder path at a later stage.
+
+```typescript
+public Cue() : this(string.Empty) { }
+```
+
+These enhancements in cue handling, particularly the support for relative and absolute paths and the introduction of a new constructor for cue initialization, mark significant improvements in the flexibility and usability of the cue management system.
