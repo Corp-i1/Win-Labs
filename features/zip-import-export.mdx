@@ -1,0 +1,58 @@
+---
+title: "Enhanced ZIP Import and Export Functionality"
+description: "Learn about the improved ZIP import and export functionality, including handling paths in cue files and error handling."
+---
+
+## Enhanced ZIP Handling
+
+The ZIP import and export functionality has been enhanced to provide a more robust and error-resistant process. These improvements include handling paths in cue files to ensure they are correctly adjusted during the import and export processes, and improved error handling to provide clearer feedback to the user.
+
+### Exporting a Playlist with Cue Files
+
+When exporting a playlist that includes cue files, the system now automatically adjusts the paths within these cue files to be relative. This ensures that when the ZIP file is extracted, the paths remain valid and the media files can be correctly located.
+
+```typescript
+import { createZIP } from 'Win_Labs.ZIPManagement.Export';
+
+const playlistFolderPath = 'path/to/playlist';
+const playlistExportFolder = 'path/to/export';
+
+createZIP(playlistFolderPath, playlistExportFolder);
+```
+
+This process involves scanning the playlist folder for cue files, parsing each one, and adjusting the `TargetFile` path to be relative to the playlist folder. This adjustment is crucial for maintaining the integrity of the playlist when it is moved or shared.
+
+### Importing a Playlist
+
+Similarly, when importing a playlist from a ZIP file, the system ensures that paths within cue files are converted back to absolute paths. This conversion is necessary to locate the media files correctly within the user's file system.
+
+```typescript
+import { openZIP } from 'Win_Labs.ZIPManagement.Import';
+
+const playlistImportFilePath = 'path/to/imported/playlist.zip';
+const playlistFolderDestination = 'path/to/destination';
+
+const extractedFolderPath = openZIP(playlistImportFilePath, playlistFolderDestination);
+```
+
+During the import process, the system creates any necessary directories and ensures that file paths are safely and accurately restored, including converting paths in cue files back to their absolute form.
+
+## Error Handling
+
+Enhanced error handling has been implemented to provide clearer and more informative feedback to the user during both the export and import processes. This includes checks for existing files with the same name, permissions issues, and potential security concerns with file paths.
+
+When an error occurs, the system now presents a detailed message box to the user, explaining the nature of the error and suggesting possible resolutions. This approach helps users troubleshoot issues more effectively and ensures a smoother user experience.
+
+### Example: Handling File Creation Errors
+
+```typescript
+try {
+    createZIP(playlistFolderPath, playlistExportFolder);
+} catch (error) {
+    MessageBox.Show($"Could not create ZIP file: {error.message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+}
+```
+
+This example demonstrates how the application might handle an error that occurs during the ZIP creation process, such as a permission issue or a naming conflict. By catching and handling the error, the application can ensure that the user is informed and can take appropriate action.
+
+In summary, the improvements to the ZIP import and export functionality, along with enhanced error handling, make managing playlists more reliable and user-friendly. These updates ensure that users can easily share and migrate their playlists without encountering path or file access issues.
