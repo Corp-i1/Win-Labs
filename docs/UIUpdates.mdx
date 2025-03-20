@@ -1,0 +1,43 @@
+---
+title: "UI Updates: Theme and Settings Management"
+description: "Documentation on the latest UI changes in Win_Labs, focusing on theme switching and updates to the settings UI."
+---
+
+## Theme Switching in UI
+
+The recent updates to Win_Labs introduce a more dynamic approach to managing UI themes, allowing users to switch themes seamlessly within the application. This enhancement leverages the new `Themes` namespace, which encapsulates the functionality required for theme management.
+
+To support theme switching, the application now includes the `Win_Labs.Themes` namespace:
+
+```typescript
+using Win_Labs.Themes;
+```
+
+This inclusion signifies the application's capability to handle different themes and provide a more personalized user experience. The theme management functionality is designed to be intuitive, enabling users to select their preferred theme through the settings UI.
+
+## Settings UI Updates
+
+Alongside theme management, there have been significant updates to the settings UI. These updates aim to provide a more streamlined and user-friendly interface for configuring application settings, including theme preferences.
+
+The settings UI now integrates closely with the theme management functionality, offering users a preview of available themes and applying selected themes in real-time. This immediate feedback enhances the user experience by allowing users to see the effects of their theme choices instantly.
+
+### Code Enhancements
+
+The application's backend has also received updates to support the new UI features. These include:
+
+- The introduction of the `Win_Labs.ZIPManagement` namespace, which suggests enhancements related to managing ZIP files within the application. This addition could be part of broader efforts to improve file management and support within the application.
+
+- Modifications to the `MainWindow.xaml.cs` file to improve file path handling. The application now resolves the `TargetFile` to an absolute path before checking its existence or initiating playback. This change ensures that the application can accurately locate and interact with media files, regardless of the current working directory:
+
+```typescript
+// Resolve the TargetFile to an absolute path
+var absoluteTargetFile = cue.GetAbsolutePath(cue.TargetFile);
+```
+
+- Improved logging and error handling, providing clearer feedback to the user when issues arise, such as when a target file does not exist. These enhancements contribute to a more robust and user-friendly application.
+
+### Conclusion
+
+The latest UI updates in Win_Labs, including theme switching and settings UI enhancements, reflect a commitment to providing a customizable and intuitive user experience. By integrating these features, Win_Labs continues to evolve, offering users a flexible and engaging environment for managing their tasks. 
+
+Stay tuned for further documentation on theme and settings management, which will delve deeper into how users can leverage these new features to personalize their Win_Labs experience.
