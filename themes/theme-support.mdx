@@ -1,0 +1,75 @@
+---
+title: Theme Support
+description: Learn how to apply and customize themes in Win_Labs applications to enhance your user interface.
+---
+
+## Introduction
+
+Win_Labs now supports theming, allowing developers to customize the appearance of their applications with ease. This feature is designed to provide flexibility in UI design, enabling both the use of built-in themes and the creation of custom themes. This document outlines how to apply themes, customize them, and troubleshoot common issues.
+
+## How to Apply Themes
+
+To apply a theme in your Win_Labs application, you need to use the `ThemeManager` class, which has been moved to the `Win_Labs.Themes` namespace. The `ThemeManager` provides methods to apply a theme globally across your application.
+
+### Applying a built-in theme
+
+```typescript
+using Win_Labs.Themes;
+
+public class MyApp
+{
+    public void ApplyTheme()
+    {
+        ThemeManager.ApplyTheme("DarkTheme");
+    }
+}
+```
+
+In the example above, `ApplyTheme("DarkTheme")` applies a built-in dark theme to the application. Replace `"DarkTheme"` with any other built-in theme name as required.
+
+## Customizing Themes
+
+While built-in themes provide a quick way to change the look and feel of your application, you might want to create a custom theme for a more personalized appearance.
+
+### Creating a custom theme
+
+1. Create a new XAML file in your project, e.g., `CustomTheme.xaml`.
+2. Define your theme by setting various properties such as colors, fonts, and control styles.
+
+```typescript
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Define your theme resources here -->
+    <SolidColorBrush x:Key="PrimaryColor" Color="#FF6347"/>
+    <!-- Add more customizations -->
+</ResourceDictionary>
+```
+
+3. Apply your custom theme using the `ThemeManager`.
+
+```typescript
+using Win_Labs.Themes;
+
+public class MyApp
+{
+    public void ApplyCustomTheme()
+    {
+        ThemeManager.ApplyTheme("CustomTheme.xaml");
+    }
+}
+```
+
+Ensure the custom theme file is correctly referenced and loaded into your application.
+
+## Troubleshooting
+
+If you encounter issues while applying or customizing themes, consider the following tips:
+
+- Ensure the theme name or path is correctly specified when calling `ApplyTheme`.
+- Verify that your custom theme XAML file is set to `Resource` in its build action.
+- Check for any typos or errors in your theme XAML file that might prevent it from being loaded properly.
+- If changes to the theme do not appear, ensure that the application is restarted after applying a new theme.
+
+For more detailed troubleshooting, refer to the `ThemeManager` class documentation and ensure that your project references are up to date.
+
+This document should provide a comprehensive guide to utilizing theme support in your Win_Labs applications. By following these instructions, you can significantly enhance the visual appeal and user experience of your applications.
