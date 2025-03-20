@@ -1,0 +1,69 @@
+---
+title: File Path Handling in Cues
+description: Learn about the improved file path handling in cues, including how to work with relative and absolute paths effectively.
+---
+
+## Introduction
+
+In the realm of managing multimedia content, especially within applications that handle playlists and cues, efficient file path handling is crucial. The recent improvements to file path handling mechanisms in cues aim to streamline operations, enhance security, and improve the overall developer and user experience. This documentation outlines the changes made and guides developers on how to adapt to these new mechanisms.
+
+## Changes in File Path Handling
+
+The core changes to file path handling involve the introduction of methods to convert between relative and absolute paths, and the enforcement of path validation to prevent path traversal attacks. These changes ensure that file paths are handled more securely and flexibly within the application.
+
+### Key Improvements
+
+- **Relative and Absolute Path Conversion**: New methods `GetRelativePath` and `GetAbsolutePath` have been introduced to convert file paths to relative or absolute paths, based on the playlist folder path. This allows for more flexible file management and easier integration with different file storage approaches.
+  
+- **Security Enhancements**: The application now includes checks to prevent path traversal attacks by validating paths against the application's base directory. Additionally, if an invalid path is detected, the application will take measures to mitigate potential security risks.
+
+### New Method Signatures
+
+```typescript
+internal string GetRelativePath(string filePath)
+```
+
+- **Parameters**:
+  - `filePath`: The absolute file path to be converted to a relative path.
+- **Returns**: The relative path from the playlist folder to the specified file.
+
+```typescript
+internal string GetAbsolutePath(string relativePath)
+```
+
+- **Parameters**:
+  - `relativePath`: The relative path to be converted to an absolute path.
+- **Returns**: The absolute path based on the playlist folder path.
+
+## Migrating to the New Handling Mechanism
+
+To adapt to the new file path handling mechanisms, follow these guidelines:
+
+1. **Use `GetRelativePath` for Storing Paths**: When saving file paths, especially when persisting to a database or a configuration file, use the `GetRelativePath` method to store paths relative to the playlist folder. This approach makes your application more portable and simplifies file management.
+
+2. **Resolve Paths with `GetAbsolutePath` Before Use**: Before accessing files, use the `GetAbsolutePath` method to resolve relative paths to their absolute counterparts. This ensures that your application always works with valid file paths, regardless of the environment.
+
+3. **Validate External Path Inputs**: For applications that accept file paths from external sources, implement additional validation to ensure that these paths are safe and within expected boundaries. Use the provided path validation mechanisms as a reference for implementing your own security checks.
+
+## Handling File Paths in Cues
+
+Below is an example demonstrating how to handle file paths within a cue, leveraging the new path handling methods:
+
+```typescript
+// Assuming _targetFile is a relative path stored within a cue
+var absolutePath = cue.GetAbsolutePath(_targetFile);
+var relativePath = cue.GetRelativePath(absolutePath);
+
+// Use the absolute path for file operations
+if (File.Exists(absolutePath))
+{
+    // Perform operations with the file
+}
+
+// When saving or updating the cue, store the relative path
+cue.TargetFile = relativePath;
+```
+
+This example illustrates the process of converting between relative and absolute paths for file operations, ensuring that file access is both flexible and secure.
+
+By following these guidelines and examples, developers can effectively manage file paths within their applications, taking full advantage of the improvements to file path handling in cues.
