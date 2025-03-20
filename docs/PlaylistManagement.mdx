@@ -1,0 +1,55 @@
+---
+title: Playlist Management
+description: Learn how to manage playlists including exporting and importing them as ZIP files in Win_Labs.
+---
+
+## Exporting Playlists
+
+To export a playlist, the `PlaylistManager` utilizes the `ZIPManagement` namespace to create a ZIP file from the specified playlist folder. This process involves converting absolute paths in cue files to relative paths to ensure portability.
+
+```typescript
+export.createZIP(playlistFolderPath, playlistExportFolder);
+```
+
+This function performs several key operations:
+
+1. Checks for existing ZIP files with the same name and prompts the user for overwrite permission.
+2. Converts absolute paths in cue files to relative paths to ensure the playlist is portable.
+3. Creates a ZIP file from the entire playlist folder.
+4. Notifies the user upon successful export.
+
+### Example: Exporting a Playlist
+
+```typescript
+var playlistFolderPath = @"C:\Playlists\MyPlaylist";
+var playlistExportFolder = @"C:\Exports\MyPlaylist.zip";
+ZIPManagement.export.createZIP(playlistFolderPath, playlistExportFolder);
+```
+
+## Importing Playlists
+
+When importing a playlist, the `PlaylistManager` extracts the ZIP file into a temporary folder. It then ensures that any relative paths in cue files are converted back to absolute paths based on the new location.
+
+```typescript
+var destinationPath = import.openZIP(playlistImportFilePath, playlistFolderPathTemp);
+```
+
+The import process includes:
+
+1. Creating necessary directories for the extracted files.
+2. Handling file overwrite scenarios with user input to overwrite or skip files.
+3. Converting relative paths in cue files back to absolute paths to match the new location.
+
+### Example: Importing a Playlist
+
+```typescript
+var playlistImportFilePath = @"C:\Imports\MyPlaylist.zip";
+var playlistFolderPathTemp = @"C:\Playlists\Imported\MyPlaylist";
+var destinationPath = ZIPManagement.import.openZIP(playlistImportFilePath, playlistFolderPathTemp);
+```
+
+## Notes on ZIP Management
+
+The ZIP management functionality is crucial for ensuring that playlists are easily portable and can be shared or backed up. By handling path conversions, `PlaylistManager` ensures that playlists are functional regardless of the machine or directory structure.
+
+For further details on the ZIP management implementation, refer to the upcoming `ZIPManagement.mdx` documentation.
