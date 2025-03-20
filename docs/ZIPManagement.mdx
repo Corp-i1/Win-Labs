@@ -1,0 +1,76 @@
+---
+title: ZIP Management for Playlists
+description: Learn how to manage your playlists through exporting and importing functionalities with ZIP files, including handling of file paths.
+---
+
+## Introduction
+
+The ZIP Management feature in Win_Labs.ZIPManagement namespace provides a comprehensive solution for exporting and importing playlists. This functionality is crucial for backing up, sharing, or transferring playlists between different systems or instances of the application. This document outlines how to utilize the ZIP Management for exporting and importing playlists, including the handling of file paths to ensure that playlists are correctly resolved in different environments.
+
+## Exporting Playlists
+
+Exporting playlists involves creating a ZIP file from a specified playlist folder. This process includes converting absolute file paths within the playlist to relative paths, ensuring that the playlist can be imported correctly on another system where the absolute paths might differ.
+
+### Usage
+
+To export a playlist, you need to specify the source folder of the playlist and the destination folder for the ZIP file.
+
+```typescript
+export.createZIP(playlistFolderPath: string, playlistExportFolder: string): void
+```
+
+- `playlistFolderPath`: The path to the folder containing the playlist files.
+- `playlistExportFolder`: The path where the ZIP file should be created.
+
+### Example: Exporting a playlist with relative paths
+
+```typescript
+import { export } from 'Win_Labs.ZIPManagement';
+
+const playlistFolderPath = "C:\\Users\\User\\Music\\MyPlaylist";
+const playlistExportFolder = "C:\\Users\\User\\Documents\\PlaylistExports";
+
+export.createZIP(playlistFolderPath, playlistExportFolder);
+```
+
+This example demonstrates how to export a playlist located at `C:\\Users\\User\\Music\\MyPlaylist` to a ZIP file in the `C:\\Users\\User\\Documents\\PlaylistExports` folder. During the export process, all file paths within the playlist are converted to relative paths.
+
+## Importing Playlists
+
+Importing playlists involves extracting a ZIP file to a specified playlist folder. This process includes converting relative file paths within the playlist back to absolute paths based on the new location of the playlist folder.
+
+### Usage
+
+To import a playlist, you need to specify the ZIP file path and the destination folder for the playlist.
+
+```typescript
+import.openZIP(playlistImportFilePath: string, playlistFolderDestination: string): string
+```
+
+- `playlistImportFilePath`: The path to the ZIP file containing the exported playlist.
+- `playlistFolderDestination`: The path where the playlist should be extracted and saved.
+
+### Example: Importing a playlist and resolving file paths
+
+```typescript
+import { import } from 'Win_Labs.ZIPManagement';
+
+const playlistImportFilePath = "C:\\Users\\User\\Downloads\\MyPlaylist.zip";
+const playlistFolderDestination = "C:\\Users\\User\\Music\\ImportedPlaylists";
+
+const extractedFolderPath = import.openZIP(playlistImportFilePath, playlistFolderDestination);
+console.log(`Playlist imported to: ${extractedFolderPath}`);
+```
+
+This example demonstrates how to import a playlist from a ZIP file located at `C:\\Users\\User\\Downloads\\MyPlaylist.zip` to the `C:\\Users\\User\\Music\\ImportedPlaylists` folder. During the import process, all relative file paths within the playlist are converted back to absolute paths based on the new location.
+
+## File Path Handling
+
+The ZIP Management functionality includes mechanisms for handling file paths during the export and import processes to ensure playlists are correctly resolved in different environments.
+
+- **Exporting**: Converts absolute paths to relative paths to ensure portability.
+- **Importing**: Converts relative paths back to absolute paths based on the new environment.
+
+This handling is crucial for maintaining the integrity of the playlist and ensuring that all files are correctly located and accessible after importing.
+
+By following the guidelines and examples provided in this documentation, you can effectively manage your playlists using the ZIP Management functionality in Win_Labs.ZIPManagement.
