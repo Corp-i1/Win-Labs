@@ -1,0 +1,74 @@
+---
+title: ZIP Management for Playlists
+description: Learn how to leverage ZIP management for importing and exporting playlists in your applications.
+---
+
+## Overview
+
+The ZIP Management feature introduced in the `Win_Labs.ZIPManagement` namespace provides developers with the ability to export playlists to ZIP files and import playlists from ZIP files. This functionality is crucial for applications that need to handle bulk playlist data efficiently, allowing for easy distribution and backup of playlists.
+
+## Exporting Playlists
+
+Exporting playlists involves creating a ZIP file from a directory containing playlist files. The `export` class within the `ZIPManagement` namespace offers a static method `createZIP` for this purpose.
+
+### Usage
+
+To export a playlist, you need to specify the source directory containing the playlist files and the destination path for the ZIP file.
+
+```typescript
+using Win_Labs.ZIPManagement;
+
+// Define the source directory and the destination ZIP file path
+string playlistFolderPath = @"C:\path\to\playlist\folder";
+string playlistExportFolder = @"C:\path\to\export\playlist.zip";
+
+// Export the playlist to a ZIP file
+export.createZIP(playlistFolderPath, playlistExportFolder);
+```
+
+The `createZIP` method also handles file overwrites by prompting the user with a message box asking whether to overwrite an existing file with the same name.
+
+### Making Paths Relative
+
+Before creating the ZIP file, the method `MakePathsRelative` is called to ensure that all paths in cue files are relative to the playlist folder. This step is crucial for maintaining the integrity of the playlist when it is moved or shared.
+
+## Importing Playlists
+
+Importing playlists involves extracting a ZIP file to a specified directory and ensuring that the file paths within the extracted cue files are correctly set.
+
+The `import` class within the `ZIPManagement` namespace provides a static method `openZIP` for importing playlists from ZIP files.
+
+### Usage
+
+To import a playlist, specify the path to the ZIP file and the destination directory where the playlist files should be extracted.
+
+```typescript
+using Win_Labs.ZIPManagement;
+
+// Define the ZIP file path and the destination folder
+string playlistImportFilePath = @"C:\path\to\playlist.zip";
+string playlistFolder = @"C:\path\to\import\folder";
+
+// Import the playlist from the ZIP file
+string extractedFolderPath = import.openZIP(playlistImportFilePath, playlistFolder);
+```
+
+The `openZIP` method handles file extraction, including directory creation and file overwrite decisions. It also ensures that paths in cue files are made absolute after extraction, using the `MakePathsAbsolute` method.
+
+## ZIP Format Specification
+
+When exporting playlists to ZIP files, it is essential to adhere to a specific format for compatibility and ease of use:
+
+- **Directory Structure**: The root of the ZIP file should directly contain the playlist files without any nested directories.
+- **File Paths**: Paths within cue files should be relative to the root of the ZIP file during export and will be converted to absolute paths upon import.
+- **File Naming**: Cue files should follow a naming convention like `cue_*.json` to be correctly identified and processed during import and export operations.
+
+### Exporting a playlist to ZIP
+
+Ensure your playlist folder is structured according to the ZIP format specification. Use the `export.createZIP` method to package your playlist into a ZIP file.
+
+### Importing a playlist from ZIP
+
+Use the `import.openZIP` method to extract a playlist from a ZIP file. Ensure the destination directory is prepared to receive the playlist files. The import process will automatically adjust file paths within cue files.
+
+This ZIP management functionality simplifies the process of distributing and backing up playlists, making it an essential feature for developers working with media applications.
