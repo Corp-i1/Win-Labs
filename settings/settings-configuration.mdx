@@ -1,0 +1,53 @@
+---
+title: "Managing Application Settings"
+description: "Learn how to configure and manage application settings, including new theme support."
+---
+
+## Updated Settings Structure
+
+With recent updates, the structure and management of settings within the application have been revised for better clarity and maintainability. The settings files and their corresponding management classes have been renamed to reflect their purposes more accurately.
+
+### Renamed Files and Classes
+
+- **Settings File**: The `settings.json` file has been renamed to `AppSettings.json` to clearly indicate that it contains settings applicable to the entire application.
+
+- **Settings Class**: The `AppSettings.cs` class, which models the settings found in the `AppSettings.json` file, has been renamed to better align with the file it represents.
+
+- **Settings Manager Class**: The `AppSettingsManager.cs` class is responsible for loading, saving, and accessing the application settings. This class has also been renamed to reflect the updated settings structure.
+
+These changes aim to make the settings more intuitive to work with, whether you're a new developer getting acquainted with the codebase or an existing developer looking for specific settings.
+
+## New Theme Settings
+
+To enhance user experience, support for themes has been introduced. This allows the application's appearance to be customized according to user preferences or branding requirements.
+
+### Theme Settings Overview
+
+The new theme settings include options for:
+
+- **Color Scheme**: Defines the primary and secondary colors used throughout the application.
+- **Font Style**: Specifies the default font style for text elements.
+- **Layout Preferences**: Allows users to select between different layout configurations, such as dense or spacious.
+
+These settings can be found under the `Theme` section in the `AppSettings.json` file.
+
+### Configuring Theme Settings
+
+To configure the theme settings, navigate to the `AppSettings.json` file and locate the `Theme` section. Here, you can specify your preferences for color scheme, font style, and layout. For example:
+
+```json
+{
+  "Theme": {
+    "ColorScheme": {
+      "Primary": "#007bff",
+      "Secondary": "#6c757d"
+    },
+    "FontStyle": "Arial, sans-serif",
+    "LayoutPreferences": "Spacious"
+  }
+}
+```
+
+After making your changes, save the file. The application will need to be restarted for the new settings to take effect.
+
+By customizing the theme settings, you can create a more personalized and engaging user interface that aligns with your specific needs or brand identity.
