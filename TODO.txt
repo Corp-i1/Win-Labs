@@ -1,4 +1,4 @@
-﻿                                                                                  
+                                                                                  
                                                                                   
 TTTTTTTTTTTTTTTTTTTTTTT                   DDDDDDDDDDDDD             OOOOOOOOO     
 T:::::::::::::::::::::T                   D::::::::::::DDD        OO:::::::::OO   
@@ -22,7 +22,8 @@ TTTTTT  T:::::T  TTTTTTooooooooooo          D:::::D    D:::::D O::::::O   O:::::
 
 SHORT TERM:
 
-- 
+- Add ability for custom themes
+	-Provide template fir user made themes
 - Make Tabs for the inspector window both the pop out and the main window. 
    - Potentialaly to have multiple tabs open at once as separate windows. 
 - Centralise programing for the inspector element
