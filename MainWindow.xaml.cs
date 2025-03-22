@@ -23,6 +23,7 @@ using System.Runtime.InteropServices;
 using System.Printing;
 using System.Windows.Input;
 using System.Text.RegularExpressions;
+using Win_Labs.ZIPManagement;
 
 
 namespace Win_Labs
@@ -316,7 +317,8 @@ namespace Win_Labs
             InitializeCueData();
             RefreshCueList();
         }
-        internal bool EditMode = true;
+
+        internal static bool EditMode = true;
         private void EditModeToggle_Click(object sender, RoutedEventArgs e)
         {
             // Toggle edit mode
@@ -496,25 +498,28 @@ namespace Win_Labs
             try
             {
                 _currentCue = cue;
+                // Resolve the TargetFile to an absolute path
+                var absoluteTargetFile = cue.GetAbsolutePath(cue.TargetFile);
+
                 // Ensure TargetFile exists
-                if (!File.Exists(cue.TargetFile))
+                if (!File.Exists(absoluteTargetFile))
                 {
                     if (EditMode == true)
                     {
-                        Log.Error($"Target file does not exist: {cue.TargetFile}");
-                        MessageBox.Show($"The file {cue.TargetFile} could not be found.", "File Not Found", MessageBoxButton.OK, MessageBoxImage.Error);
+                        Log.Error($"Target file does not exist: {absoluteTargetFile}");
+                        MessageBox.Show($"The file {absoluteTargetFile} could not be found.", "File Not Found", MessageBoxButton.OK, MessageBoxImage.Error);
                         return;
                     }
                     else
                     {
-                        Log.Error($"Target file does not exist: {cue.TargetFile}");
+                        Log.Error($"Target file does not exist: {absoluteTargetFile}");
                         Log.Warning("Message box skipped as in show mode.");
                         return;
                     }
                 }
 
                 // Initialize playback components
-                var audioReader = new AudioFileReader(cue.TargetFile);
+                var audioReader = new AudioFileReader(absoluteTargetFile);
                 var newWaveOut = new WaveOutEvent();
                 newWaveOut.Init(audioReader);
 
@@ -546,7 +551,7 @@ namespace Win_Labs
 
                 if (isDurationValid)
                 {
-                    Log.Info($"Playing Cue {cue.CueNumber}: {cue.TargetFile} for {limitDuration.TotalSeconds} seconds.");
+                    Log.Info($"Playing Cue {cue.CueNumber}: {absoluteTargetFile} for {limitDuration.TotalSeconds} seconds.");
 
                     var playbackTimer = new System.Timers.Timer(limitDuration.TotalMilliseconds)
                     {
@@ -582,7 +587,6 @@ namespace Win_Labs
                 // Move to next cue without auto follow
                 int currentIndex = CueListView.Items.IndexOf(cue);
                 bool foundNextCue = false;
-                bool Breakout = false;
                 while (currentIndex + 1 < CueListView.Items.Count)
                 {
                     currentIndex++;
@@ -591,19 +595,13 @@ namespace Win_Labs
                     {
                         foundNextCue = true;
                         CueListView.SelectedIndex = currentIndex;
-
                     }
-
                 }
 
                 if (foundNextCue == false)
                 {
                     Log.Info("Reached the end of the cue list or no non-auto-follow cue found.");
-                    // Optionally, reset to the first item
-                    // CueListView.SelectedIndex = 0;
                 }
-
-
             }
             catch (Exception ex)
             {
@@ -611,6 +609,8 @@ namespace Win_Labs
                 MessageBox.Show($"Failed to play the cue: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
+
 
         private void PlayNextCueIfAutoFollow(Cue currentCue)
         {

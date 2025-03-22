@@ -1,7 +1,7 @@
 using System;
 using System.Windows;
 
-namespace Win_Labs
+namespace Win_Labs.Themes
 {
     public static class ThemeManager
     {

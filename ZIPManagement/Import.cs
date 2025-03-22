@@ -1,8 +1,9 @@
 ﻿using System.IO.Compression;
 using System.IO;
 using System.Windows;
+using Newtonsoft.Json;
 
-namespace Win_Labs
+namespace Win_Labs.ZIPManagement
 {
     internal class import
     {
@@ -27,10 +28,15 @@ namespace Win_Labs
                 bool overwriteAll = false;
                 bool skipAll = false;
                 var CuePath = "";
+                var directoryPath = Path.GetDirectoryName(CuePath);
+                if (directoryPath != null)
+                {
+                    Directory.CreateDirectory(directoryPath);
+                }
 
                 // Extract files with overwrite handling
                 Log.Info("Opening file: " + playlistImportFilePath);
-                using (var archive = System.IO.Compression.ZipFile.OpenRead(playlistImportFilePath))
+                using (var archive = ZipFile.OpenRead(playlistImportFilePath))
                 {
                     foreach (var entry in archive.Entries)
                     {
@@ -39,19 +45,6 @@ namespace Win_Labs
                         if (!CuePath.StartsWith(fullDestDirPath))
                         {
                             throw new InvalidOperationException("Entry is outside the target dir: " + CuePath);
-                        }
-
-                        if (entry.FullName.EndsWith("/"))
-                        {
-                            Log.Info($"Skipped directory: {entry.FullName}");
-                            // Ensure the directory exists
-                            var directoryPath = Path.GetDirectoryName(CuePath);
-                            if (directoryPath != null)
-                            {
-                                Directory.CreateDirectory(directoryPath);
-                            }
-                            continue; // Skip directories
-
                         }
 
                         // Check if the file already exists
@@ -114,6 +107,9 @@ namespace Win_Labs
                     }
                 }
 
+                // Ensure paths in cue files are absolute
+                MakePathsAbsolute(destinationPath);
+
                 Log.Info($"{destinationPath} successfully populated with files from the ZIP archive.");
                 return destinationPath;
             }
@@ -127,5 +123,18 @@ namespace Win_Labs
             }
         }
 
+        private static void MakePathsAbsolute(string playlistFolderPath)
+        {
+            var cueFiles = Directory.GetFiles(playlistFolderPath, "cue_*.json");
+            foreach (var file in cueFiles)
+            {
+                var cue = JsonConvert.DeserializeObject<Cue>(File.ReadAllText(file));
+                if (cue != null)
+                {
+                    cue.TargetFile = cue.GetAbsolutePath(cue.TargetFile);
+                    File.WriteAllText(file, JsonConvert.SerializeObject(cue));
+                }
+            }
+        }
     }
 }

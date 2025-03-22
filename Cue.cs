@@ -26,8 +26,16 @@ namespace Win_Labs
 
         internal static bool IsInitializing { get; set; }
         internal string PlaylistFolderPath = PlaylistManager.playlistFolderPath;
-
+        private TimeSpan _totalDuration;
+        public event PropertyChangedEventHandler PropertyChanged;
         private static readonly object _lock = new object();
+
+        public Cue(string playlistFolderPath)
+        {
+            PlaylistFolderPath = PlaylistManager.playlistFolderPath;
+        }
+
+        public Cue() : this(string.Empty) { }
 
         public int CueNumber
         {
@@ -64,18 +72,6 @@ namespace Win_Labs
                 }
             }
         }
-
-        private TimeSpan _totalDuration;
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        public Cue(string playlistFolderPath)
-        {
-            PlaylistFolderPath = PlaylistManager.playlistFolderPath;
-        }
-
-        public Cue() : this(string.Empty) { }
-
-
         public string CueName
         {
             get => _cueName;
@@ -198,7 +194,6 @@ namespace Win_Labs
                 }
             }
         }
-
         public string TargetFile
         {
             get => _targetFile;
@@ -207,12 +202,73 @@ namespace Win_Labs
                 if (_targetFile != value)
                 {
                     Log.Info("PropertyChange.TargetFile");
-                    _targetFile = value;
+                    _targetFile = GetRelativePath(value);
                     OnPropertyChanged(nameof(TargetFile));
                     UpdateDuration();
                 }
             }
         }
+
+
+        internal string GetRelativePath(string filePath)
+        {
+            try {
+                if (string.IsNullOrEmpty(filePath) || string.IsNullOrEmpty(PlaylistFolderPath))
+                {
+                    return filePath;
+                }
+
+                // Ensure filePath is an absolute path
+                if (!Path.IsPathRooted(filePath))
+                {
+                    filePath = Path.GetFullPath(Path.Combine(PlaylistFolderPath, filePath));
+                }
+
+                var playlistFolderUri = new Uri(PlaylistFolderPath);
+                var fileUri = new Uri(filePath);
+
+                if (playlistFolderUri.IsBaseOf(fileUri))
+                {
+                    return Uri.UnescapeDataString(playlistFolderUri.MakeRelativeUri(fileUri).ToString().Replace('/', Path.DirectorySeparatorChar));
+                }
+
+                return filePath;
+            }
+            catch (Exception ex)
+            {
+                Log.Exception(ex);
+                return filePath;
+            }
+        }
+
+        bool EditMode = MainWindow.EditMode;
+        internal string GetAbsolutePath(string relativePath)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(relativePath) || string.IsNullOrEmpty(PlaylistFolderPath))
+                {
+                    return relativePath;
+                }
+
+                // Ensure relativePath is correctly combined with PlaylistFolderPath
+                var playlistFolderUri = new Uri(PlaylistFolderPath);
+                var fileUri = new Uri(playlistFolderUri, relativePath);
+
+                return fileUri.LocalPath;
+            }
+            catch (Exception ex)
+            {
+                Log.Exception(ex);
+                if(EditMode == true)
+                {
+                    System.Windows.MessageBox.Show("Error: " + ex.Message);
+                }
+                return relativePath;
+            }
+        }
+
+
 
         public string Notes
         {
@@ -236,6 +292,7 @@ namespace Win_Labs
                 if (!normalizedPath.StartsWith(Path.GetFullPath(AppDomain.CurrentDomain.BaseDirectory)))
                 {
                     Log.Warning("Attempted path traversal detected.");
+                    MainWindow.CloseMainWindow();
                     return string.Empty;
                 }
                 var json = File.ReadAllText(normalizedPath);
@@ -282,7 +339,9 @@ namespace Win_Labs
                 return;
             }
 
-            if (string.IsNullOrEmpty(_targetFile) || !File.Exists(_targetFile))
+            var absoluteTargetFile = GetAbsolutePath(_targetFile);
+
+            if (string.IsNullOrEmpty(absoluteTargetFile) || !File.Exists(absoluteTargetFile))
             {
                 SetDuration(TimeSpan.Zero);
                 Log.Warning("TargetFile is invalid or does not exist. Duration set to 00:00.00");
@@ -291,17 +350,17 @@ namespace Win_Labs
 
             try
             {
-                using (var audioFileReader = new AudioFileReader(_targetFile))
+                using (var audioFileReader = new AudioFileReader(absoluteTargetFile))
                 {
                     var totalDuration = audioFileReader.TotalTime;
-                    Log.Info($"Duration updated for TargetFile {_targetFile}: {totalDuration}");
+                    Log.Info($"Duration updated for TargetFile {absoluteTargetFile}: {totalDuration}");
                     SetDuration(totalDuration);
                 }
             }
             catch (Exception ex)
             {
                 SetDuration(TimeSpan.Zero);
-                Log.Error($"Error calculating duration for file '{_targetFile}': {ex.Message}");
+                Log.Error($"Error calculating duration for file '{absoluteTargetFile}': {ex.Message}");
             }
         }
 

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Forms;
+using Win_Labs.ZIPManagement;
 
 namespace Win_Labs
 {
@@ -136,6 +137,7 @@ namespace Win_Labs
                 if (!string.IsNullOrEmpty(playlistFolderPath))
                 {
                     playlistFolderPathTemp = playlistFolderPath;
+                    // Ensure the directory exists
                     PurgeExistingCueFiles();
                     Log.Info($"Importing playlist to: {playlistFolderPath}");
 
@@ -194,6 +196,10 @@ namespace Win_Labs
             {
                 var folderName = Path.GetFileNameWithoutExtension(playlistImportFilePath);
                 var destinationPath = Path.Combine(playlistFolderPathTemp, folderName);
+                if (destinationPath != null)
+                {
+                    return;
+                }
                 if (Directory.EnumerateFiles(destinationPath, "cue_*.json").Any())
                 {
                     var cueFiles = Directory.EnumerateFiles(destinationPath, "cue_*.json").ToList();

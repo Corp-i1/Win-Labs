@@ -84,13 +84,14 @@
 	<Resource Include="resources\Toolbar\Blank Paper.png" />
 	<Resource Include="resources\Toolbar\Folder.jpg" />
 	<Resource Include="resources\Toolbar\Help.png" />
-	<Resource Include="settings.json">
+	<Resource Include="Settings\settings.json">
 	  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	</Resource>
   </ItemGroup>
 
   <ItemGroup>
 	<Folder Include="resources\SaveData\" />
+	<Folder Include="Templates\" />
   </ItemGroup>
 
   <ItemGroup>
