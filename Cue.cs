@@ -212,41 +212,60 @@ namespace Win_Labs
 
         internal string GetRelativePath(string filePath)
         {
-            if (string.IsNullOrEmpty(filePath) || string.IsNullOrEmpty(PlaylistFolderPath))
-            {
+            try {
+                if (string.IsNullOrEmpty(filePath) || string.IsNullOrEmpty(PlaylistFolderPath))
+                {
+                    return filePath;
+                }
+
+                // Ensure filePath is an absolute path
+                if (!Path.IsPathRooted(filePath))
+                {
+                    filePath = Path.GetFullPath(Path.Combine(PlaylistFolderPath, filePath));
+                }
+
+                var playlistFolderUri = new Uri(PlaylistFolderPath);
+                var fileUri = new Uri(filePath);
+
+                if (playlistFolderUri.IsBaseOf(fileUri))
+                {
+                    return Uri.UnescapeDataString(playlistFolderUri.MakeRelativeUri(fileUri).ToString().Replace('/', Path.DirectorySeparatorChar));
+                }
+
                 return filePath;
             }
-
-            // Ensure filePath is an absolute path
-            if (!Path.IsPathRooted(filePath))
+            catch (Exception ex)
             {
-                filePath = Path.GetFullPath(Path.Combine(PlaylistFolderPath, filePath));
+                Log.Exception(ex);
+                return filePath;
             }
-
-            var playlistFolderUri = new Uri(PlaylistFolderPath);
-            var fileUri = new Uri(filePath);
-
-            if (playlistFolderUri.IsBaseOf(fileUri))
-            {
-                return Uri.UnescapeDataString(playlistFolderUri.MakeRelativeUri(fileUri).ToString().Replace('/', Path.DirectorySeparatorChar));
-            }
-
-            return filePath;
         }
 
-
+        bool EditMode = MainWindow.EditMode;
         internal string GetAbsolutePath(string relativePath)
         {
-            if (string.IsNullOrEmpty(relativePath) || string.IsNullOrEmpty(PlaylistFolderPath))
+            try
             {
+                if (string.IsNullOrEmpty(relativePath) || string.IsNullOrEmpty(PlaylistFolderPath))
+                {
+                    return relativePath;
+                }
+
+                // Ensure relativePath is correctly combined with PlaylistFolderPath
+                var playlistFolderUri = new Uri(PlaylistFolderPath);
+                var fileUri = new Uri(playlistFolderUri, relativePath);
+
+                return fileUri.LocalPath;
+            }
+            catch (Exception ex)
+            {
+                Log.Exception(ex);
+                if(EditMode == true)
+                {
+                    System.Windows.MessageBox.Show("Error: " + ex.Message);
+                }
                 return relativePath;
             }
-
-            // Ensure relativePath is correctly combined with PlaylistFolderPath
-            var playlistFolderUri = new Uri(PlaylistFolderPath);
-            var fileUri = new Uri(playlistFolderUri, relativePath);
-
-            return fileUri.LocalPath;
         }
 
 

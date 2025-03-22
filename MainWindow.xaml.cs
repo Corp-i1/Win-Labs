@@ -317,7 +317,8 @@ namespace Win_Labs
             InitializeCueData();
             RefreshCueList();
         }
-        internal bool EditMode = true;
+
+        internal static bool EditMode = true;
         private void EditModeToggle_Click(object sender, RoutedEventArgs e)
         {
             // Toggle edit mode
