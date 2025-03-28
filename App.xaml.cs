@@ -2,9 +2,6 @@
 
 namespace Win_Labs
 {
-    /// <summary>
-    /// Interaction logic for App.xaml
-    /// </summary>
     public partial class App : Application
     {
         private bool Debug = false;
@@ -29,6 +26,9 @@ namespace Win_Labs
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
+            // Initialize Logs
+            Log.IntLog();
+
             Log.Info("Program.Start");
             LaunchDebug();
             Log.Info("Creating.StartupWindow");

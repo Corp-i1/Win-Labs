@@ -464,6 +464,9 @@ namespace Win_Labs
 
         }
 
+        internal void MasterVolumeChange(int newValue)
+        {
 
+        }
     }
 }

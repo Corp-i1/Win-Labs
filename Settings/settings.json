@@ -1,4 +1,5 @@
 {
   "Theme": "Dark",
-  "Language": "en-UK"
+  "Language": "en-UK",
+  "MaxLogFiles": 10
 }
