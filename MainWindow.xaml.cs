@@ -30,6 +30,7 @@ namespace Win_Labs
 {
     public partial class MainWindow : BaseWindow, INotifyPropertyChanged
     {
+        private PlaylistFileManager _playlistFileManager;
         private PlaylistManager playlistManager;
         private string _playlistFolderPath;
         private readonly ObservableCollection<Cue> _cues = new ObservableCollection<Cue>();
@@ -47,6 +48,15 @@ namespace Win_Labs
             _playlistFolderPath = PlaylistManager.playlistFolderPath;
             CueListView.ItemsSource = _cues;
             Initialize();
+
+            // Initialize PlaylistFileManager
+            string playlistFilePath = Path.Combine(_playlistFolderPath, "playlist.wlp");
+            _playlistFileManager = new PlaylistFileManager(playlistFilePath);
+            _playlistFileManager.Load();
+
+            // Set the master volume slider value
+            MasterVolumeSliderValue = _playlistFileManager.Data.MasterVolume;
+
             Log.Info("Application started.");
         }
 
@@ -319,6 +329,14 @@ namespace Win_Labs
         }
 
         internal static bool EditMode = true;
+        internal static bool EditModeCheck()
+        {
+            if (EditMode == true)
+            {
+                return true;
+            }
+            return false;
+        }
         private void EditModeToggle_Click(object sender, RoutedEventArgs e)
         {
             // Toggle edit mode
@@ -476,8 +494,11 @@ namespace Win_Labs
             if (Paused)
             {
                 Log.Warning("Cannot start new playback while paused.");
-                MessageBox.Show("Playback is currently paused. Resume before starting a new track.",
-                                "Action Blocked", MessageBoxButton.OK, MessageBoxImage.Warning);
+                if (EditMode == true)
+                {
+                    MessageBox.Show("Playback is currently paused. Resume before starting a new track.",
+                                    "Action Blocked", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
                 return;
             }
 
@@ -489,7 +510,6 @@ namespace Win_Labs
                 Log.Warning("Go button clicked with no valid cue selected.");
                 return;
             }
-
             PlayCue(selectedCue);
         }
 
@@ -522,6 +542,9 @@ namespace Win_Labs
                 var audioReader = new AudioFileReader(absoluteTargetFile);
                 var newWaveOut = new WaveOutEvent();
                 newWaveOut.Init(audioReader);
+
+                // Set the volume to the master volume from PlaylistFileManager
+                newWaveOut.Volume = (float)_playlistFileManager.Data.MasterVolume / 100;
 
                 // Ensure collections are initialized
                 if (_activeWaveOuts == null) _activeWaveOuts = new List<WaveOutEvent>();
@@ -587,7 +610,7 @@ namespace Win_Labs
                 // Move to next cue without auto follow
                 int currentIndex = CueListView.Items.IndexOf(cue);
                 bool foundNextCue = false;
-                while (currentIndex + 1 < CueListView.Items.Count)
+                while (currentIndex + 1 < CueListView.Items.Count && !foundNextCue)
                 {
                     currentIndex++;
                     var nextCue = CueListView.Items[currentIndex] as Cue;
@@ -595,13 +618,15 @@ namespace Win_Labs
                     {
                         foundNextCue = true;
                         CueListView.SelectedIndex = currentIndex;
+                        CueListView.ScrollIntoView(nextCue);
                     }
                 }
 
-                if (foundNextCue == false)
+                if (!foundNextCue)
                 {
                     Log.Info("Reached the end of the cue list or no non-auto-follow cue found.");
                 }
+
             }
             catch (Exception ex)
             {
@@ -609,9 +634,6 @@ namespace Win_Labs
                 MessageBox.Show($"Failed to play the cue: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-
-
-
         private void PlayNextCueIfAutoFollow(Cue currentCue)
         {
             int currentIndex = _cues.IndexOf(currentCue);
@@ -707,6 +729,7 @@ namespace Win_Labs
             try
             {
                 CueManager.SaveAllCues(_cues, _playlistFolderPath);
+                _playlistFileManager.Save();
                 MessageBox.Show("All changes have been saved.", "Save Complete", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
@@ -746,7 +769,11 @@ namespace Win_Labs
         {
             base.OnClosing(e);
             SaveAllCues_Click(this, new RoutedEventArgs());
+
+            // Save playlist data
+            _playlistFileManager.Save();
         }
+
 
         private void Settings_Click(object sender, RoutedEventArgs e)
         {
@@ -755,6 +782,32 @@ namespace Win_Labs
             settingsWindow.Owner = this;
             settingsWindow.ShowDialog();
         }
-        
+        internal double _masterVolumeSliderValue;
+        internal double MasterVolumeSliderValue
+        {
+            get => _masterVolumeSliderValue;
+            set
+            {
+                if (_masterVolumeSliderValue != value)
+                {
+                    _masterVolumeSliderValue = value;
+                    OnPropertyChanged(nameof(MasterVolumeSliderValue));
+                    if (_playlistFileManager?.Data != null)
+                    {
+                        _playlistFileManager.Data.MasterVolume = value; // Update PlaylistFileManager
+                    }
+                    else
+                    {
+                        Log.Error("PlaylistFileManager or its Data property is not initialized.");
+                    }
+                }
+            }
+        }
+
+        private void MasterSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            MasterVolumeSliderValue = MasterVolumeSlider.Value;
+            
+        }
     }
 }

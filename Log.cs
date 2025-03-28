@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.VisualBasic.Logging;
+using System;
 using System.IO;
 
 namespace Win_Labs
@@ -7,10 +8,11 @@ namespace Win_Labs
     {
         private static readonly string LogDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs");
         private static readonly string LogFilePath = Path.Combine(LogDirectory, $"log_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.txt");
-        private const int MaxLogFiles = 10;
+        private static readonly int MaxLogFiles = AppSettingsManager.Settings.MaxLogFiles;
 
-        static Log()
+        internal static void IntLog()
         {
+            Log.Info("Log.Initialised");
             InitializeLogDirectory();
             CleanUpOldLogFiles();
         }

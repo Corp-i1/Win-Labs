@@ -5,7 +5,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:themes="clr-namespace:Microsoft.Windows.Themes;assembly=PresentationFramework.Aero"
         Title="Settings Menu" 
-        Height="200" Width="300"
+        Height="300" Width="300"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
         Icon="{Binding IconIcoPath, RelativeSource={RelativeSource AncestorType=local:BaseWindow}}">
@@ -26,7 +26,17 @@
                 <ComboBoxItem Content="wanna translate it?" />
             </ComboBox>
 
+            <TextBox Text="10" 
+                     x:Name="MaxLogFilesTextBox"
+                     DockPanel.Dock="Right" 
+                     TextAlignment="Left" 
+                     Margin="0,5,0,0" 
+                     Width="40" 
+                     />
+
             <Button Content="Save" Click="SaveButton_Click" Margin="0,20,0,0" Width="80" />
+            
+
         </StackPanel>
     </Grid>
 </local:BaseWindow>

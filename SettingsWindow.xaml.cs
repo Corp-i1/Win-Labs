@@ -15,9 +15,6 @@ using Win_Labs.Themes;
 
 namespace Win_Labs
 {
-    /// <summary>
-    /// Interaction logic for SettingsWindow.xaml
-    /// </summary>
     public partial class SettingsWindow : BaseWindow
     {
         public SettingsWindow()
@@ -34,6 +31,9 @@ namespace Win_Labs
             // Set Language ComboBox
             LanguageComboBox.SelectedItem = LanguageComboBox.Items.OfType<ComboBoxItem>()
                 .FirstOrDefault(item => item.Content.ToString() == settings.Language);
+
+            // Set Max Log File Text Box
+            MaxLogFilesTextBox.Text = settings.MaxLogFiles.ToString();
         }
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -42,16 +42,23 @@ namespace Win_Labs
             var settings = AppSettingsManager.Settings;
             var selectedTheme = ThemeComboBox.SelectedItem as ComboBoxItem;
             var selectedLanguage = LanguageComboBox.SelectedItem as ComboBoxItem;
-            
+            var maxLogFilesText = MaxLogFilesTextBox.Text;
+
             if (selectedTheme?.Content == null || selectedLanguage?.Content == null)
             {
-                MessageBox.Show("Please select both theme and language", "Invalid Selection", 
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("Please select both theme and language", "Invalid Selection", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            
+
+            if (!int.TryParse(maxLogFilesText, out int maxLogFiles))
+            {
+                MessageBox.Show("Please enter a valid number for Max Log Files", "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             settings.Theme = selectedTheme.Content.ToString();
             settings.Language = selectedLanguage.Content.ToString();
+            settings.MaxLogFiles = maxLogFiles;
 
             // Save settings to file
             AppSettingsManager.SaveSettings();
@@ -64,12 +71,13 @@ namespace Win_Labs
             catch (Exception ex)
             {
                 Log.Error($"Failed to apply theme: {ex.Message}");
-                System.Windows.MessageBox.Show("Failed to apply theme. Settings were saved.", 
+                System.Windows.MessageBox.Show("Failed to apply theme. Settings were saved.",
                     "Theme Error", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
 
             // Close the settings window
             this.Close();
         }
+
     }
 }
