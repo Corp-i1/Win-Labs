@@ -2,7 +2,8 @@
 ### My Website: [Corpi1.uk](https://Corpi1.uk)
 This project is my window alternative for Q-Labs for Sound Technictions its bad but it might work.
 
-Needs to be ran as a WPF will create a release or installer when im happyer with the project
+## Installation
+To install please head to the latest relase.
 
 ## License  
 This project is licensed under the **MPL-2.0 with a No Resale Clause**.  
