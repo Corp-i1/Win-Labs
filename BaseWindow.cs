@@ -1,4 +1,5 @@
 using System.Windows;
+using Win_Labs.Settings.AppSettings;
 using Win_Labs.Themes;
 
 namespace Win_Labs

@@ -24,6 +24,7 @@ using System.Printing;
 using System.Windows.Input;
 using System.Text.RegularExpressions;
 using Win_Labs.ZIPManagement;
+using Win_Labs.Settings.PlaylistSettings;
 
 
 namespace Win_Labs
