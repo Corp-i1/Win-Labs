@@ -413,7 +413,7 @@
         </Setter>
     </Style>
 
-
+    
 
     <!-- Style for ContextMenu -->
     <Style TargetType="{x:Type ContextMenu}">

@@ -7,7 +7,7 @@
      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
      mc:Ignorable="d"
-     Title="Win-Labs" Height="600" Width="857"
+     Title="Win-Labs" Height="600" Width="857" MinHeight="455" MinWidth="800"
      Background="{DynamicResource WindowBackgroundBrush}"
      ShowInTaskbar="True"
      BorderBrush="{DynamicResource WindowBackgroundBrush}"
@@ -19,7 +19,7 @@
         <localConverters:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
     </local:BaseWindow.Resources>
 
-    <Grid ShowGridLines="False">
+    <Grid ShowGridLines="False" x:Name="MainWindowMainGrid" >
         <!-- Define rows for vertical layout -->
         <Grid.RowDefinitions>
             <RowDefinition Height="20" />
@@ -28,11 +28,11 @@
             <!-- MasterHead row:1 -->
             <RowDefinition Height="60" />
             <!-- Toolbar row:2 -->
-            <RowDefinition Height="*" />
-            <!-- CueList row:4 -->
-            <!-- Inspector row:4 -->
+            <RowDefinition Height="*" MinHeight="225" />
+            <!-- CueList row:3 -->
+            <!-- Inspector row:3 -->
             <RowDefinition Height="30" />
-            <!-- Footer row:5 -->
+            <!-- Footer row: 4 -->
         </Grid.RowDefinitions>
 
         <!-- Define columns for vertical layout -->
@@ -133,15 +133,14 @@
                 <ColumnDefinition Width="55"/>
                 <ColumnDefinition Width="55"/>
             </Grid.ColumnDefinitions>
-            <Button Name="RefreshButton" Width="50" Height="50" Content="Refresh" Click="RefreshButton_Click" Grid.Column="1"/>
+            <Button Name="RefreshButton" Width="50" Height="50" Content="Refresh" Click="RefreshButton_Click" Grid.Column="1" />
             <Button Content="New Cue" Width="50" Height="50" Click="CreateNewCue_Click" Grid.Column="2"/>
             <Button Content="Delete Cue" Width="50" Height="50" Click="DeleteCue_Click" Grid.Column="3"/>
         </Grid>
 
         <!-- Cue List -->
-        <DockPanel Grid.Row="3" Grid.Column="0" LastChildFill="True" DockPanel.Dock="Left" SelectiveScrollingGrid.SelectiveScrollingOrientation="Vertical" VerticalAlignment="Top">
-            <ListView x:Name="CueListView" SelectionChanged="CueListView_SelectionChanged" SelectiveScrollingGrid.SelectiveScrollingOrientation="Vertical" SelectedIndex="0">
-
+        <DockPanel Grid.Row="3" Grid.Column="0" HorizontalAlignment="Stretch" LastChildFill="True" DockPanel.Dock="Left" SelectiveScrollingGrid.SelectiveScrollingOrientation="Vertical" VerticalAlignment="Top">
+            <ListView Height="{Binding CueListViewHeight,RelativeSource={RelativeSource AncestorType={x:Type local:MainWindow}}}" Grid.Column="0" x:Name="CueListView" SelectionChanged="CueListView_SelectionChanged" SelectiveScrollingGrid.SelectiveScrollingOrientation="Vertical" SelectedIndex="0">
                 <ListView.ContextMenu>
                     <ContextMenu>
                         <MenuItem Header="Create New Cue" Click="CreateNewCue_Click" />
@@ -169,17 +168,26 @@
 
         <!-- Inspector -->
         <StackPanel Grid.Row="3" Grid.Column="0" VerticalAlignment="Bottom" Visibility="{Binding MainInspectorVisibility, RelativeSource={RelativeSource AncestorType={x:Type local:MainWindow}}}">
-            <Grid ShowGridLines="False">
+            <Grid ShowGridLines="False" x:Name="MainWindowInspectorGrid">
                 <!-- Define rows for horizontal Layout -->
-                <Grid.RowDefinitions>
+                <Grid.RowDefinitions >
+                    <!-- Cue Name: 0-->
                     <RowDefinition Height="25" />
+                    <!-- Cue Number: 1-->
                     <RowDefinition Height="25" />
+                    <!-- Duration: 2-->
                     <RowDefinition Height="25" />
+                    <!-- Pre Wait: 3-->
                     <RowDefinition Height="25" />
+                    <!-- Post Wait: 4-->
                     <RowDefinition Height="25" />
+                    <!-- Auto Follow: 5-->
                     <RowDefinition Height="25" />
+                    <!-- File Name: 6-->
                     <RowDefinition Height="25" />
+                    <!-- Target File: 7-->
                     <RowDefinition Height="25" />
+                    <!-- Notes: 8-->
                     <RowDefinition Height="25" />
                 </Grid.RowDefinitions>
 
@@ -248,4 +256,5 @@
             <Button Grid.Column="3" HorizontalAlignment="Right" Content="Settings" Height="24" Width="100" Click="Settings_Click"/>
         </Grid>
     </Grid>
+    
 </local:BaseWindow>
