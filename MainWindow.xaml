@@ -229,10 +229,17 @@
                 <TextBlock Grid.Column="0" Grid.Row="7" VerticalAlignment="Center" Text="Target File:" />
                 <TextBox Grid.Column="1" Grid.Row="7" Text="{Binding TargetFile, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" />
 
+                 <!--Button with a cross icon-->
+                <Button Grid.Column="1" Grid.Row="7" HorizontalAlignment="Right" Click="ClearTargetFile_Click" Margin="36,0">
+                    <Button.Content>
+                        <Image Source="/resources/Icons/Close_Icon_White.png" Width="16" Height="16" />
+                    </Button.Content>
+                </Button>
+                
                 <!-- Button with a folder icon -->
                 <Button Grid.Column="1" Grid.Row="7" HorizontalAlignment="Right" Click="SelectTargetFile_Click">
                     <Button.Content>
-                        <Image Source="pack://application:,,,/Resources/jpgs/Folder.jpg" Width="16" Height="16" />
+                        <Image Source="/resources/jpgs/Folder.jpg" Width="16" Height="16" />
                     </Button.Content>
                 </Button>
 

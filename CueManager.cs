@@ -57,7 +57,7 @@ namespace Win_Labs
                 AutoFollow = false,
                 FileName = "",
                 TargetFile = "",
-                Notes = "Default Cue"
+                Notes = ""
             };
         }
 

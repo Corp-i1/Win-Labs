@@ -388,6 +388,13 @@ namespace Win_Labs
             }
         }
 
+        internal void ClearTargetFile_Click(object sender, RoutedEventArgs e)
+        {
+            if (CueListView.SelectedItem is Cue selectedCue)
+            {
+                selectedCue.TargetFile = string.Empty; // Set to an empty string instead of null
+            }
+        }
         private void DeleteCue_Click(object sender, RoutedEventArgs e)
         {
             if (CueListView.SelectedItem is Cue selectedCue)
@@ -905,5 +912,7 @@ namespace Win_Labs
                 CueListViewHeight = MainWindowMainGridRow3 - TotalInspectorHeight;
             }
         }
+
+
     }
 }
