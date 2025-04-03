@@ -216,6 +216,7 @@ namespace Win_Labs
                     {
                         _isCueNameSetByUser = false; // Reset the flag
                         CueName = $"Cue {_cueNumber}";
+                        FileName = null;
                     }
                     else if (!_isCueNameSetByUser)
                     {

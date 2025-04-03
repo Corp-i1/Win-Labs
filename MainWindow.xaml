@@ -232,7 +232,7 @@
                  <!--Button with a cross icon-->
                 <Button Grid.Column="1" Grid.Row="7" HorizontalAlignment="Right" Click="ClearTargetFile_Click" Margin="36,0">
                     <Button.Content>
-                        <Image Source="/resources/Icons/Close_Icon_White.png" Width="16" Height="16" />
+                        <TextBlock Text="X" HorizontalAlignment="Center" Width="16" Height="16" />
                     </Button.Content>
                 </Button>
                 
