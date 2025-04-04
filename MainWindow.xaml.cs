@@ -56,7 +56,6 @@ namespace Win_Labs
 
             // Set the master volume slider value
             MasterVolumeSliderValue = _playlistFileManager.Data.MasterVolume;
-            UpdateMainWindowRowHeights();
             IntializeResizeEvents();
             // InitializeResizeTimer();
             Log.Info("Application started.");
@@ -115,7 +114,7 @@ namespace Win_Labs
         private void LoadCues()
         {
             Cue.IsInitializing = true;
-            var loadedCues = CueManager.LoadCues(_playlistFolderPath);
+            var loadedCues = new CueManager().LoadCues(_playlistFolderPath);
             _cues.Clear();
             foreach (var cue in loadedCues)
             {
