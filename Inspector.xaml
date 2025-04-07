@@ -21,8 +21,7 @@
                 <RowDefinition Height="25" />
                 <RowDefinition Height="25" />
                 <RowDefinition Height="25" />
-                <RowDefinition Height="25" />
-                <RowDefinition Height="Auto" MinHeight="25"/>
+                <RowDefinition Height="*" MinHeight="25"/>
             </Grid.RowDefinitions>
 
             <!-- Define columns for vertical layout -->
@@ -47,32 +46,35 @@
             <TextBlock Grid.Column="0" Grid.Row="3" VerticalAlignment="Center" Text="Pre Wait:" />
             <TextBox Grid.Column="1" Grid.Row="3" Text="{Binding PreWait, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False" />
 
-            <!-- Post Wait -->
-            <TextBlock Grid.Column="0" Grid.Row="4" VerticalAlignment="Center" Text="Post Wait:" />
-            <TextBox Grid.Column="1" Grid.Row="4" Text="{Binding PostWait, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False" />
-
             <!-- Auto Follow -->
-            <TextBlock Grid.Column="0" Grid.Row="5" VerticalAlignment="Center" Text="Auto Follow:" />
-            <CheckBox Grid.Column="1" Grid.Row="5" IsChecked="{Binding AutoFollow, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="10,0,0,0" />
+            <TextBlock Grid.Column="0" Grid.Row="4" VerticalAlignment="Center" Text="Auto Follow:" />
+            <CheckBox Grid.Column="1" Grid.Row="4" IsChecked="{Binding AutoFollow, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="10,0,0,0" />
 
             <!-- File Name -->
-            <TextBlock Grid.Column="0" Grid.Row="6" VerticalAlignment="Center" Text="File Name:" />
-            <TextBox Grid.Column="1" Grid.Row="6" Text="{Binding FileName, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" />
+            <TextBlock Grid.Column="0" Grid.Row="5" VerticalAlignment="Center" Text="File Name:" />
+            <TextBox Grid.Column="1" Grid.Row="5" Text="{Binding FileName, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" />
 
             <!-- Target File -->
-            <TextBlock Grid.Column="0" Grid.Row="7" VerticalAlignment="Center" Text="Target File:" />
-            <TextBox Grid.Column="1" Grid.Row="7" Text="{Binding TargetFile, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" />
+            <TextBlock Grid.Column="0" Grid.Row="6" VerticalAlignment="Center" Text="Target File:" />
+            <TextBox Grid.Column="1" Grid.Row="6" Text="{Binding TargetFile, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" />
 
+            <!--Button with a cross icon-->
+            <Button Grid.Column="1" Grid.Row="6" HorizontalAlignment="Right" Click="ClearTargetFile_Click" Margin="36,0">
+                <Button.Content>
+                    <TextBlock Text="X" HorizontalAlignment="Center" Width="16" Height="16" />
+                </Button.Content>
+            </Button>
+            
             <!-- Button with a folder icon -->
-            <Button Grid.Column="1" Grid.Row="7" HorizontalAlignment="Right" Click="SelectTargetFile_Click">
+            <Button Grid.Column="1" Grid.Row="6" HorizontalAlignment="Right" Click="SelectTargetFile_Click">
                 <Button.Content>
                     <Image Source="pack://application:,,,/Resources/jpgs/Folder.jpg" Width="16" Height="16" />
                 </Button.Content>
             </Button>
 
             <!-- Notes -->
-            <TextBlock Grid.Column="0" Grid.Row="8" VerticalAlignment="Center" Text="Notes:" />
-            <TextBox Grid.Column="1" Grid.Row="8" Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" Height="Auto" />
+            <TextBlock Grid.Column="0" Grid.Row="7" VerticalAlignment="Center" Text="Notes:" />
+            <TextBox Grid.Column="1" Grid.Row="7" Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" />
         </Grid>
     </Grid>
 </local:BaseWindow>

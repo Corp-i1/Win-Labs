@@ -60,7 +60,6 @@ namespace Win_Labs
                 CueName = $"Cue {cueNumber}",
                 Duration = "00:00.00",
                 PreWait = "00:00.00",
-                PostWait = "00:00.00",
                 AutoFollow = false,
                 FileName = "",
                 TargetFile = "",

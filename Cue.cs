@@ -16,7 +16,6 @@ namespace Win_Labs
         private string _cueFilePath;
         private string _duration;
         private string _preWait;
-        private string _postWait;
         private bool _autoFollow;
         private string _fileName;
         private string _targetFile;
@@ -154,20 +153,6 @@ namespace Win_Labs
                     OnPropertyChanged(nameof(PreWait));
 
 
-                }
-            }
-        }
-
-        public string PostWait
-        {
-            get => _postWait;
-            set
-            {
-                if (_postWait != value)
-                {
-                    Log.Info("PropertyChange.PostWait");
-                    _postWait = value;
-                    OnPropertyChanged(nameof(PostWait));
                 }
             }
         }
