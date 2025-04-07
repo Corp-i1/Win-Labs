@@ -6,7 +6,7 @@ using System.Windows;
 
 namespace Win_Labs
 {
-    public static class CueManager
+        public class CueManager
     {
          internal static bool StartupFinished { get; private set; }
 
@@ -15,8 +15,9 @@ namespace Win_Labs
             StartupFinished = true;
         }
         public static bool ValidJsonFileInPlaylist { get; private set; }
-
-        public static ObservableCollection<Cue> LoadCues(string playlistFolderPath)
+        internal int numberOfCues;
+        internal int currentCueCount;
+        public ObservableCollection<Cue> LoadCues(string playlistFolderPath)
         {
             var cues = new ObservableCollection<Cue>();
             if (string.IsNullOrEmpty(playlistFolderPath))
@@ -28,8 +29,14 @@ namespace Win_Labs
             Log.Info($"Found {cueFiles.Length} cue files in {playlistFolderPath}.");
             try
             {
+                numberOfCues = Directory.GetFiles(playlistFolderPath, "cue_*.json").Length;
+                LoadingWindow loadingWindow = new LoadingWindow();
+                loadingWindow.SetProgressBarMaximum(numberOfCues);
+
                 foreach (var file in Directory.EnumerateFiles(playlistFolderPath, "cue_*.json"))
                 {
+                    currentCueCount++;
+                    loadingWindow.SetProgressBarValue(currentCueCount);
                     var cue = JsonConvert.DeserializeObject<Cue>(File.ReadAllText(file));
                     cue.PlaylistFolderPath = playlistFolderPath;
                     cue.TargetFile = cue.GetAbsolutePath(cue.TargetFile); // Resolve to absolute path
@@ -53,11 +60,10 @@ namespace Win_Labs
                 CueName = $"Cue {cueNumber}",
                 Duration = "00:00.00",
                 PreWait = "00:00.00",
-                PostWait = "00:00.00",
                 AutoFollow = false,
                 FileName = "",
                 TargetFile = "",
-                Notes = "Default Cue"
+                Notes = ""
             };
         }
 

@@ -16,13 +16,13 @@ namespace Win_Labs
         private string _cueFilePath;
         private string _duration;
         private string _preWait;
-        private string _postWait;
         private bool _autoFollow;
         private string _fileName;
         private string _targetFile;
         private string _notes;
         private string _cueName;
         private bool _renaming;
+        private bool _isCueNameSetByUser = false;
 
         internal static bool IsInitializing { get; set; }
         internal string PlaylistFolderPath = PlaylistManager.playlistFolderPath;
@@ -72,6 +72,8 @@ namespace Win_Labs
                 }
             }
         }
+
+
         public string CueName
         {
             get => _cueName;
@@ -81,10 +83,12 @@ namespace Win_Labs
                 {
                     Log.Info("PropertyChange.CueName");
                     _cueName = value;
+                    _isCueNameSetByUser = true; // Update the flag
                     OnPropertyChanged(nameof(CueName));
                 }
             }
         }
+
         private string _displayedDuration;
         private bool _isEditingDuration = false;
         private string _lastValidDuration;
@@ -120,14 +124,14 @@ namespace Win_Labs
             return TimeSpan.TryParseExact(value, @"mm\:ss\.ff", null, out parsedDuration);
         }
 
-        public void Duration_GotFocus()
+        internal void Duration_GotFocus()
         {
             _isEditingDuration = true; // Mark as editing
             Log.Info("User started editing the Duration field.");
             OnPropertyChanged(nameof(Duration)); // Update the binding
         }
 
-        public void Duration_LostFocus()
+        internal void Duration_LostFocus()
         {
             _isEditingDuration = false; // Mark as no longer editing
             Log.Info("User finished editing the Duration field.");
@@ -149,20 +153,6 @@ namespace Win_Labs
                     OnPropertyChanged(nameof(PreWait));
 
 
-                }
-            }
-        }
-
-        public string PostWait
-        {
-            get => _postWait;
-            set
-            {
-                if (_postWait != value)
-                {
-                    Log.Info("PropertyChange.PostWait");
-                    _postWait = value;
-                    OnPropertyChanged(nameof(PostWait));
                 }
             }
         }
@@ -205,10 +195,22 @@ namespace Win_Labs
                     _targetFile = GetRelativePath(value);
                     OnPropertyChanged(nameof(TargetFile));
                     UpdateDuration();
+
+                    // Reset the CueName to default if the target file is cleared
+                    if (string.IsNullOrEmpty(_targetFile))
+                    {
+                        _isCueNameSetByUser = false; // Reset the flag
+                        CueName = $"Cue {_cueNumber}";
+                        FileName = null;
+                    }
+                    else if (!_isCueNameSetByUser)
+                    {
+                        // Set the CueName based on the target file name if the user has not set a name
+                        CueName = Path.GetFileNameWithoutExtension(_targetFile).Replace("-", " ").Replace("_", " ");
+                    }
                 }
             }
         }
-
 
         internal string GetRelativePath(string filePath)
         {
@@ -461,11 +463,6 @@ namespace Win_Labs
             {
                 Log.Exception(ex);
             }
-
-        }
-
-        internal void MasterVolumeChange(int newValue)
-        {
 
         }
     }

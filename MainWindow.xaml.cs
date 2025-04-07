@@ -2,7 +2,6 @@
 using System.IO;
 using System.Linq;
 using System.Windows;
-using System.Windows.Controls;
 using Microsoft.Win32;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
@@ -22,8 +21,9 @@ using System.Diagnostics.Eventing.Reader;
 using System.Runtime.InteropServices;
 using System.Printing;
 using System.Windows.Input;
-using System.Text.RegularExpressions;
 using Win_Labs.ZIPManagement;
+using Win_Labs.Settings.PlaylistSettings;
+using System.Windows.Threading;
 
 
 namespace Win_Labs
@@ -56,9 +56,11 @@ namespace Win_Labs
 
             // Set the master volume slider value
             MasterVolumeSliderValue = _playlistFileManager.Data.MasterVolume;
-
+            InitializeResizeEvents();
+            // InitializeResizeTimer();
             Log.Info("Application started.");
         }
+
 
 
         private void Initialize()
@@ -112,7 +114,7 @@ namespace Win_Labs
         private void LoadCues()
         {
             Cue.IsInitializing = true;
-            var loadedCues = CueManager.LoadCues(_playlistFolderPath);
+            var loadedCues = new CueManager().LoadCues(_playlistFolderPath);
             _cues.Clear();
             foreach (var cue in loadedCues)
             {
@@ -240,12 +242,14 @@ namespace Win_Labs
         {
             Log.Info("Showing main inspector.");
             MainInspectorVisibility = Visibility.Visible; // Show Inspector when window is closed
+            UpdateCueListViewHeight(); // Update the size of the cue listView
         }
 
         private void HideMainInspector()
         {
             Log.Info("Hiding main inspector.");
             MainInspectorVisibility = Visibility.Hidden; // Hide Inspector in MainWindow
+            UpdateCueListViewHeight(); // Update the size of the cue listView
         }
 
         private void Pop_Out_Inspector_Click(object sender, RoutedEventArgs e)
@@ -382,6 +386,13 @@ namespace Win_Labs
             }
         }
 
+        internal void ClearTargetFile_Click(object sender, RoutedEventArgs e)
+        {
+            if (CueListView.SelectedItem is Cue selectedCue)
+            {
+                selectedCue.TargetFile = string.Empty; // Set to an empty string instead of null
+            }
+        }
         private void DeleteCue_Click(object sender, RoutedEventArgs e)
         {
             if (CueListView.SelectedItem is Cue selectedCue)
@@ -803,11 +814,102 @@ namespace Win_Labs
                 }
             }
         }
-
         private void MasterSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             MasterVolumeSliderValue = MasterVolumeSlider.Value;
-            
+
         }
+        private double _cueListViewHeight;
+        public double CueListViewHeight
+        {
+            get => _cueListViewHeight;
+            set
+            {
+                if (_cueListViewHeight != value)
+                {
+                    _cueListViewHeight = value;
+                    OnPropertyChanged(nameof(CueListViewHeight));
+                }
+            }
+        }
+        internal double MainWindowHeight;
+        internal double MainWindowMainGridRow0;
+        internal double MainWindowMainGridRow1;
+        internal double MainWindowMainGridRow2;
+        internal double MainWindowMainGridRow3;
+        internal double MainWindowMainGridRow4;
+        /* Function:UpdateMainWindowRowHeights
+         * Description:Sets up values for use in UpdateCueListViewHeight dynamicly.
+         */
+        internal void UpdateMainWindowRowHeights()
+        {
+            Log.Info("Updating MainWindow row heights.");
+            MainWindowHeight = this.Height;
+            MainWindowMainGridRow0 = GetMainWindowMainGridRow(0);
+            MainWindowMainGridRow1 = GetMainWindowMainGridRow(1);
+            MainWindowMainGridRow2 = GetMainWindowMainGridRow(2);
+            MainWindowMainGridRow3 = GetMainWindowMainGridRow(3);
+            MainWindowMainGridRow4 = GetMainWindowMainGridRow(4);
+            Log.Info($"Row heights updated: \n Row 0: {MainWindowMainGridRow0}, \n Row 1: {MainWindowMainGridRow1}, \n Row 2: {MainWindowMainGridRow2}, \n Row 3: {MainWindowMainGridRow3}, \n Row 4: {MainWindowMainGridRow4}");
+            Log.Info("Updated Inpector total row height");
+
+        }
+        /* Function: InitializeResizeEvents
+         * Description: Creates a subscription to any resize of the main window to the method UpdateCueListViewHeight
+         */
+        internal void InitializeResizeEvents()
+        {
+            Log.Info("Initializing resize events.");
+            // Subscribe to the SizeChanged event
+            this.SizeChanged += UpdateCueListViewHeightEvent;
+        }
+        /* Method: GetMainWindowGridRow
+        * Description: Gets the height of the main grid in the parent xaml file. Doing like this rather than just pasting in the numbers so they are dynamic.
+        * Input:Row number (int)
+        * Output:Height of row number inputed (double)
+        */
+        internal double GetMainWindowMainGridRow(int rowNumber)
+        {
+            return this.MainWindowMainGrid.RowDefinitions[rowNumber].ActualHeight;
+        }
+        /* Function: GetMainWindowInspectorGridTotal
+         * Description: Calculates the total Inspector grid Height for use in the ResizeWindowUpdate function to make it dynamic.
+         */
+        internal double TotalInspectorHeight;
+        private double GetMainWindowInspectorGridTotal()
+        {
+            double countingTotal = 0;
+            foreach (RowDefinition rowDefinition in MainWindowInspectorGrid.RowDefinitions)
+            {
+                countingTotal += rowDefinition.Height.Value;
+            }
+
+            return TotalInspectorHeight = countingTotal;
+        }
+
+        /* Function: UpdateCueListViewHeightEvent
+         * Description: Just setting up the event to call UpdateCueListViewHeight
+         */
+        private void UpdateCueListViewHeightEvent(object sender, SizeChangedEventArgs e)
+        {
+            UpdateCueListViewHeight();
+        }
+        /* Function: UpdateCueListViewHeight
+         * Description: Update the size of the cue ListView depending on factors such as the popout inspector and size of MainWindow
+         */
+        internal void UpdateCueListViewHeight()
+        {
+            UpdateMainWindowRowHeights();
+            if (_inspectorWindow != null) //true when the popout inspector exists
+            {
+                CueListViewHeight = MainWindowMainGridRow3;
+            }
+            else //true when there is no popout inspector
+            {
+                CueListViewHeight = MainWindowMainGridRow3 - TotalInspectorHeight;
+            }
+        }
+
+
     }
 }

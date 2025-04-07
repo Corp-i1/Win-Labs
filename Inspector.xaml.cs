@@ -39,5 +39,13 @@ namespace Win_Labs
                 mainWindow.SelectTargetFile_Click(sender, e);
             }
         }
+
+        private void ClearTargetFile_Click(object sender, RoutedEventArgs e)
+        {
+            if (Owner is MainWindow mainWindow)
+            {
+                mainWindow.ClearTargetFile_Click(sender, e);
+            }
+        }
     }
 }

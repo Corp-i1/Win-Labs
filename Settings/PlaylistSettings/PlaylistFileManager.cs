@@ -5,7 +5,7 @@ using System.Windows.Forms;
 using System.Windows.Media;
 using Newtonsoft.Json;
 
-namespace Win_Labs
+namespace Win_Labs.Settings.PlaylistSettings
 {
     public class PlaylistFileManager
     {

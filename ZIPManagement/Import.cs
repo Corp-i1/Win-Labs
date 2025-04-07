@@ -47,6 +47,14 @@ namespace Win_Labs.ZIPManagement
                             throw new InvalidOperationException("Entry is outside the target dir: " + CuePath);
                         }
 
+                        // Check if the entry is a directory
+                        if (entry.FullName.EndsWith(Path.DirectorySeparatorChar.ToString(), StringComparison.Ordinal))
+                        {
+                            Directory.CreateDirectory(CuePath);
+                            Log.Info($"Created directory: {entry.FullName}");
+                            continue;
+                        }
+
                         // Check if the file already exists
                         if (File.Exists(CuePath))
                         {
@@ -83,7 +91,7 @@ namespace Win_Labs.ZIPManagement
                                 else if (result == MessageBoxResult.Cancel)
                                 {
                                     Log.Info("User canceled extraction.");
-                                    return null; // Stop extraction
+                                    return destinationPath; // Stop extraction
                                 }
                                 else if (result == MessageBoxResult.Yes)
                                 {

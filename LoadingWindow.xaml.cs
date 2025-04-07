@@ -1,24 +1,50 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace Win_Labs
 {
-    public partial class LoadingWindow : BaseWindow
+    public partial class LoadingWindow : BaseWindow, INotifyPropertyChanged
     {
-        public LoadingWindow()
+        private string _progressText;
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        public LoadingWindow ()
         {
             InitializeComponent();
+            DataContext = this;
+            ProgressText = "0 / 0";
+        }
+
+        public string ProgressText
+        {
+            get => _progressText;
+            set
+            {
+                _progressText = value;
+                OnPropertyChanged(nameof(ProgressText));
+            }
+        }
+
+        public void SetProgressBarMaximum(int value)
+        {
+            ProgressBar.Maximum = value;
+            UpdateProgressText();
+        }
+
+        public void SetProgressBarValue(int value)
+        {
+            ProgressBar.Value = value;
+            UpdateProgressText();
+        }
+
+
+        private void UpdateProgressText()
+        {
+            ProgressText = $"{ProgressBar.Value} / {ProgressBar.Maximum}";
+        }
+
+        protected virtual void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }

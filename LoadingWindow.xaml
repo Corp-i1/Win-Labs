@@ -10,11 +10,12 @@
         WindowStartupLocation="CenterScreen"
         AllowsTransparency="True"
         Icon="{Binding IconIcoPath, RelativeSource={RelativeSource AncestorType=local:BaseWindow}}"
-        WindowStyle="None">
-    
-    
+        WindowStyle="None"
+        >
+
     <Grid>
-        <ProgressBar Name="ProgressBar" IsIndeterminate="True" VerticalAlignment="Center" Height="200"/>
+        <ProgressBar x:Name="ProgressBar" Minimum="0" Maximum="10" VerticalAlignment="Center" Height="200" Width="200" Background="Transparent" Foreground="Green"/>
         <TextBlock Text="Loading, please wait..." VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,20,0,0"/>
+        <TextBlock Text="{Binding ProgressText}" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,40,0,0"/>
     </Grid>
 </local:BaseWindow>
