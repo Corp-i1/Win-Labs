@@ -56,7 +56,7 @@ namespace Win_Labs
 
             // Set the master volume slider value
             MasterVolumeSliderValue = _playlistFileManager.Data.MasterVolume;
-            IntializeResizeEvents();
+            InitializeResizeEvents();
             // InitializeResizeTimer();
             Log.Info("Application started.");
         }
@@ -857,7 +857,7 @@ namespace Win_Labs
         /* Function: InitializeResizeEvents
          * Description: Creates a subscription to any resize of the main window to the method UpdateCueListViewHeight
          */
-        internal void IntializeResizeEvents()
+        internal void InitializeResizeEvents()
         {
             Log.Info("Initializing resize events.");
             // Subscribe to the SizeChanged event
