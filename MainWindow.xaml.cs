@@ -260,7 +260,6 @@ namespace Win_Labs
                 {
                     Owner = this,
                     DataContext = _currentCue
-                    
                 };
                 _inspectorWindow.Closed += (s, args) =>
                 {
