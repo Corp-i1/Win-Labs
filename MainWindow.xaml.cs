@@ -852,7 +852,6 @@ namespace Win_Labs
             MainWindowMainGridRow4 = GetMainWindowMainGridRow(4);
             Log.Info($"Row heights updated: \n Row 0: {MainWindowMainGridRow0}, \n Row 1: {MainWindowMainGridRow1}, \n Row 2: {MainWindowMainGridRow2}, \n Row 3: {MainWindowMainGridRow3}, \n Row 4: {MainWindowMainGridRow4}");
             Log.Info("Updated Inpector total row height");
-            Log.Info($"Inspector row height: {GetMainWindowInspectorGridTotal()}");
 
         }
         /* Function: InitializeResizeEvents
