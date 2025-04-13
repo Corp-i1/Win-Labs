@@ -75,6 +75,7 @@ namespace Win_Labs
             SetupCueChangeHandler();
             InitializeCueData();
             _activeWaveOuts = new List<WaveOutEvent>();
+            TriggerSort();
             RefreshCueList();
 
         }
@@ -374,6 +375,7 @@ namespace Win_Labs
 
             // Log the creation
             Log.Info($"Created a new cue: {newCue.CueNumber}");
+            TriggerSort();
             RefreshCueList();
         }
 
@@ -496,6 +498,7 @@ namespace Win_Labs
                     DataContext = selectedCue;
                     CueManager.SaveCueToFile(selectedCue, _playlistFolderPath);
                     Log.Info($"'{openFileDialog.FileName}' added to {CueListView.SelectedItem}");
+                    TriggerSort();
                 }
                 else
                 {
@@ -515,6 +518,7 @@ namespace Win_Labs
             if (CueListView.SelectedItem is Cue selectedCue)
             {
                 selectedCue.TargetFile = string.Empty; // Set to an empty string instead of null
+                TriggerSort();
             }
         }
 
@@ -526,6 +530,7 @@ namespace Win_Labs
          */
         private void DeleteCue_Click(object sender, RoutedEventArgs e)
         {
+
             if (CueListView.SelectedItem is Cue selectedCue)
             {
                 Log.Info($"Delete Cue button clicked. Deleting Cue: {selectedCue.CueNumber} - {selectedCue.CueName}");
@@ -542,6 +547,7 @@ namespace Win_Labs
                     // Delete the file
                     CueManager.DeleteCueFile(selectedCue, _playlistFolderPath);
                     Log.Info($"Cue {selectedCue.CueNumber} deleted successfully.");
+                    TriggerSort();
                     RefreshCueList();
                 }
             }
@@ -910,6 +916,7 @@ namespace Win_Labs
  */
         private void ExportMenuItem_Click(object sender, RoutedEventArgs e)
         {
+            TriggerSort();
             playlistManager.ExportPlaylist(_playlistFolderPath);
         }
 
@@ -933,6 +940,7 @@ namespace Win_Labs
                 Log.Error($"Error saving cues: {ex.Message}");
                 MessageBox.Show($"Failed to save changes: {ex.Message}", "Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+            TriggerSort();
             RefreshCueList();
         }
 
@@ -1122,10 +1130,6 @@ namespace Win_Labs
                 CueListViewHeight = MainWindowMainGridRow3 - TotalInspectorHeight;
             }
         }
-        private void InitializeSorting()
-        {
-            
-        }
 
         private bool IsSortEnabled = false;
         private bool SortAssending = true;
@@ -1157,6 +1161,7 @@ namespace Win_Labs
         {
             if (IsSortEnabled)
             {
+                Log.Info("Sorting Cue ListView.");
                 string? sortBy = (SortComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString();
                 if (!string.IsNullOrEmpty(sortBy))
                 {
