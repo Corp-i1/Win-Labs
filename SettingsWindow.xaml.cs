@@ -18,6 +18,10 @@ namespace Win_Labs
 {
     public partial class SettingsWindow : BaseWindow
     {
+        /* Constructor: SettingsWindow
+         * Description: Initializes a new instance of the SettingsWindow class, loads current application settings, 
+         *              and populates the UI elements with the loaded settings.
+         */
         public SettingsWindow()
         {
             InitializeComponent();
@@ -37,6 +41,13 @@ namespace Win_Labs
             MaxLogFilesTextBox.Text = settings.MaxLogFiles.ToString();
         }
 
+        /* Function: SaveButton_Click
+         * Description: Handles the click event for the "Save" button. Updates application settings based on user input, 
+         *              saves the settings to a file, applies the selected theme, and closes the settings window.
+         * Parameters:
+         *   - sender: The source of the event.
+         *   - e: The event data.
+         */
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             // Update settings
@@ -79,6 +90,5 @@ namespace Win_Labs
             // Close the settings window
             this.Close();
         }
-
     }
 }

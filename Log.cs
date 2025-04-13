@@ -7,24 +7,48 @@ namespace Win_Labs
 {
     public static class Log
     {
+        // Static fields for log configuration
         private static readonly string LogDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs");
         private static readonly string LogFilePath = Path.Combine(LogDirectory, $"log_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.txt");
         private static readonly int MaxLogFiles = AppSettingsManager.Settings.MaxLogFiles;
 
+        /* Function: IntLog
+         * Description: Initializes the logging system by creating the log directory (if necessary) and cleaning up old log files.
+         */
         internal static void IntLog()
         {
-            Log.Info("Log.Initialised");
             InitializeLogDirectory();
             CleanUpOldLogFiles();
+            Log.Info("Log.Initialised");
         }
 
         // Public logging methods
+
+        /* Function: Info
+         * Description: Logs an informational message.
+         * Parameters:
+         *   - message: The message to log.
+         */
         public static void Info(string message) => WriteLog(message, LogLevel.Info);
-
+         /* Function: Warning
+         * Description: Logs a warning message.
+         * Parameters:
+         *   - message: The message to log.
+         */
         public static void Warning(string message) => WriteLog(message, LogLevel.Warning);
-
+        /* Function: Error
+         * Description: Logs an error message.
+         * Parameters:
+         *   - message: The message to log.
+         */
         public static void Error(string message) => WriteLog(message, LogLevel.Error);
 
+
+        /* Function: Exception
+         * Description: Logs an exception, including its message and stack trace.
+         * Parameters:
+         *   - ex: The exception to log.
+         */
         public static void Exception(Exception ex)
         {
             var exceptionMessage = $"Exception: {ex.Message}\nStack Trace: {ex.StackTrace}";
@@ -32,6 +56,10 @@ namespace Win_Labs
         }
 
         // Private helper methods
+
+        /* Function: InitializeLogDirectory
+         * Description: Ensures the log directory exists. If it does not, the directory is created, and a log entry is written.
+         */
         private static void InitializeLogDirectory()
         {
             if (!Directory.Exists(LogDirectory))
@@ -40,7 +68,9 @@ namespace Win_Labs
                 WriteLog($"Log directory created at: {LogDirectory}", LogLevel.Info);
             }
         }
-
+        /* Function: CleanUpOldLogFiles
+         * Description: Deletes old log files to ensure the number of log files does not exceed the maximum allowed.
+         */
         private static void CleanUpOldLogFiles()
         {
             var oldFiles = Directory.GetFiles(LogDirectory, "log_*.txt")
@@ -61,6 +91,12 @@ namespace Win_Labs
             }
         }
 
+        /* Function: WriteLog
+         * Description: Writes a log message to both the console and the log file.
+         * Parameters:
+         *   - message: The message to log.
+         *   - level: The log level (Info, Warning, or Error).
+         */
         private static void WriteLog(string message, LogLevel level)
         {
             var logMessage = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss} [{level}] {message}";
@@ -75,8 +111,15 @@ namespace Win_Labs
                 Console.WriteLine($"Failed to write log: {ex.Message}");
             }
         }
-
         // Enum for log levels
+
+        /* Enum: LogLevel
+         * Description: Represents the severity level of a log message.
+         * Values:
+         *   - Info: Informational messages.
+         *   - Warning: Warning messages.
+         *   - Error: Error messages.
+         */
         public enum LogLevel
         {
             Info,

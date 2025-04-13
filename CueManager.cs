@@ -6,17 +6,34 @@ using System.Windows;
 
 namespace Win_Labs
 {
-        public class CueManager
+    public class CueManager
     {
-         internal static bool StartupFinished { get; private set; }
+        /* Property: StartupFinished
+         * Description: Indicates whether the startup process has finished.
+         */
+        internal static bool StartupFinished { get; private set; }
 
+        /* Function: MarkStartupAsFinished
+         * Description: Marks the startup process as finished by setting the StartupFinished property to true.
+         */
         public static void MarkStartupAsFinished()
         {
             StartupFinished = true;
         }
+
+        /* Property: ValidJsonFileInPlaylist
+         * Description: Indicates whether a valid JSON file exists in the playlist folder.
+         */
         public static bool ValidJsonFileInPlaylist { get; private set; }
         internal int numberOfCues;
         internal int currentCueCount;
+
+        /* Function: LoadCues
+         * Description: Loads all cues from the specified playlist folder path and returns them as an ObservableCollection.
+         * Parameters:
+         *   - playlistFolderPath: The path to the playlist folder containing cue files.
+         * Returns: An ObservableCollection of Cue objects.
+         */
         public ObservableCollection<Cue> LoadCues(string playlistFolderPath)
         {
             var cues = new ObservableCollection<Cue>();
@@ -51,6 +68,13 @@ namespace Win_Labs
             return cues;
         }
 
+        /* Function: CreateNewCue
+         * Description: Creates a new Cue object with default values and the specified cue number and playlist folder path.
+         * Parameters:
+         *   - cueNumber: The number of the new cue.
+         *   - playlistFolderPath: The path to the playlist folder.
+         * Returns: A new Cue object.
+         */
         public static Cue CreateNewCue(int cueNumber, string playlistFolderPath)
         {
             return new Cue(playlistFolderPath)
@@ -67,6 +91,12 @@ namespace Win_Labs
             };
         }
 
+        /* Function: SaveCueToFile
+         * Description: Saves a Cue object to a file in the specified folder path.
+         * Parameters:
+         *   - cue: The Cue object to save.
+         *   - folderPath: The folder path where the cue file will be saved.
+         */
         public static void SaveCueToFile(Cue cue, string folderPath)
         {
             try
@@ -80,7 +110,12 @@ namespace Win_Labs
             }
         }
 
-
+        /* Function: SaveAllCues
+         * Description: Saves all Cue objects in the specified ObservableCollection to the specified playlist folder path.
+         * Parameters:
+         *   - cues: The collection of Cue objects to save.
+         *   - playlistFolderPath: The folder path where the cue files will be saved.
+         */
         public static void SaveAllCues(ObservableCollection<Cue> cues, string playlistFolderPath)
         {
             if (cues == null || string.IsNullOrEmpty(playlistFolderPath))
@@ -96,6 +131,12 @@ namespace Win_Labs
             Log.Info("All cues saved successfully.");
         }
 
+        /* Function: DeleteCueFile
+         * Description: Deletes the file associated with the specified Cue object from the specified playlist folder path.
+         * Parameters:
+         *   - cue: The Cue object whose file will be deleted.
+         *   - playlistFolderPath: The folder path where the cue file is located.
+         */
         public static void DeleteCueFile(Cue cue, string playlistFolderPath)
         {
             var filePath = GetCueFilePath(cue, playlistFolderPath);
@@ -118,6 +159,12 @@ namespace Win_Labs
             }
         }
 
+        /* Function: IsValidJsonFileInPlaylist
+         * Description: Checks if there is a valid JSON file in the specified playlist folder path.
+         * Parameters:
+         *   - playlistFolderPath: The path to the playlist folder.
+         * Returns: True if a valid JSON file exists; otherwise, false.
+         */
         public static bool IsValidJsonFileInPlaylist(string playlistFolderPath)
         {
             if (string.IsNullOrEmpty(playlistFolderPath) || !Directory.Exists(playlistFolderPath))
@@ -140,9 +187,22 @@ namespace Win_Labs
             return false;
         }
 
+        /* Function: GetCueFilePath
+         * Description: Constructs the file path for a Cue object based on its cue number and the specified folder path.
+         * Parameters:
+         *   - cue: The Cue object.
+         *   - folderPath: The folder path where the cue file is located.
+         * Returns: The file path for the Cue object.
+         */
         private static string GetCueFilePath(Cue cue, string folderPath) =>
             Path.Combine(folderPath, $"cue_{cue.CueNumber}.json");
 
+        /* Function: DeserializeCue
+         * Description: Deserializes a Cue object from a JSON file. If the file is missing or invalid, a default Cue object is returned.
+         * Parameters:
+         *   - filePath: The path to the JSON file.
+         * Returns: A Cue object or a default Cue if deserialization fails.
+         */
         private static Cue DeserializeCue(string filePath)
         {
             try
@@ -162,7 +222,6 @@ namespace Win_Labs
                     {
                         return new Cue(); // Return a default Cue if the file is missing and the user chooses to create one
                     }
-
                 }
 
                 var json = File.ReadAllText(filePath);
@@ -173,7 +232,7 @@ namespace Win_Labs
                     Log.Warning($"Failed to deserialize cue: JSON resulted in a null object from {MaskFilePath(filePath)}");
                     return new Cue(); // Return a default Cue if deserialization failed
                 }
-                Log.Info("Sucessfully DeserialisedCue");
+                Log.Info("Successfully Deserialized Cue");
                 return cue;
             }
             catch (JsonException jsonEx)
@@ -193,7 +252,12 @@ namespace Win_Labs
             }
         }
 
-
+        /* Function: MaskFilePath
+         * Description: Masks a file path to limit its length for logging purposes.
+         * Parameters:
+         *   - filePath: The file path to mask.
+         * Returns: A masked version of the file path.
+         */
         private static string MaskFilePath(string filePath)
         {
             const int maxLength = 30;

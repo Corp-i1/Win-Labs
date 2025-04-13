@@ -17,11 +17,22 @@ namespace Win_Labs
         private string playlistFolderPathTemp;
         private Window _startupWindow;
 
+        /* Constructor: PlaylistManager
+         * Description: Initializes a new instance of the PlaylistManager class and sets the startup window.
+         * Parameters:
+         *   - startupWindow: The startup window to associate with the PlaylistManager.
+         */
         public PlaylistManager(Window startupWindow)
         {
             _startupWindow = startupWindow;
             Log.Info($"PlaylistManager initialized with window: {_startupWindow.GetType().Name}");
         }
+
+        /* Function: OpenMainWindow
+         * Description: Opens the MainWindow with the specified playlist folder path and closes the startup window.
+         * Parameters:
+         *   - playlistFolderPath: The path to the playlist folder to open.
+         */
         private void OpenMainWindow(string playlistFolderPath)
         {
             var mainWindow = new MainWindow(playlistFolderPath);
@@ -36,6 +47,9 @@ namespace Win_Labs
             _startupWindow.Close();
         }
 
+        /* Function: CreateNewPlaylist
+         * Description: Creates a new playlist by selecting a folder, closing the current MainWindow, and opening a new MainWindow.
+         */
         public void CreateNewPlaylist()
         {
             string playlistFolderPath = OpenFolderDialog("Select a folder to create a playlist in.");
@@ -69,13 +83,14 @@ namespace Win_Labs
                 }
             }
         }
-
+         /* Function: OpenExistingPlaylist
+         * Description: Opens an existing playlist by selecting a folder and validating the presence of cue files.
+         */
         public void OpenExistingPlaylist()
         {
             string playlistFolderPath = OpenFolderDialog("Select a playlist folder.");
             Log.Info($"Opening existing playlist folder: {playlistFolderPath}");
 
-            // Add protection for cancelation of window
             try
             {
                 if (!Directory.EnumerateFiles(playlistFolderPath, "cue_*.json").Any())
@@ -90,7 +105,6 @@ namespace Win_Labs
                 Log.Error("No folder selected.");
                 return;
             }
-
 
             try
             {
@@ -120,6 +134,9 @@ namespace Win_Labs
             }
         }
 
+        /* Function: ImportPlaylist
+         * Description: Imports a playlist from a ZIP file to a selected directory, purging existing cue files if necessary.
+         */
         public void ImportPlaylist()
         {
             var openFileDialog = new System.Windows.Forms.OpenFileDialog
@@ -146,6 +163,9 @@ namespace Win_Labs
             }
         }
 
+        /* Function: TryImportPlaylist
+         * Description: Attempts to import a playlist from a ZIP file to the specified directory and opens the MainWindow.
+         */
         private void TryImportPlaylist()
         {
             try
@@ -190,6 +210,9 @@ namespace Win_Labs
             }
         }
 
+        /* Function: PurgeExistingCueFiles
+         * Description: Deletes existing cue files in the destination folder if the user confirms the action.
+         */
         private void PurgeExistingCueFiles()
         {
             try
@@ -229,7 +252,12 @@ namespace Win_Labs
             }
         }
 
-
+        /* Function: OpenFolderDialog
+         * Description: Opens a folder browser dialog for the user to select a directory.
+         * Parameters:
+         *   - description: The description to display in the folder browser dialog.
+         * Returns: The selected folder path, or an empty string if no folder is selected.
+         */
         private string OpenFolderDialog(string description)
         {
             var folderDialog = new FolderBrowserDialog
@@ -240,6 +268,11 @@ namespace Win_Labs
             return folderDialog.ShowDialog() == DialogResult.OK ? folderDialog.SelectedPath : string.Empty;
         }
 
+        /* Function: ExportPlaylist
+         * Description: Exports the current playlist to a ZIP file in a user-selected destination folder.
+         * Parameters:
+         *   - _playlistFolderPath: The path to the playlist folder to export.
+         */
         public void ExportPlaylist(string _playlistFolderPath)
         {
             Log.Info("Export menu item clicked.");
@@ -277,7 +310,7 @@ namespace Win_Labs
             }
             else
             {
-                Log.Warning("!!! No MainWindow instance found. !!! \n \n Please create a bug report and upload you log file to github. \n \n !!! No MainWindow instance found. !!! ");
+                Log.Warning("!!! No MainWindow instance found. !!! \n \n Please create a bug report and upload your log file to GitHub. \n \n !!! No MainWindow instance found. !!! ");
             }
         }
     }
