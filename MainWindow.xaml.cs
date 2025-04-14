@@ -221,10 +221,13 @@ namespace Win_Labs
          *   - sender: The source of the event.
          *   - e: The event data.
          */
-        private void KeyDownManager(object sender, KeyEventArgs e)
+        private void KeyPressManager(object sender, KeyEventArgs e)
         {
             if (CueListView.Items.Count == 0)
                 return;
+
+            // Ensure the SelectedIndex is updated correctly  
+            CueListView.UpdateLayout(); // Force the UI to refresh  
 
             int selectedIndex = CueListView.SelectedIndex;
 
