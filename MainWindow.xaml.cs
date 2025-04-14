@@ -24,7 +24,7 @@ using System.Windows.Input;
 using Win_Labs.ZIPManagement;
 using Win_Labs.Settings.PlaylistSettings;
 using System.Windows.Threading;
-
+using System.Windows.Media;
 
 namespace Win_Labs
 {
@@ -39,6 +39,11 @@ namespace Win_Labs
         public event RoutedEventHandler GotFocus;
         private InspectorWindow _inspectorWindow;
 
+        /* Constructor: MainWindow
+         * Description: Initializes the MainWindow, sets up the playlist manager, loads cues, and initializes UI components.
+         * Parameters:
+         *   - playlistFolderPath: The path to the playlist folder.
+         */
         public MainWindow(string playlistFolderPath)
         {
             PlaylistManager.playlistFolderPath = playlistFolderPath;
@@ -57,28 +62,33 @@ namespace Win_Labs
             // Set the master volume slider value
             MasterVolumeSliderValue = _playlistFileManager.Data.MasterVolume;
             InitializeResizeEvents();
-            // InitializeResizeTimer();
             Log.Info("Application started.");
         }
 
-
-
+        /* Function: Initialize
+         * Description: Initializes the application by binding cues, setting up handlers, and refreshing the cue list.
+         */
         private void Initialize()
         {
-
             Log.Info("Initializing application...");
             BindCue(_currentCue);
             SetupCueChangeHandler();
             InitializeCueData();
             _activeWaveOuts = new List<WaveOutEvent>();
+            TriggerSort();
             RefreshCueList();
+
         }
+
+        /* Function: InitializeCueData
+         * Description: Loads cues from the playlist folder or creates a default cue if none exist.
+         */
         private void InitializeCueData()
         {
             try
             {
                 _playlistFolderPath = import.destinationPath;
-                if(_playlistFolderPath == null)
+                if (_playlistFolderPath == null)
                 {
                     _playlistFolderPath = PlaylistManager.playlistFolderPath;
                     if (!Directory.EnumerateFiles(_playlistFolderPath, "cue_*.json").Any())
@@ -89,7 +99,7 @@ namespace Win_Labs
                         Log.Info("Default cue created successfully.");
                     }
                 }
-                else 
+                else
                 {
                     if (!Directory.EnumerateFiles(_playlistFolderPath, "cue_*.json").Any())
                     {
@@ -105,12 +115,11 @@ namespace Win_Labs
             {
                 Log.Exception(ex);
             }
-            finally
-            {
-                RefreshCueList();
-            }
         }
 
+        /* Function: LoadCues
+         * Description: Loads cues from the playlist folder into the ObservableCollection.
+         */
         private void LoadCues()
         {
             Cue.IsInitializing = true;
@@ -121,15 +130,23 @@ namespace Win_Labs
                 Log.Info($"Loaded cue: {cue.CueNumber}");
                 _cues.Add(cue);
             }
-            RefreshCueList();
             Cue.IsInitializing = false;
         }
 
+        /* Function: SetupCueChangeHandler
+         * Description: Sets up a handler to respond to property changes in the current cue.
+         */
         private void SetupCueChangeHandler()
         {
             _currentCue.PropertyChanged += OnCurrentCuePropertyChanged;
         }
 
+        /* Function: Duration_GotFocus
+         * Description: Handles the GotFocus event for the Duration field of a cue.
+         * Parameters:
+         *   - sender: The source of the event.
+         *   - e: The event data.
+         */
         internal void Duration_GotFocus(object sender, RoutedEventArgs e)
         {
             if (sender is TextBox textBox && textBox.DataContext is Cue cue)
@@ -137,6 +154,13 @@ namespace Win_Labs
                 cue.Duration_GotFocus();
             }
         }
+
+        /* Function: Duration_LostFocus
+         * Description: Handles the LostFocus event for the Duration field of a cue.
+         * Parameters:
+         *   - sender: The source of the event.
+         *   - e: The event data.
+         */
         internal void Duration_LostFocus(object sender, RoutedEventArgs e)
         {
             if (sender is TextBox textBox && textBox.DataContext is Cue cue)
@@ -144,6 +168,13 @@ namespace Win_Labs
                 cue.Duration_LostFocus();
             }
         }
+
+        /* Function: OnCurrentCuePropertyChanged
+         * Description: Handles property changes in the current cue and refreshes the cue list.
+         * Parameters:
+         *   - sender: The source of the event.
+         *   - e: The event data.
+         */
         private void OnCurrentCuePropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             if (e.PropertyName == nameof(Cue.CueNumber))
@@ -153,12 +184,23 @@ namespace Win_Labs
             RefreshCueList();
         }
 
+        /* Function: SaveCueData
+         * Description: Saves the data of the specified cue to a file.
+         * Parameters:
+         *   - cue: The cue to save.
+         */
         private void SaveCueData(Cue cue)
         {
             CueManager.SaveCueToFile(cue, _playlistFolderPath);
             RefreshCueList();
         }
 
+        /* Function: CueListView_SelectionChanged
+         * Description: Handles the selection change event for the cue list view.
+         * Parameters:
+         *   - sender: The source of the event.
+         *   - e: The event data.
+         */
         private void CueListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (CueListView.SelectedItem is Cue selectedCue)
@@ -173,10 +215,19 @@ namespace Win_Labs
             RefreshCueList();
         }
 
-        private void KeyDownManager(object sender, KeyEventArgs e)
+        /* Function: KeyDownManager
+         * Description: Handles key press events for navigating and managing cues.
+         * Parameters:
+         *   - sender: The source of the event.
+         *   - e: The event data.
+         */
+        private void KeyPressManager(object sender, KeyEventArgs e)
         {
             if (CueListView.Items.Count == 0)
                 return;
+
+            // Ensure the SelectedIndex is updated correctly  
+            CueListView.UpdateLayout(); // Force the UI to refresh  
 
             int selectedIndex = CueListView.SelectedIndex;
 
@@ -200,12 +251,15 @@ namespace Win_Labs
                     CleanupAudio();
                     break;
                 case Key.Space:
-
                     break;
             }
         }
 
-
+        /* Function: BindCue
+         * Description: Binds the specified cue to the DataContext and updates the InspectorWindow if open.
+         * Parameters:
+         *   - cue: The cue to bind.
+         */
         private void BindCue(Cue cue)
         {
             DataContext = cue;
@@ -217,6 +271,10 @@ namespace Win_Labs
                 _inspectorWindow.DataContext = cue;
             }
         }
+
+        /* Property: MainInspectorVisibility
+         * Description: Gets or sets the visibility of the main inspector.
+         */
         private Visibility _mainInspectorVisibility = Visibility.Visible;
         public Visibility MainInspectorVisibility
         {
@@ -231,13 +289,24 @@ namespace Win_Labs
             }
         }
 
+        /* Event: PropertyChanged
+         * Description: Occurs when a property value changes.
+         */
         public event PropertyChangedEventHandler PropertyChanged;
 
+        /* Function: OnPropertyChanged
+         * Description: Notifies listeners that a property value has changed.
+         * Parameters:
+         *   - propertyName: The name of the property that changed.
+         */
         private void OnPropertyChanged(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
+        /* Function: ShowMainInspector
+         * Description: Shows the main inspector and updates the cue list view height.
+         */
         private void ShowMainInspector()
         {
             Log.Info("Showing main inspector.");
@@ -245,6 +314,9 @@ namespace Win_Labs
             UpdateCueListViewHeight(); // Update the size of the cue listView
         }
 
+        /* Function: HideMainInspector
+         * Description: Hides the main inspector and updates the cue list view height.
+         */
         private void HideMainInspector()
         {
             Log.Info("Hiding main inspector.");
@@ -252,6 +324,12 @@ namespace Win_Labs
             UpdateCueListViewHeight(); // Update the size of the cue listView
         }
 
+        /* Function: Pop_Out_Inspector_Click
+         * Description: Handles the click event for the "Pop Out Inspector" button. Opens the InspectorWindow or focuses it if already open.
+         * Parameters:
+         *   - sender: The source of the event.
+         *   - e: The event data.
+         */
         private void Pop_Out_Inspector_Click(object sender, RoutedEventArgs e)
         {
             if (_inspectorWindow == null)
@@ -274,6 +352,13 @@ namespace Win_Labs
                 _inspectorWindow.Focus();
             }
         }
+
+        /* Function: CreateNewCue_Click
+         * Description: Handles the click event for the "Create New Cue" button. Creates a new cue and adds it to the ObservableCollection.
+         * Parameters:
+         *   - sender: The source of the event.
+         *   - e: The event data.
+         */
         private void CreateNewCue_Click(object sender, RoutedEventArgs e)
         {
             // Calculate the next cue number based on the current count of cues
@@ -293,9 +378,13 @@ namespace Win_Labs
 
             // Log the creation
             Log.Info($"Created a new cue: {newCue.CueNumber}");
+            TriggerSort();
             RefreshCueList();
         }
 
+        /* Function: RefreshCueList
+         * Description: Refreshes the cue list view to reflect any changes.
+         */
         public void RefreshCueList()
         {
             var selectedCue = CueListView.SelectedItem;
@@ -303,6 +392,12 @@ namespace Win_Labs
             CueListView.SelectedItem = selectedCue;
         }
 
+        /* Function: DeleteSelectedCue_Click
+         * Description: Handles the click event for the "Delete Selected Cue" button. Deletes the selected cue from the collection and file system.
+         * Parameters:
+         *   - sender: The source of the event.
+         *   - e: The event data.
+         */
         private void DeleteSelectedCue_Click(object sender, RoutedEventArgs e)
         {
             if (CueListView.SelectedItem is Cue selectedCue)
@@ -317,6 +412,12 @@ namespace Win_Labs
             }
         }
 
+        /* Function: SaveAllCues_Click
+         * Description: Handles the click event for the "Save All Cues" button. Saves all cues in the collection to the file system.
+         * Parameters:
+         *   - sender: The source of the event.
+         *   - e: The event data.
+         */
         private void SaveAllCues_Click(object sender, RoutedEventArgs e)
         {
             foreach (var cue in _cues)
@@ -325,6 +426,12 @@ namespace Win_Labs
             }
         }
 
+        /* Function: RefreshButton_Click
+         * Description: Handles the click event for the "Refresh" button. Reloads cues and refreshes the cue list view.
+         * Parameters:
+         *   - sender: The source of the event.
+         *   - e: The event data.
+         */
         private void RefreshButton_Click(object sender, RoutedEventArgs e)
         {
             Log.Info("Refreshing playlist...");
@@ -332,6 +439,10 @@ namespace Win_Labs
             RefreshCueList();
         }
 
+        /* Function: EditModeCheck
+         * Description: Checks if the application is in edit mode.
+         * Returns: True if in edit mode; otherwise, false.
+         */
         internal static bool EditMode = true;
         internal static bool EditModeCheck()
         {
@@ -341,15 +452,21 @@ namespace Win_Labs
             }
             return false;
         }
+
+        /* Function: EditModeToggle_Click
+         * Description: Handles the click event for the "Edit Mode Toggle" button. Toggles between edit mode and show mode.
+         * Parameters:
+         *   - sender: The source of the event.
+         *   - e: The event data.
+         */
         private void EditModeToggle_Click(object sender, RoutedEventArgs e)
         {
-            // Toggle edit mode
             if (!EditModeToggle.IsChecked == true)
             {
                 EditModeToggle.Content = "Show Mode";
                 EditMode = false;
                 Log.Info("Switched to Show Mode");
-                Log.Info("!Some Error and Warning message box will be skiped!");
+                Log.Info("!Some Error and Warning message boxes will be skipped!");
             }
             else
             {
@@ -360,6 +477,12 @@ namespace Win_Labs
             RefreshCueList();
         }
 
+        /* Function: SelectTargetFile_Click
+         * Description: Handles the click event for the "Select Target File" button. Opens a file dialog to select a target file for the selected cue.
+         * Parameters:
+         *   - sender: The source of the event.
+         *   - e: The event data.
+         */
         internal void SelectTargetFile_Click(object sender, RoutedEventArgs e)
         {
             Log.Info("Selecting target file...");
@@ -372,12 +495,13 @@ namespace Win_Labs
             {
                 if (CueListView.SelectedItem is Cue selectedCue)
                 {
-                    string fileNameWoutextention = Path.GetFileNameWithoutExtension(openFileDialog.FileName);
+                    string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(openFileDialog.FileName);
                     selectedCue.TargetFile = openFileDialog.FileName;
-                    selectedCue.FileName = fileNameWoutextention;
+                    selectedCue.FileName = fileNameWithoutExtension;
                     DataContext = selectedCue;
                     CueManager.SaveCueToFile(selectedCue, _playlistFolderPath);
                     Log.Info($"'{openFileDialog.FileName}' added to {CueListView.SelectedItem}");
+                    TriggerSort();
                 }
                 else
                 {
@@ -386,15 +510,30 @@ namespace Win_Labs
             }
         }
 
+        /* Function: ClearTargetFile_Click
+         * Description: Handles the click event for the "Clear Target File" button. Clears the target file for the selected cue.
+         * Parameters:
+         *   - sender: The source of the event.
+         *   - e: The event data.
+         */
         internal void ClearTargetFile_Click(object sender, RoutedEventArgs e)
         {
             if (CueListView.SelectedItem is Cue selectedCue)
             {
                 selectedCue.TargetFile = string.Empty; // Set to an empty string instead of null
+                TriggerSort();
             }
         }
+
+        /* Function: DeleteCue_Click
+         * Description: Handles the click event for the "Delete Cue" button. Deletes the selected cue after user confirmation.
+         * Parameters:
+         *   - sender: The source of the event.
+         *   - e: The event data.
+         */
         private void DeleteCue_Click(object sender, RoutedEventArgs e)
         {
+
             if (CueListView.SelectedItem is Cue selectedCue)
             {
                 Log.Info($"Delete Cue button clicked. Deleting Cue: {selectedCue.CueNumber} - {selectedCue.CueName}");
@@ -411,6 +550,7 @@ namespace Win_Labs
                     // Delete the file
                     CueManager.DeleteCueFile(selectedCue, _playlistFolderPath);
                     Log.Info($"Cue {selectedCue.CueNumber} deleted successfully.");
+                    TriggerSort();
                     RefreshCueList();
                 }
             }
@@ -419,12 +559,16 @@ namespace Win_Labs
                 MessageBox.Show("No cue selected to delete.", "Delete Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 Log.Warning("Delete Cue button clicked with no selection.");
             }
-
         }
         private WaveOutEvent? waveOut; // For audio playback
         private AudioFileReader? audioFileReader; // For reading audio files
 
-
+        /* Function: StopButton_Click
+         * Description: Handles the click event for the "Stop" button. Stops audio playback and cleans up audio resources.
+         * Parameters:
+         *   - sender: The source of the event.
+         *   - e: The event data.
+         */
         private void StopButton_Click(object sender, RoutedEventArgs e)
         {
             Log.Info("Stop button clicked.");
@@ -439,8 +583,13 @@ namespace Win_Labs
                 MessageBox.Show($"Failed to stop playback: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+        /* Function: PauseButton_Click
+         * Description: Handles the click event for the "Pause" button. Toggles between pausing and resuming audio playback.
+         * Parameters:
+         *   - sender: The source of the event.
+         *   - e: The event data.
+         */
         bool Paused = false;
-
         private void PauseButton_Click(object sender, RoutedEventArgs e)
         {
             Log.Info("Pause button clicked.");
@@ -496,10 +645,18 @@ namespace Win_Labs
             }
         }
 
+
+
         private List<WaveOutEvent> _activeWaveOuts = new List<WaveOutEvent>();
         private Dictionary<WaveOutEvent, System.Timers.Timer> _playbackTimers = new();
         private Dictionary<WaveOutEvent, AudioFileReader> _audioFileReaders = new();
 
+        /* Function: GoButton_Click
+         * Description: Handles the click event for the "Go" button. Starts playback of the selected cue.
+         * Parameters:
+         *   - sender: The source of the event.
+         *   - e: The event data.
+         */
         private void GoButton_Click(object sender, RoutedEventArgs e)
         {
             if (Paused)
@@ -524,6 +681,11 @@ namespace Win_Labs
             PlayCue(selectedCue);
         }
 
+        /* Function: PlayCue
+         * Description: Plays the specified cue. Handles audio playback initialization, duration validation, and auto-follow logic.
+         * Parameters:
+         *   - cue: The cue to play.
+         */
         private void PlayCue(Cue cue)
         {
             try
@@ -645,6 +807,11 @@ namespace Win_Labs
                 MessageBox.Show($"Failed to play the cue: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+        /* Function: PlayNextCueIfAutoFollow
+         * Description: Automatically plays the next cue if the current cue has the AutoFollow property set to true.
+         * Parameters:
+         *   - currentCue: The currently playing cue.
+         */
         private void PlayNextCueIfAutoFollow(Cue currentCue)
         {
             int currentIndex = _cues.IndexOf(currentCue);
@@ -657,6 +824,11 @@ namespace Win_Labs
                 }
             }
         }
+        /* Function: StopPlayback
+         * Description: Stops playback for the specified WaveOutEvent and cleans up associated resources.
+         * Parameters:
+         *   - waveOut: The WaveOutEvent instance to stop playback for.
+         */
         private void StopPlayback(WaveOutEvent waveOut)
         {
             try
@@ -676,7 +848,7 @@ namespace Win_Labs
 
                 CleanupAudio();
 
-                Log.Info($"Playback stopped for {_currentCue.TargetFile}."); //not working TODO
+                Log.Info($"Playback stopped for {_currentCue.TargetFile}.");
             }
             catch (Exception ex)
             {
@@ -685,7 +857,9 @@ namespace Win_Labs
             }
         }
 
-
+        /* Function: CleanupAudio
+         * Description: Cleans up all active audio playback resources.
+         */
         private void CleanupAudio()
         {
             if (_activeWaveOuts != null)
@@ -712,7 +886,12 @@ namespace Win_Labs
             CurrentTrack.Text = "No Track Playing";
             Log.Info("Audio resources cleaned up.");
         }
-
+        /* Function: SettingsMenuItem_Click
+        * Description: Handles the click event for the "Settings" menu item. Opens the SettingsWindow as a modal dialog.
+        * Parameters:
+        *   - sender: The source of the event.
+        *   - e: The event data.
+        */
         private void SettingsMenuItem_Click(object sender, RoutedEventArgs e)
         {
             Log.Info("Settings menu item clicked");
@@ -721,19 +900,35 @@ namespace Win_Labs
             settingsWindow.ShowDialog();
         }
 
+        /* Function: ImportMenuItem_Click
+         * Description: Handles the click event for the "Import Playlist" menu item. Initiates the playlist import process.
+         * Parameters:
+         *   - sender: The source of the event.
+         *   - e: The event data.
+         */
         private void ImportMenuItem_Click(object sender, RoutedEventArgs e)
         {
             Log.Info("Import menu item clicked.");
             playlistManager.ImportPlaylist();
         }
-
-
+        /* Function: ExportMenuItem_Click
+ * Description: Handles the click event for the "Export Playlist" menu item. Exports the current playlist to the specified folder path.
+ * Parameters:
+ *   - sender: The source of the event.
+ *   - e: The event data.
+ */
         private void ExportMenuItem_Click(object sender, RoutedEventArgs e)
         {
+            TriggerSort();
             playlistManager.ExportPlaylist(_playlistFolderPath);
         }
 
-
+        /* Function: SaveMenuItem_Click
+         * Description: Handles the click event for the "Save" menu item. Saves all cues and playlist data to the file system.
+         * Parameters:
+         *   - sender: The source of the event.
+         *   - e: The event data.
+         */
         private void SaveMenuItem_Click(object sender, RoutedEventArgs e)
         {
             Log.Info("Save menu item clicked.");
@@ -748,44 +943,66 @@ namespace Win_Labs
                 Log.Error($"Error saving cues: {ex.Message}");
                 MessageBox.Show($"Failed to save changes: {ex.Message}", "Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+            TriggerSort();
             RefreshCueList();
         }
 
+        /* Function: OpenMenuItem_Click
+         * Description: Handles the click event for the "Open Playlist" menu item. Opens an existing playlist using the PlaylistManager.
+         * Parameters:
+         *   - sender: The source of the event.
+         *   - e: The event data.
+         */
         private void OpenMenuItem_Click(object sender, RoutedEventArgs e)
         {
             Log.Info("Open menu item clicked.");
             playlistManager.OpenExistingPlaylist();
         }
 
+        /* Function: CloseMenuItem_Click
+         * Description: Handles the click event for the "Close" menu item. Prompts the user for confirmation and closes the application if confirmed.
+         * Parameters:
+         *   - sender: The source of the event.
+         *   - e: The event data.
+         */
         private void CloseMenuItem_Click(object sender, RoutedEventArgs e)
         {
             Log.Info("Closing application via menu.");
-            // Confirm with the user
             var result = MessageBox.Show("Are you sure you want to close the application?", "Confirm Close", MessageBoxButton.YesNo, MessageBoxImage.Question);
 
             if (result == MessageBoxResult.Yes)
             {
-                // Close the application
                 Application.Current.Shutdown();
             }
         }
 
+        /* Function: CloseMainWindow
+         * Description: Closes the main window of the application. Invokes the shutdown process on the application's dispatcher.
+         */
         internal static void CloseMainWindow()
         {
             Log.Info("Closing Main Window.");
             Application.Current.Dispatcher.Invoke(() => Application.Current.MainWindow.Close());
         }
 
+        /* Function: OnClosing
+         * Description: Overrides the OnClosing method to save all cues and playlist data before the application closes.
+         * Parameters:
+         *   - e: Provides data for the Closing event.
+         */
         protected override void OnClosing(CancelEventArgs e)
         {
             base.OnClosing(e);
             SaveAllCues_Click(this, new RoutedEventArgs());
-
-            // Save playlist data
             _playlistFileManager.Save();
         }
 
-
+        /* Function: Settings_Click
+         * Description: Handles the click event for the "Settings" button. Opens the SettingsWindow as a modal dialog.
+         * Parameters:
+         *   - sender: The source of the event.
+         *   - e: The event data.
+         */
         private void Settings_Click(object sender, RoutedEventArgs e)
         {
             Log.Info("Settings button clicked");
@@ -814,10 +1031,16 @@ namespace Win_Labs
                 }
             }
         }
+
+        /* Function: MasterSlider_ValueChanged
+         * Description: Handles the value change event for the master volume slider. Updates the master volume value in the PlaylistFileManager.
+         * Parameters:
+         *   - sender: The source of the event.
+         *   - e: The event data.
+         */
         private void MasterSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             MasterVolumeSliderValue = MasterVolumeSlider.Value;
-
         }
         private double _cueListViewHeight;
         public double CueListViewHeight
@@ -852,6 +1075,7 @@ namespace Win_Labs
             MainWindowMainGridRow4 = GetMainWindowMainGridRow(4);
             Log.Info($"Row heights updated: \n Row 0: {MainWindowMainGridRow0}, \n Row 1: {MainWindowMainGridRow1}, \n Row 2: {MainWindowMainGridRow2}, \n Row 3: {MainWindowMainGridRow3}, \n Row 4: {MainWindowMainGridRow4}");
             Log.Info("Updated Inpector total row height");
+            Log.Info($"Inspector row height: {GetMainWindowInspectorGridTotal()}");
 
         }
         /* Function: InitializeResizeEvents
@@ -907,6 +1131,102 @@ namespace Win_Labs
             else //true when there is no popout inspector
             {
                 CueListViewHeight = MainWindowMainGridRow3 - TotalInspectorHeight;
+            }
+        }
+
+        private bool IsSortEnabled = false;
+        private bool SortAssending = true;
+        private void AscendingCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            SortAssending = true;
+            TriggerSort();
+        }
+
+        private void AscendingCheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            SortAssending = false;
+            TriggerSort();
+        }
+
+        private void SortEnabledCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            IsSortEnabled = true;
+            TriggerSort();
+        }
+
+        private void SortEnabledCheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            IsSortEnabled = false;
+            TriggerSort();
+        }
+
+        private void TriggerSort()
+        {
+            if (IsSortEnabled)
+            {
+                Log.Info("Sorting Cue ListView.");
+                string? sortBy = (SortComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString();
+                if (!string.IsNullOrEmpty(sortBy))
+                {
+                    SortListView(sortBy, SortAssending);
+                }
+                else
+                {
+                    Log.Warning("SortBy value is null or empty.");
+                }
+            }
+            else
+            {
+                Log.Info("Sort is not enabled.");
+            }
+        }
+
+        private void SortListViewComboBoxUpdate(object sender, SelectionChangedEventArgs e)
+        {
+            TriggerSort();
+        }
+        /*Funtion: SortListView
+         * Description: Sorts the list view as specified by the users.
+         * Parameters:
+         */
+        internal void SortListView(string sortBy, bool ascending = true)
+        {
+            try
+            {
+                var sortingHelper = new SortingHelper();
+
+                // Determine the property to sort by
+                Func<Cue, object> keySelector = sortBy switch
+                {
+                    "Cue_Number" => cue => cue.CueNumber,
+                    "Cue_Name" => cue => cue.CueName,
+                    "Duration" => cue => cue.Duration,
+                    _ => throw new ArgumentException($"Invalid sortBy value: {sortBy}")
+                };
+
+                // Sort the cues
+                var sortedCues = sortingHelper.SortCues(_cues.ToList(), keySelector, ascending);
+
+                // Update the ObservableCollection
+                _cues.Clear();
+                foreach (var cue in sortedCues)
+                {
+                    _cues.Add(cue);
+                }
+                RefreshCueList();
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"Error sorting list view: {ex.Message}");
+
+                if (EditMode)
+                {
+                    MessageBox.Show($"Failed to sort the list view: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+                else
+                {
+                    Log.Warning("Message box skipped as in show mode.");
+                }
             }
         }
 

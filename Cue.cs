@@ -5,8 +5,8 @@ using System;
 using System.ComponentModel;
 using System.IO;
 using System.Windows;
-
 using System.Windows.Forms;
+using System.Windows.Media;
 
 namespace Win_Labs
 {
@@ -30,13 +30,24 @@ namespace Win_Labs
         public event PropertyChangedEventHandler PropertyChanged;
         private static readonly object _lock = new object();
 
+        /* Function: Cue (Constructor)
+         * Description: Initializes a new instance of the Cue class with a specified playlist folder path.
+         * Parameters:
+         *   - playlistFolderPath: The path to the playlist folder.
+         */
         public Cue(string playlistFolderPath)
         {
             PlaylistFolderPath = PlaylistManager.playlistFolderPath;
         }
 
+        /* Function: Cue (Default Constructor)
+         * Description: Initializes a new instance of the Cue class with default values.
+         */
         public Cue() : this(string.Empty) { }
 
+        /* Property: CueNumber
+         * Description: Gets or sets the cue number. Handles renaming of cue files and checks for duplicates.
+         */
         public int CueNumber
         {
             get => _cueNumber;
@@ -56,7 +67,6 @@ namespace Win_Labs
                             _cueNumber = value;
                             OnPropertyChanged(nameof(CueNumber));
                             Log.Info($"CueNumber set to {value}");
-
                         }
                         else
                         {
@@ -73,7 +83,9 @@ namespace Win_Labs
             }
         }
 
-
+        /* Property: CueName
+         * Description: Gets or sets the name of the cue. Updates the flag indicating if the name was set by the user.
+         */
         public string CueName
         {
             get => _cueName;
@@ -92,6 +104,10 @@ namespace Win_Labs
         private string _displayedDuration;
         private bool _isEditingDuration = false;
         private string _lastValidDuration;
+
+        /* Property: Duration
+         * Description: Gets or sets the duration of the cue. Handles validation and formatting of the duration value.
+         */
         public string Duration
         {
             get => _displayedDuration ?? $"{_totalDuration:mm\\:ss\\.ff}";
@@ -119,11 +135,21 @@ namespace Win_Labs
             }
         }
 
+        /* Function: TryParseDuration
+         * Description: Attempts to parse a duration string into a TimeSpan object.
+         * Parameters:
+         *   - value: The duration string to parse.
+         *   - parsedDuration: The resulting TimeSpan object if parsing is successful.
+         * Returns: True if parsing is successful; otherwise, false.
+         */
         private bool TryParseDuration(string value, out TimeSpan parsedDuration)
         {
             return TimeSpan.TryParseExact(value, @"mm\:ss\.ff", null, out parsedDuration);
         }
 
+        /* Function: Duration_GotFocus
+         * Description: Marks the duration field as being edited and logs the action.
+         */
         internal void Duration_GotFocus()
         {
             _isEditingDuration = true; // Mark as editing
@@ -131,6 +157,9 @@ namespace Win_Labs
             OnPropertyChanged(nameof(Duration)); // Update the binding
         }
 
+        /* Function: Duration_LostFocus
+         * Description: Validates the duration field when editing is finished and logs the action.
+         */
         internal void Duration_LostFocus()
         {
             _isEditingDuration = false; // Mark as no longer editing
@@ -141,6 +170,10 @@ namespace Win_Labs
             Duration = tempDuration;
             OnPropertyChanged(nameof(Duration)); // Update the binding
         }
+
+        /* Property: PreWait
+         * Description: Gets or sets the pre-wait time for the cue.
+         */
         public string PreWait
         {
             get => _preWait;
@@ -151,12 +184,13 @@ namespace Win_Labs
                     Log.Info("PropertyChange.PreWait");
                     _preWait = value;
                     OnPropertyChanged(nameof(PreWait));
-
-
                 }
             }
         }
 
+        /* Property: AutoFollow
+         * Description: Gets or sets whether the cue automatically follows the previous one.
+         */
         public bool AutoFollow
         {
             get => _autoFollow;
@@ -171,6 +205,9 @@ namespace Win_Labs
             }
         }
 
+        /* Property: FileName
+         * Description: Gets or sets the file name associated with the cue.
+         */
         public string FileName
         {
             get => _fileName;
@@ -184,6 +221,10 @@ namespace Win_Labs
                 }
             }
         }
+
+        /* Property: TargetFile
+         * Description: Gets or sets the target file for the cue. Updates the duration and cue name based on the file.
+         */
         public string TargetFile
         {
             get => _targetFile;
@@ -212,9 +253,16 @@ namespace Win_Labs
             }
         }
 
+        /* Function: GetRelativePath
+         * Description: Converts an absolute file path to a relative path based on the playlist folder path.
+         * Parameters:
+         *   - filePath: The absolute file path to convert.
+         * Returns: The relative file path.
+         */
         internal string GetRelativePath(string filePath)
         {
-            try {
+            try
+            {
                 if (string.IsNullOrEmpty(filePath) || string.IsNullOrEmpty(PlaylistFolderPath))
                 {
                     return filePath;
@@ -243,6 +291,12 @@ namespace Win_Labs
             }
         }
 
+        /* Function: GetAbsolutePath
+         * Description: Converts a relative file path to an absolute path based on the playlist folder path.
+         * Parameters:
+         *   - relativePath: The relative file path to convert.
+         * Returns: The absolute file path.
+         */
         bool EditMode = MainWindow.EditMode;
         internal string GetAbsolutePath(string relativePath)
         {
@@ -262,7 +316,7 @@ namespace Win_Labs
             catch (Exception ex)
             {
                 Log.Exception(ex);
-                if(EditMode == true)
+                if (EditMode == true)
                 {
                     System.Windows.MessageBox.Show("Error: " + ex.Message);
                 }
@@ -270,8 +324,9 @@ namespace Win_Labs
             }
         }
 
-
-
+        /* Property: Notes
+         * Description: Gets or sets the notes associated with the cue.
+         */
         public string Notes
         {
             get => _notes;
@@ -286,6 +341,10 @@ namespace Win_Labs
             }
         }
 
+        /* Function: GetCurrentPlaylistPath
+         * Description: Retrieves the current playlist path from the playlist manager.
+         * Returns: The current playlist path.
+         */
         public static string GetCurrentPlaylistPath()
         {
             try
@@ -316,6 +375,11 @@ namespace Win_Labs
             }
         }
 
+        /* Function: OnPropertyChanged
+         * Description: Notifies listeners of property changes and triggers saving of the cue.
+         * Parameters:
+         *   - propertyName: The name of the property that changed.
+         */
         private static bool isResolvingPath = false;
         protected void OnPropertyChanged(string propertyName)
         {
@@ -333,6 +397,10 @@ namespace Win_Labs
                 Save();
             }
         }
+
+        /* Function: UpdateDuration
+         * Description: Updates the duration of the cue based on the target file.
+         */
         private void UpdateDuration()
         {
             if (_isEditingDuration)
@@ -366,6 +434,11 @@ namespace Win_Labs
             }
         }
 
+        /* Function: SetDuration
+         * Description: Sets the duration of the cue and updates the displayed duration.
+         * Parameters:
+         *   - duration: The duration to set.
+         */
         private void SetDuration(TimeSpan duration)
         {
             _totalDuration = duration;
@@ -373,7 +446,9 @@ namespace Win_Labs
             OnPropertyChanged(nameof(Duration));
         }
 
-
+        /* Function: Save
+         * Description: Saves the cue to a file using the CueManager.
+         */
         public void Save()
         {
             if (_renaming || string.IsNullOrEmpty(PlaylistFolderPath))
@@ -384,16 +459,17 @@ namespace Win_Labs
             CueManager.SaveCueToFile(this, PlaylistFolderPath);
             Log.Info("Saved successfully.");
         }
-        bool PlaylistFolderPathNull = false;
+
+        /* Function: CheckForDuplicateCueFile
+         * Description: Checks if a cue file with the specified number already exists and handles user confirmation for replacement.
+         * Parameters:
+         *   - newCueNumber: The new cue number to check for duplicates.
+         * Returns: True if the file can be replaced; otherwise, false.
+         */
         private bool CheckForDuplicateCueFile(float newCueNumber)
         {
             if (Cue.IsInitializing == true) { return false; }
-
-            if (PlaylistFolderPath == null)
-            {
-                PlaylistFolderPathNull = true;
-            }
-            if (!Directory.Exists(PlaylistFolderPath) || PlaylistFolderPathNull)
+            if (!Directory.Exists(PlaylistFolderPath) || PlaylistFolderPath == null)
             {
                 Log.Warning($"Playlist folder does not exist: {PlaylistFolderPath}");
                 return false;
@@ -440,6 +516,12 @@ namespace Win_Labs
             return true;
         }
 
+        /* Function: RenameCueFile
+         * Description: Renames a cue file from the old cue number to the new cue number.
+         * Parameters:
+         *   - oldCueNumber: The old cue number.
+         *   - newCueNumber: The new cue number.
+         */
         private void RenameCueFile(float oldCueNumber, float newCueNumber)
         {
             string oldFilePath = Path.Combine(PlaylistFolderPath, $"cue_{oldCueNumber}.json");
@@ -447,7 +529,6 @@ namespace Win_Labs
 
             try
             {
-
                 if (File.Exists(oldFilePath))
                 {
                     File.Move(oldFilePath, newFilePath);
@@ -463,7 +544,6 @@ namespace Win_Labs
             {
                 Log.Exception(ex);
             }
-
         }
     }
 }

@@ -14,7 +14,7 @@
      BorderThickness="0"
      WindowStartupLocation="CenterScreen"
      Icon="{Binding IconIcoPath, RelativeSource={RelativeSource AncestorType={x:Type local:BaseWindow}}}"
-     KeyDown="KeyDownManager">
+     KeyDown="KeyPressManager">
     <local:BaseWindow.Resources>
         <localConverters:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
     </local:BaseWindow.Resources>
@@ -132,10 +132,19 @@
                 <ColumnDefinition Width="55"/>
                 <ColumnDefinition Width="55"/>
                 <ColumnDefinition Width="55"/>
+                <ColumnDefinition Width="100"/>
             </Grid.ColumnDefinitions>
-            <Button Name="RefreshButton" Width="50" Height="50" Content="Refresh" Click="RefreshButton_Click" Grid.Column="1" />
-            <Button Content="New Cue" Width="50" Height="50" Click="CreateNewCue_Click" Grid.Column="2"/>
-            <Button Content="Delete Cue" Width="50" Height="50" Click="DeleteCue_Click" Grid.Column="3"/>
+            <Button Name="RefreshButton" Width="50" Height="55" Content="Refresh" Click="RefreshButton_Click" Grid.Column="1" />
+            <Button Content="New Cue" Width="50" Height="55" Click="CreateNewCue_Click" Grid.Column="2"/>
+            <Button Content="Delete Cue" Width="50" Height="55" Click="DeleteCue_Click" Grid.Column="3"/>
+            <ComboBox x:Name="SortComboBox" Width="100" Height="55" Grid.Column="4" VerticalContentAlignment="Center" IsReadOnly="True" SelectedIndex="2" SelectionChanged="SortListViewComboBoxUpdate">
+                <CheckBox Content=" Ascending" x:Name="AscendingCheckBox" IsChecked="True" Checked="AscendingCheckBox_Checked" Unchecked="AscendingCheckBox_Unchecked"/>
+                <ComboBoxItem Content="Cue_Number" />
+                <ComboBoxItem Content="Cue_Name" />
+                <ComboBoxItem Content="Duration" />
+            </ComboBox>
+            <Label Content="Sort By:" Width="100" Height="50" Grid.Column="4" VerticalAlignment="Top" HorizontalAlignment="Left" IsHitTestVisible="False"/>
+            <CheckBox Margin="1,3" Content=" Sort Enabled" x:Name="SortEnabled" Width="100" Height="15" Grid.Column="4" VerticalContentAlignment="Bottom" VerticalAlignment="Bottom" HorizontalAlignment="Left" IsChecked="False" Checked="SortEnabledCheckBox_Checked" Unchecked="SortEnabledCheckBox_Unchecked"/>
         </Grid>
 
         <!-- Cue List -->
