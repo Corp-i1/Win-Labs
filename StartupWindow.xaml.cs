@@ -156,6 +156,5 @@ namespace Win_Labs
             settingsWindow.Owner = this;
             settingsWindow.ShowDialog();
         }
-
     }
 }
