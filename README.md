@@ -25,6 +25,7 @@ If you want to build the project yourself, you can do so by following these step
         - The executable will be named `Win-Labs.exe` Just double click it to run it.
 1. **Extras**
     - You can also run the project from a different location by copying the entire folder to a different location and running it from there.
+        - Keep in mind **if you place the program in a protected folder it may not function properly** (e.g. any appdata folder, root of your system, any system critical folder)
         - This is useful if you want to run the project from a USB drive or a different computer.
         - Just make sure to copy the entire folder and not just the executable as it may require other files in the folder to run properly.
     - You can move the entire folder to a different location and run it from there as well as rename the folder.
