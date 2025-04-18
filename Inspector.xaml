@@ -14,14 +14,24 @@
         <Grid ShowGridLines="False">
             <!-- Define rows for horizontal Layout -->
             <Grid.RowDefinitions>
+                <!-- Tabs: 0-->
                 <RowDefinition Height="25" />
+                <!-- Cue Name: 1-->
                 <RowDefinition Height="25" />
+                <!-- Cue Number: 2-->
                 <RowDefinition Height="25" />
+                <!-- Duration: 3-->
                 <RowDefinition Height="25" />
+                <!-- Pre Wait: 4-->
                 <RowDefinition Height="25" />
+                <!-- Auto Follow: 5-->
                 <RowDefinition Height="25" />
+                <!-- File Name: 6-->
                 <RowDefinition Height="25" />
-                <RowDefinition Height="*" MinHeight="25"/>
+                <!-- Target File: 7-->
+                <RowDefinition Height="25" />
+                <!-- Notes: 8-->
+                <RowDefinition Height="25" />
             </Grid.RowDefinitions>
 
             <!-- Define columns for vertical layout -->
@@ -30,6 +40,17 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
+            <!-- Tabs -->
+            <TextBlock Grid.Column="0" Grid.Row="0" VerticalAlignment="Center" Text="Tabs:" />
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="75" />
+                    <ColumnDefinition Width="75" />
+                </Grid.ColumnDefinitions>
+
+                <Button Grid.Column="0" Grid.Row="0" Content="Details" Click="DetailsTab_Click" Width="75" Height="25" Margin="0,0,0,0"/>
+                <Button Grid.Column="1" Grid.Row="0" Content="Time/Loops" Click="Time_LoopsTab_Click" Width="75" Height="25" Margin="0,0,0,0"/>
+            </Grid>
             <!-- Cue Name -->
             <TextBlock Grid.Column="0" Grid.Row="0" VerticalAlignment="Center" Text="Cue Name:" />
             <TextBox Grid.Column="1" Grid.Row="0" Text="{Binding CueName, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False" />

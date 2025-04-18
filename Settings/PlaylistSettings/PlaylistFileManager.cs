@@ -7,16 +7,16 @@ using Newtonsoft.Json;
 
 namespace Win_Labs.Settings.PlaylistSettings
 {
-    public class PlaylistFileManager
+    internal class PlaylistFileManager
     {
-        public string FilePath { get; private set; }
-        public PlaylistData Data { get; private set; }
-        public PlaylistFileManager(string filePath)
+        internal string FilePath { get; private set; }
+        internal PlaylistData Data { get; private set; }
+        internal PlaylistFileManager(string filePath)
         {
             FilePath = filePath;
             Data = new PlaylistData(); // Initialize with default values
         }
-        public void Load()
+        internal void Load()
         {
             try
             {
@@ -39,7 +39,7 @@ namespace Win_Labs.Settings.PlaylistSettings
             }
         }
 
-        public void Save()
+        internal void Save()
         {
             try
             {
@@ -55,10 +55,10 @@ namespace Win_Labs.Settings.PlaylistSettings
         }
     }
 
-    public class PlaylistData
+    internal class PlaylistData
     {
         private double _masterVolume;
-        public double MasterVolume
+        internal double MasterVolume
         {
             get => _masterVolume;
             set
@@ -82,12 +82,21 @@ namespace Win_Labs.Settings.PlaylistSettings
                 }
             }
         }
-        public string ExtraInfo { get; set; }
-        public PlaylistData()
+
+        internal string ExtraInfo { get; set; }
+        internal bool IsSortEnabled { get; set; }
+        internal string SortBy { get; set; }
+        internal bool SortAssending { get; set; }
+
+        internal PlaylistData()
         {
             _masterVolume = 100; // Default value
             ExtraInfo = string.Empty; // Default value
+            IsSortEnabled = false; // Default value
+            SortBy = "Cue_Number"; // Default value 
+            SortAssending = true; // Default value
         }
     }
+
 
 }

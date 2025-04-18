@@ -137,14 +137,14 @@
             <Button Name="RefreshButton" Width="50" Height="55" Content="Refresh" Click="RefreshButton_Click" Grid.Column="1" />
             <Button Content="New Cue" Width="50" Height="55" Click="CreateNewCue_Click" Grid.Column="2"/>
             <Button Content="Delete Cue" Width="50" Height="55" Click="DeleteCue_Click" Grid.Column="3"/>
-            <ComboBox x:Name="SortComboBox" Width="100" Height="55" Grid.Column="4" VerticalContentAlignment="Center" IsReadOnly="True" SelectedIndex="2" SelectionChanged="SortListViewComboBoxUpdate">
+            <ComboBox x:Name="SortComboBox" Width="100" Height="55" Grid.Column="4" VerticalContentAlignment="Center" IsReadOnly="True" SelectedIndex="1" SelectionChanged="SortListViewComboBoxUpdate">
                 <CheckBox Content=" Ascending" x:Name="AscendingCheckBox" IsChecked="True" Checked="AscendingCheckBox_Checked" Unchecked="AscendingCheckBox_Unchecked"/>
                 <ComboBoxItem Content="Cue_Number" />
                 <ComboBoxItem Content="Cue_Name" />
                 <ComboBoxItem Content="Duration" />
             </ComboBox>
             <Label Content="Sort By:" Width="100" Height="50" Grid.Column="4" VerticalAlignment="Top" HorizontalAlignment="Left" IsHitTestVisible="False"/>
-            <CheckBox Margin="1,3" Content=" Sort Enabled" x:Name="SortEnabled" Width="100" Height="15" Grid.Column="4" VerticalContentAlignment="Bottom" VerticalAlignment="Bottom" HorizontalAlignment="Left" IsChecked="False" Checked="SortEnabledCheckBox_Checked" Unchecked="SortEnabledCheckBox_Unchecked"/>
+            <CheckBox Margin="1,3" Content=" Sort Enabled" x:Name="SortEnabled" Width="100" Height="15" Grid.Column="4" VerticalContentAlignment="Bottom" VerticalAlignment="Bottom" HorizontalAlignment="Left" Checked="SortEnabledCheckBox_Checked" Unchecked="SortEnabledCheckBox_Unchecked"/>
         </Grid>
 
         <!-- Cue List -->
@@ -176,16 +176,18 @@
 
         <!-- Inspector -->
         <StackPanel Grid.Row="3" Grid.Column="0" VerticalAlignment="Bottom" Visibility="{Binding MainInspectorVisibility, RelativeSource={RelativeSource AncestorType={x:Type local:MainWindow}}}">
-            <Grid ShowGridLines="False" x:Name="MainWindowInspectorGrid">
+            <Grid ShowGridLines="False" x:Name="MainWindowInspectorGrid" >
                 <!-- Define rows for horizontal Layout -->
                 <Grid.RowDefinitions >
-                    <!-- Cue Name: 0-->
+                    <!-- Tabs: 0-->
                     <RowDefinition Height="25" />
-                    <!-- Cue Number: 1-->
+                    <!-- Cue Name: 1-->
                     <RowDefinition Height="25" />
-                    <!-- Duration: 2-->
+                    <!-- Cue Number: 2-->
                     <RowDefinition Height="25" />
-                    <!-- Pre Wait: 3-->
+                    <!-- Duration: 3-->
+                    <RowDefinition Height="25" />
+                    <!-- Pre Wait: 4-->
                     <RowDefinition Height="25" />
                     <!-- Auto Follow: 5-->
                     <RowDefinition Height="25" />
@@ -203,51 +205,62 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
+                <!-- Tabs -->
+                <TextBlock Grid.Column="0" Grid.Row="0" VerticalAlignment="Center" Text="Tabs:" />
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="75" />
+                        <ColumnDefinition Width="75" />
+                    </Grid.ColumnDefinitions>
+
+                    <Button Grid.Column="0" Grid.Row="0" Content="Details" Click="DetailsTab_Click" Width="75" Height="25" Margin="0,0,0,0"/>
+                    <Button Grid.Column="1" Grid.Row="0" Content="Time/Loops" Click="Time_LoopsTab_Click" Width="75" Height="25" Margin="0,0,0,0"/>
+                </Grid>
                 <!-- Cue Name -->
-                <TextBlock Grid.Column="0" Grid.Row="0" VerticalAlignment="Center" Text="Cue Name:" />
-                <TextBox Grid.Column="1" Grid.Row="0" Text="{Binding CueName, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False" />
+                <TextBlock Grid.Column="0" Grid.Row="1" VerticalAlignment="Center" Text="Cue Name:" />
+                <TextBox Grid.Column="1" Grid.Row="1" Text="{Binding CueName, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False" />
 
                 <!-- Cue Number -->
-                <TextBlock Grid.Column="0" Grid.Row="1" VerticalAlignment="Center" Text="Cue Number:" />
-                <TextBox Grid.Column="1" Grid.Row="1" Text="{Binding CueNumber, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False" />
+                <TextBlock Grid.Column="0" Grid.Row="2" VerticalAlignment="Center" Text="Cue Number:" />
+                <TextBox Grid.Column="1" Grid.Row="2" Text="{Binding CueNumber, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False" />
 
                 <!-- Duration -->
-                <TextBlock Grid.Column="0" Grid.Row="2" VerticalAlignment="Center" Text="Duration:" />
-                <TextBox Grid.Column="1" Grid.Row="2" Text="{Binding Duration, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False" GotFocus="Duration_GotFocus" LostFocus="Duration_LostFocus"/>
+                <TextBlock Grid.Column="0" Grid.Row="3" VerticalAlignment="Center" Text="Duration:" />
+                <TextBox Grid.Column="1" Grid.Row="3" Text="{Binding Duration, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False" GotFocus="Duration_GotFocus" LostFocus="Duration_LostFocus"/>
 
                 <!-- Pre Wait -->
-                <TextBlock Grid.Column="0" Grid.Row="3" VerticalAlignment="Center" Text="Pre Wait:" />
-                <TextBox Grid.Column="1" Grid.Row="3" Text="{Binding PreWait, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False" />
+                <TextBlock Grid.Column="0" Grid.Row="4" VerticalAlignment="Center" Text="Pre Wait:" />
+                <TextBox Grid.Column="1" Grid.Row="4" Text="{Binding PreWait, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="False" />
 
                 <!-- Auto Follow -->
-                <TextBlock Grid.Column="0" Grid.Row="4" VerticalAlignment="Center" Text="Auto Follow:" />
-                <CheckBox Style="{DynamicResource CheckBoxStyle1}" Grid.Column="1" Grid.Row="4" IsChecked="{Binding AutoFollow, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="10,0,0,0" />
+                <TextBlock Grid.Column="0" Grid.Row="5" VerticalAlignment="Center" Text="Auto Follow:" />
+                <CheckBox Style="{DynamicResource CheckBoxStyle1}" Grid.Column="1" Grid.Row="5" IsChecked="{Binding AutoFollow, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="10,0,0,0" />
 
                 <!-- File Name -->
-                <TextBlock Grid.Column="0" Grid.Row="5" VerticalAlignment="Center" Text="File Name:" />
-                <TextBox Grid.Column="1" Grid.Row="5" Text="{Binding FileName, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" />
+                <TextBlock Grid.Column="0" Grid.Row="6" VerticalAlignment="Center" Text="File Name:" />
+                <TextBox Grid.Column="1" Grid.Row="6" Text="{Binding FileName, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" />
 
                 <!-- Target File -->
-                <TextBlock Grid.Column="0" Grid.Row="6" VerticalAlignment="Center" Text="Target File:" />
-                <TextBox Grid.Column="1" Grid.Row="6" Text="{Binding TargetFile, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" />
+                <TextBlock Grid.Column="0" Grid.Row="7" VerticalAlignment="Center" Text="Target File:" />
+                <TextBox Grid.Column="1" Grid.Row="7" Text="{Binding TargetFile, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" />
 
                  <!--Button with a cross icon-->
-                <Button Grid.Column="1" Grid.Row="6" HorizontalAlignment="Right" Click="ClearTargetFile_Click" Margin="36,0">
+                <Button Grid.Column="1" Grid.Row="7" HorizontalAlignment="Right" Click="ClearTargetFile_Click" Margin="36,0">
                     <Button.Content>
                         <TextBlock Text="X" HorizontalAlignment="Center" Width="16" Height="16" />
                     </Button.Content>
                 </Button>
                 
                 <!-- Button with a folder icon -->
-                <Button Grid.Column="1" Grid.Row="6" HorizontalAlignment="Right" Click="SelectTargetFile_Click">
+                <Button Grid.Column="1" Grid.Row="7" HorizontalAlignment="Right" Click="SelectTargetFile_Click">
                     <Button.Content>
                         <Image Source="/resources/jpgs/Folder.jpg" Width="16" Height="16" />
                     </Button.Content>
                 </Button>
 
                 <!-- Notes -->
-                <TextBlock Grid.Column="0" Grid.Row="7" VerticalAlignment="Center" Text="Notes:" />
-                <TextBox Grid.Column="1" Grid.Row="7" Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" Height="Auto" />
+                <TextBlock Grid.Column="0" Grid.Row="8" VerticalAlignment="Center" Text="Notes:" />
+                <TextBox Grid.Column="1" Grid.Row="8" Text="{Binding Notes, UpdateSourceTrigger=PropertyChanged}" AcceptsReturn="True" Height="Auto" />
             </Grid>
         </StackPanel>
 

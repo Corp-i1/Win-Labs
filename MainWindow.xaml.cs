@@ -25,6 +25,7 @@ using Win_Labs.ZIPManagement;
 using Win_Labs.Settings.PlaylistSettings;
 using System.Windows.Threading;
 using System.Windows.Media;
+using System.Globalization;
 
 namespace Win_Labs
 {
@@ -52,18 +53,23 @@ namespace Win_Labs
             playlistManager = new PlaylistManager(this);
             _playlistFolderPath = PlaylistManager.playlistFolderPath;
             CueListView.ItemsSource = _cues;
-            Initialize();
 
             // Initialize PlaylistFileManager
             string playlistFilePath = Path.Combine(_playlistFolderPath, "playlist.wlp");
             _playlistFileManager = new PlaylistFileManager(playlistFilePath);
             _playlistFileManager.Load();
 
+            Initialize();
+
             // Set the master volume slider value
             MasterVolumeSliderValue = _playlistFileManager.Data.MasterVolume;
+
+
+
             InitializeResizeEvents();
             Log.Info("Application started.");
         }
+
 
         /* Function: Initialize
          * Description: Initializes the application by binding cues, setting up handlers, and refreshing the cue list.
@@ -75,8 +81,53 @@ namespace Win_Labs
             SetupCueChangeHandler();
             InitializeCueData();
             _activeWaveOuts = new List<WaveOutEvent>();
-            TriggerSort();
+            InitializeSorting();
             RefreshCueList();
+
+        }
+
+        private Dictionary<int, string> SortByDictionary = new()
+        {
+            { 1, "Cue_Number" },
+            { 2, "Cue_Name" },
+            { 3, "Duration" }
+        };
+
+        private string _sortBy;
+        internal string SortBy
+        {
+            get => _sortBy;
+            set
+            {
+                if (_sortBy != value)
+                {
+                    _sortBy = value;
+                    OnPropertyChanged(nameof(SortBy));
+                }
+            }
+        }
+
+        private void InitializeSorting()
+        {
+            // Load sorting settings
+            IsSortEnabled = _playlistFileManager.Data.IsSortEnabled;
+            SortAssending = _playlistFileManager.Data.SortAssending;
+            SortBy = _playlistFileManager.Data.SortBy;
+
+            // Update UI to represent saved settings
+            SortEnabled.IsChecked = IsSortEnabled;
+            AscendingCheckBox.IsChecked = SortAssending;
+            if (SortByDictionary.TryGetValue(SortComboBox.SelectedIndex, out string sortBy))
+            {
+                SortBy = sortBy; // Assign the value to the SortBy property
+                _playlistFileManager.Save();
+            }
+            else
+            {
+                SortComboBox.SelectedIndex = 1; // Default to the first option (Cue_Number)
+                SortBy = SortByDictionary[1]; // Set SortBy to the default value
+                _playlistFileManager.Save();
+            }
 
         }
 
@@ -912,11 +963,11 @@ namespace Win_Labs
             playlistManager.ImportPlaylist();
         }
         /* Function: ExportMenuItem_Click
- * Description: Handles the click event for the "Export Playlist" menu item. Exports the current playlist to the specified folder path.
- * Parameters:
- *   - sender: The source of the event.
- *   - e: The event data.
- */
+         * Description: Handles the click event for the "Export Playlist" menu item. Exports the current playlist to the specified folder path.
+         * Parameters:
+         *   - sender: The source of the event.
+         *   - e: The event data.
+         */
         private void ExportMenuItem_Click(object sender, RoutedEventArgs e)
         {
             TriggerSort();
@@ -1055,12 +1106,12 @@ namespace Win_Labs
                 }
             }
         }
-        internal double MainWindowHeight;
-        internal double MainWindowMainGridRow0;
-        internal double MainWindowMainGridRow1;
-        internal double MainWindowMainGridRow2;
-        internal double MainWindowMainGridRow3;
-        internal double MainWindowMainGridRow4;
+        private double MainWindowHeight;
+        private double MainWindowMainGridRow0;
+        private double MainWindowMainGridRow1;
+        private double MainWindowMainGridRow2;
+        private double MainWindowMainGridRow3;
+        private double MainWindowMainGridRow4;
         /* Function:UpdateMainWindowRowHeights
          * Description:Sets up values for use in UpdateCueListViewHeight dynamicly.
          */
@@ -1139,40 +1190,96 @@ namespace Win_Labs
         private void AscendingCheckBox_Checked(object sender, RoutedEventArgs e)
         {
             SortAssending = true;
+            try
+            {
+                if (_playlistFileManager == null)
+                {
+                    Log.Warning("PlaylistFileManager is not initialized.");
+                    return;
+                }
+                _playlistFileManager.Data.SortAssending = SortAssending;
+                _playlistFileManager.Save();
+            }
+            catch
+            {
+                Log.Warning("Failed to save SortAssending value to .wlp file.");
+            }
             TriggerSort();
         }
 
         private void AscendingCheckBox_Unchecked(object sender, RoutedEventArgs e)
         {
             SortAssending = false;
+            try
+            {
+                if (_playlistFileManager == null)
+                {
+                    Log.Warning("PlaylistFileManager is not initialized.");
+                    return;
+                }
+                _playlistFileManager.Data.SortAssending = SortAssending;
+                _playlistFileManager.Save();
+            }
+            catch
+            {
+                Log.Warning("Failed to save SortAssending value to .wlp file.");
+            }
             TriggerSort();
         }
 
         private void SortEnabledCheckBox_Checked(object sender, RoutedEventArgs e)
         {
             IsSortEnabled = true;
+            try
+            {
+                if (_playlistFileManager == null)
+                {
+                    Log.Warning("PlaylistFileManager is not initialized.");
+                    return;
+                }
+                _playlistFileManager.Data.IsSortEnabled = IsSortEnabled;
+                _playlistFileManager.Save();
+            }
+            catch
+            {
+                Log.Warning("Failed to save IsSortEnabled value to .wlp file.");
+            }
             TriggerSort();
         }
 
         private void SortEnabledCheckBox_Unchecked(object sender, RoutedEventArgs e)
         {
             IsSortEnabled = false;
+            try
+            {
+                if (_playlistFileManager == null)
+                {
+                    Log.Warning("PlaylistFileManager is not initialized.");
+                    return;
+                }
+                _playlistFileManager.Data.IsSortEnabled = IsSortEnabled;
+                _playlistFileManager.Save();
+            }
+            catch
+            {
+                Log.Warning("Failed to save IsSortEnabled value to .wlp file.");
+            }
             TriggerSort();
         }
+
 
         private void TriggerSort()
         {
             if (IsSortEnabled)
             {
                 Log.Info("Sorting Cue ListView.");
-                string? sortBy = (SortComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString();
-                if (!string.IsNullOrEmpty(sortBy))
+                if (SortByDictionary.TryGetValue(SortComboBox.SelectedIndex, out string? sortBy))
                 {
                     SortListView(sortBy, SortAssending);
                 }
                 else
                 {
-                    Log.Warning("SortBy value is null or empty.");
+                    Log.Warning("Invalid SortBy index.");
                 }
             }
             else
@@ -1184,6 +1291,7 @@ namespace Win_Labs
         private void SortListViewComboBoxUpdate(object sender, SelectionChangedEventArgs e)
         {
             TriggerSort();
+            _playlistFileManager.Save();
         }
         /*Funtion: SortListView
          * Description: Sorts the list view as specified by the users.
@@ -1230,6 +1338,14 @@ namespace Win_Labs
             }
         }
 
+        internal void DetailsTab_Click(Object sender, RoutedEventArgs e)
+        {
+
+        }
+        internal void Time_LoopsTab_Click(Object sender, RoutedEventArgs e)
+        {
+
+        }
 
     }
 }

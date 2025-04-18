@@ -79,6 +79,21 @@ namespace Win_Labs
                 mainWindow.ClearTargetFile_Click(sender, e);
             }
         }
+
+        private void DetailsTab_Click(Object sender, RoutedEventArgs e)
+        {
+            if (Owner is MainWindow mainWindow)
+            {
+                mainWindow.DetailsTab_Click(sender, e);
+            }
+        }
+        private void Time_LoopsTab_Click(Object sender, RoutedEventArgs e)
+        {
+            if (Owner is MainWindow mainWindow)
+            {
+                mainWindow.Time_LoopsTab_Click(sender, e);
+            }
+        }
     }
 }
 
