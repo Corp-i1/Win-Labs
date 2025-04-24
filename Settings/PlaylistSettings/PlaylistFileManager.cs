@@ -4,19 +4,20 @@ using System.IO;
 using System.Windows.Forms;
 using System.Windows.Media;
 using Newtonsoft.Json;
+using static Win_Labs.Log;
 
 namespace Win_Labs.Settings.PlaylistSettings
 {
-    internal class PlaylistFileManager
+    public class PlaylistFileManager
     {
-        internal string FilePath { get; private set; }
-        internal PlaylistData Data { get; private set; }
-        internal PlaylistFileManager(string filePath)
+        public string FilePath { get; private set; }
+        public PlaylistData Data { get; private set; }
+        public PlaylistFileManager(string filePath)
         {
             FilePath = filePath;
             Data = new PlaylistData(); // Initialize with default values
         }
-        internal void Load()
+        public void Load()
         {
             try
             {
@@ -39,7 +40,7 @@ namespace Win_Labs.Settings.PlaylistSettings
             }
         }
 
-        internal void Save()
+        public void Save()
         {
             try
             {
@@ -53,23 +54,26 @@ namespace Win_Labs.Settings.PlaylistSettings
                 Log.Exception(ex);
             }
         }
+
     }
 
-    internal class PlaylistData
+    public class PlaylistData
     {
         private double _masterVolume;
-        internal double MasterVolume
+        public double MasterVolume
         {
             get => _masterVolume;
             set
             {
-                if (_masterVolume == null)
+                // Default to 100 if the value is less than 0 or invalid
+                if (value < 0)
                 {
-                    Log.Warning("No Master Volume found, set to 100.");
+                    Log.Warning("Invalid or missing Master Volume, defaulting to 100.");
                     _masterVolume = 100;
-                    if (MainWindow.EditMode == true)
+
+                    if (MainWindow.EditMode)
                     {
-                        System.Windows.MessageBox.Show("No Master Volume found, set to 100.", "No Master Volume", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        System.Windows.MessageBox.Show("Invalid or missing Master Volume, defaulting to 100.", "Master Volume Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                     }
                     else
                     {
@@ -83,20 +87,42 @@ namespace Win_Labs.Settings.PlaylistSettings
             }
         }
 
-        internal string ExtraInfo { get; set; }
-        internal bool IsSortEnabled { get; set; }
-        internal string SortBy { get; set; }
-        internal bool SortAssending { get; set; }
+        public string ExtraInfo { get; set; } = string.Empty;
+        public bool IsSortEnabled { get; set; } = false;
+        public string SortBy { get; set; } = "Cue_Number";
+        public bool SortAssending { get; set; } = true;
 
-        internal PlaylistData()
+        public PlaylistData()
         {
-            _masterVolume = 100; // Default value
-            ExtraInfo = string.Empty; // Default value
-            IsSortEnabled = false; // Default value
-            SortBy = "Cue_Number"; // Default value 
-            SortAssending = true; // Default value
+            MasterVolume = 100; // Default value
+        }
+
+        public void LoadDefault(string option)
+        {
+            switch (option)
+            {
+                case nameof(MasterVolume):
+                    MasterVolume = 100; // Default value
+                    break;
+                case nameof(ExtraInfo):
+                    ExtraInfo = string.Empty; // Default value
+                    break;
+                case nameof(IsSortEnabled):
+                    IsSortEnabled = false; // Default value
+                    break;
+                case nameof(SortBy):
+                    SortBy = "Cue_Number"; // Default value
+                    break;
+                case nameof(SortAssending):
+                    SortAssending = true; // Default value
+                    break;
+                default:
+                    Log.Warning($"Unknown option '{option}' provided. No default value set.");
+                    break;
+            }
         }
     }
+
 
 
 }

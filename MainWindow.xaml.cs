@@ -26,14 +26,15 @@ using Win_Labs.Settings.PlaylistSettings;
 using System.Windows.Threading;
 using System.Windows.Media;
 using System.Globalization;
+using System.Numerics;
 
 namespace Win_Labs
 {
     public partial class MainWindow : BaseWindow, INotifyPropertyChanged
     {
-        private PlaylistFileManager _playlistFileManager;
+        private PlaylistFileManager playlistFileManager;
         private PlaylistManager playlistManager;
-        private string _playlistFolderPath;
+        private string playlistFolderPath;
         private readonly ObservableCollection<Cue> _cues = new ObservableCollection<Cue>();
         private Cue _currentCue = new();
         public string _currentCueFilePath;
@@ -47,43 +48,46 @@ namespace Win_Labs
          */
         public MainWindow(string playlistFolderPath)
         {
+            Log.Info("Initializing application...");
             PlaylistManager.playlistFolderPath = playlistFolderPath;
             InitializeComponent();
             DataContext = this; // Ensure DataContext is set to the MainWindow instance
             playlistManager = new PlaylistManager(this);
-            _playlistFolderPath = PlaylistManager.playlistFolderPath;
+            playlistFolderPath = PlaylistManager.playlistFolderPath;
             CueListView.ItemsSource = _cues;
-
-            // Initialize PlaylistFileManager
-            string playlistFilePath = Path.Combine(_playlistFolderPath, "playlist.wlp");
-            _playlistFileManager = new PlaylistFileManager(playlistFilePath);
-            _playlistFileManager.Load();
-
-            Initialize();
-
-            // Set the master volume slider value
-            MasterVolumeSliderValue = _playlistFileManager.Data.MasterVolume;
-
-
-
-            InitializeResizeEvents();
-            Log.Info("Application started.");
-        }
-
-
-        /* Function: Initialize
-         * Description: Initializes the application by binding cues, setting up handlers, and refreshing the cue list.
-         */
-        private void Initialize()
-        {
-            Log.Info("Initializing application...");
             BindCue(_currentCue);
             SetupCueChangeHandler();
             InitializeCueData();
             _activeWaveOuts = new List<WaveOutEvent>();
-            InitializeSorting();
             RefreshCueList();
+            InitializePlaylistFileManger();
+            InitializeMasterVolume();
+            InitializeResizeEvents();
+            InitializeSorting();
+            Log.Info("Application started.");
+        }
 
+
+        private void InitializePlaylistFileManger()
+        {
+            Log.Info("Initializing PlaylistFileManager");
+
+            string playlistFilePath = Path.Combine(playlistFolderPath, $"{Path.GetFileName(playlistFolderPath)}_playlist.wlp");
+            playlistFileManager = new PlaylistFileManager(playlistFilePath);
+            playlistFileManager.Load();
+        }
+        private void InitializeMasterVolume()
+        {
+            if (playlistFileManager?.Data != null)
+            {
+                Log.Info("Master volume initialized from wlp file.");
+                MasterVolumeSliderValue = playlistFileManager.Data.MasterVolume; // Set the slider value
+                Log.Info($"Master volume set to: {MasterVolumeSliderValue}");
+            }
+            else
+            {
+                Log.Warning("PlaylistFileManager is not initialized. Master volume cannot be set.");
+            }
         }
 
         private Dictionary<int, string> SortByDictionary = new()
@@ -93,43 +97,77 @@ namespace Win_Labs
             { 3, "Duration" }
         };
 
-        private string _sortBy;
-        internal string SortBy
+        private string _sortByIndex;
+        public string SortBy
         {
-            get => _sortBy;
+            get => _sortByIndex;
             set
             {
-                if (_sortBy != value)
+                if (_sortByIndex != value)
                 {
-                    _sortBy = value;
+                    _sortByIndex = value;
                     OnPropertyChanged(nameof(SortBy));
+                    Log.Info($"SortBy updated to: {_sortByIndex}");
+
+                    // Update PlaylistFileManager.Data and save
+                    if (playlistFileManager?.Data != null)
+                    {
+                        playlistFileManager.Data.SortBy = _sortByIndex;
+                        playlistFileManager.Save();
+                    }
+                    else
+                    {
+                        Log.Warning("PlaylistFileManager or its Data property is not initialized.");
+                    }
+
+                    // Trigger sorting logic
+                    TriggerSort();
                 }
             }
         }
 
+
         private void InitializeSorting()
         {
             // Load sorting settings
-            IsSortEnabled = _playlistFileManager.Data.IsSortEnabled;
-            SortAssending = _playlistFileManager.Data.SortAssending;
-            SortBy = _playlistFileManager.Data.SortBy;
+            IsSortEnabled = playlistFileManager.Data.IsSortEnabled;
+            SortAssending = playlistFileManager.Data.SortAssending;
+            SortBy = playlistFileManager.Data.SortBy;
 
             // Update UI to represent saved settings
             SortEnabled.IsChecked = IsSortEnabled;
             AscendingCheckBox.IsChecked = SortAssending;
-            if (SortByDictionary.TryGetValue(SortComboBox.SelectedIndex, out string sortBy))
-            {
-                SortBy = sortBy; // Assign the value to the SortBy property
-                _playlistFileManager.Save();
-            }
-            else
-            {
-                SortComboBox.SelectedIndex = 1; // Default to the first option (Cue_Number)
-                SortBy = SortByDictionary[1]; // Set SortBy to the default value
-                _playlistFileManager.Save();
-            }
 
+            try
+            {
+                var reversed = SortByDictionary.ToDictionary(x => x.Value, x => x.Key);
+                if (reversed.TryGetValue(SortBy, out int SortComboBoxIndex))
+                {
+                    SortComboBox.SelectedIndex = SortComboBoxIndex;
+                }
+                else
+                {
+                    Log.Info("Loading default sort settings.");
+                    SortComboBox.SelectedIndex = 1; // Default to "Cue_Number"
+                    SortBy = SortByDictionary[1];
+                }
+
+                // Ensure SortBy is updated in PlaylistFileManager.Data
+                playlistFileManager.Data.SortBy = SortBy;
+                playlistFileManager.Save();
+            }
+            catch (Exception e)
+            {
+                Log.Error("Loading default sort settings.");
+                Log.Exception(e);
+                SortComboBox.SelectedIndex = 1; // Default to "Cue_Number"
+                SortBy = SortByDictionary[1];
+                playlistFileManager.Data.SortBy = SortBy;
+                playlistFileManager.Save();
+            }
         }
+
+
 
         /* Function: InitializeCueData
          * Description: Loads cues from the playlist folder or creates a default cue if none exist.
@@ -138,25 +176,25 @@ namespace Win_Labs
         {
             try
             {
-                _playlistFolderPath = import.destinationPath;
-                if (_playlistFolderPath == null)
+                playlistFolderPath = import.destinationPath;
+                if (playlistFolderPath == null)
                 {
-                    _playlistFolderPath = PlaylistManager.playlistFolderPath;
-                    if (!Directory.EnumerateFiles(_playlistFolderPath, "cue_*.json").Any())
+                    playlistFolderPath = PlaylistManager.playlistFolderPath;
+                    if (!Directory.EnumerateFiles(playlistFolderPath, "cue_*.json").Any())
                     {
                         Log.Info("No cues found. Creating a default cue.");
-                        var defaultCue = CueManager.CreateNewCue(0, _playlistFolderPath);
-                        CueManager.SaveCueToFile(defaultCue, _playlistFolderPath);
+                        var defaultCue = CueManager.CreateNewCue(0, playlistFolderPath);
+                        CueManager.SaveCueToFile(defaultCue, playlistFolderPath);
                         Log.Info("Default cue created successfully.");
                     }
                 }
                 else
                 {
-                    if (!Directory.EnumerateFiles(_playlistFolderPath, "cue_*.json").Any())
+                    if (!Directory.EnumerateFiles(playlistFolderPath, "cue_*.json").Any())
                     {
                         Log.Info("No cues found. Creating a default cue.");
-                        var defaultCue = CueManager.CreateNewCue(0, _playlistFolderPath);
-                        CueManager.SaveCueToFile(defaultCue, _playlistFolderPath);
+                        var defaultCue = CueManager.CreateNewCue(0, playlistFolderPath);
+                        CueManager.SaveCueToFile(defaultCue, playlistFolderPath);
                         Log.Info("Default cue created successfully.");
                     }
                 }
@@ -174,7 +212,7 @@ namespace Win_Labs
         private void LoadCues()
         {
             Cue.IsInitializing = true;
-            var loadedCues = new CueManager().LoadCues(_playlistFolderPath);
+            var loadedCues = new CueManager().LoadCues(playlistFolderPath);
             _cues.Clear();
             foreach (var cue in loadedCues)
             {
@@ -242,7 +280,7 @@ namespace Win_Labs
          */
         private void SaveCueData(Cue cue)
         {
-            CueManager.SaveCueToFile(cue, _playlistFolderPath);
+            CueManager.SaveCueToFile(cue, playlistFolderPath);
             RefreshCueList();
         }
 
@@ -416,7 +454,7 @@ namespace Win_Labs
             int newCueNumber = (int)(_cues.Count > 0 ? _cues.Max(c => c.CueNumber) + 1 : 0);
 
             // Use CueManager to create the new cue
-            var newCue = CueManager.CreateNewCue(newCueNumber, _playlistFolderPath);
+            var newCue = CueManager.CreateNewCue(newCueNumber, playlistFolderPath);
 
             // Add the new cue to the ObservableCollection
             _cues.Add(newCue);
@@ -454,7 +492,7 @@ namespace Win_Labs
             if (CueListView.SelectedItem is Cue selectedCue)
             {
                 _cues.Remove(selectedCue);
-                CueManager.DeleteCueFile(selectedCue, _playlistFolderPath);
+                CueManager.DeleteCueFile(selectedCue, playlistFolderPath);
                 RefreshCueList();
             }
             else
@@ -473,7 +511,7 @@ namespace Win_Labs
         {
             foreach (var cue in _cues)
             {
-                CueManager.SaveCueToFile(cue, _playlistFolderPath);
+                CueManager.SaveCueToFile(cue, playlistFolderPath);
             }
         }
 
@@ -550,7 +588,7 @@ namespace Win_Labs
                     selectedCue.TargetFile = openFileDialog.FileName;
                     selectedCue.FileName = fileNameWithoutExtension;
                     DataContext = selectedCue;
-                    CueManager.SaveCueToFile(selectedCue, _playlistFolderPath);
+                    CueManager.SaveCueToFile(selectedCue, playlistFolderPath);
                     Log.Info($"'{openFileDialog.FileName}' added to {CueListView.SelectedItem}");
                     TriggerSort();
                 }
@@ -599,7 +637,7 @@ namespace Win_Labs
                     _cues.Remove(selectedCue);
 
                     // Delete the file
-                    CueManager.DeleteCueFile(selectedCue, _playlistFolderPath);
+                    CueManager.DeleteCueFile(selectedCue, playlistFolderPath);
                     Log.Info($"Cue {selectedCue.CueNumber} deleted successfully.");
                     TriggerSort();
                     RefreshCueList();
@@ -768,7 +806,7 @@ namespace Win_Labs
                 newWaveOut.Init(audioReader);
 
                 // Set the volume to the master volume from PlaylistFileManager
-                newWaveOut.Volume = (float)_playlistFileManager.Data.MasterVolume / 100;
+                newWaveOut.Volume = (float)playlistFileManager.Data.MasterVolume / 100;
 
                 // Ensure collections are initialized
                 if (_activeWaveOuts == null) _activeWaveOuts = new List<WaveOutEvent>();
@@ -971,7 +1009,7 @@ namespace Win_Labs
         private void ExportMenuItem_Click(object sender, RoutedEventArgs e)
         {
             TriggerSort();
-            playlistManager.ExportPlaylist(_playlistFolderPath);
+            playlistManager.ExportPlaylist(playlistFolderPath);
         }
 
         /* Function: SaveMenuItem_Click
@@ -985,8 +1023,8 @@ namespace Win_Labs
             Log.Info("Save menu item clicked.");
             try
             {
-                CueManager.SaveAllCues(_cues, _playlistFolderPath);
-                _playlistFileManager.Save();
+                CueManager.SaveAllCues(_cues, playlistFolderPath);
+                playlistFileManager.Save();
                 MessageBox.Show("All changes have been saved.", "Save Complete", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
@@ -1045,7 +1083,7 @@ namespace Win_Labs
         {
             base.OnClosing(e);
             SaveAllCues_Click(this, new RoutedEventArgs());
-            _playlistFileManager.Save();
+            playlistFileManager.Save();
         }
 
         /* Function: Settings_Click
@@ -1071,9 +1109,11 @@ namespace Win_Labs
                 {
                     _masterVolumeSliderValue = value;
                     OnPropertyChanged(nameof(MasterVolumeSliderValue));
-                    if (_playlistFileManager?.Data != null)
+                    if (playlistFileManager?.Data != null)
                     {
-                        _playlistFileManager.Data.MasterVolume = value; // Update PlaylistFileManager
+                        playlistFileManager.Data.MasterVolume = value; // Update PlaylistFileManager
+                        Log.Info($"Master volume change to: {MasterVolumeSliderValue}");
+                        playlistFileManager.Save();
                     }
                     else
                     {
@@ -1192,17 +1232,17 @@ namespace Win_Labs
             SortAssending = true;
             try
             {
-                if (_playlistFileManager == null)
+                if (playlistFileManager == null)
                 {
                     Log.Warning("PlaylistFileManager is not initialized.");
                     return;
                 }
-                _playlistFileManager.Data.SortAssending = SortAssending;
-                _playlistFileManager.Save();
+                playlistFileManager.Data.SortAssending = SortAssending;
+                playlistFileManager.Save();
             }
             catch
             {
-                Log.Warning("Failed to save SortAssending value to .wlp file.");
+                Log.Error("Failed to save SortAssending value to .wlp file.");
             }
             TriggerSort();
         }
@@ -1212,17 +1252,17 @@ namespace Win_Labs
             SortAssending = false;
             try
             {
-                if (_playlistFileManager == null)
+                if (playlistFileManager == null)
                 {
                     Log.Warning("PlaylistFileManager is not initialized.");
                     return;
                 }
-                _playlistFileManager.Data.SortAssending = SortAssending;
-                _playlistFileManager.Save();
+                playlistFileManager.Data.SortAssending = SortAssending;
+                playlistFileManager.Save();
             }
             catch
             {
-                Log.Warning("Failed to save SortAssending value to .wlp file.");
+                Log.Error("Failed to save SortAssending value to .wlp file.");
             }
             TriggerSort();
         }
@@ -1232,17 +1272,17 @@ namespace Win_Labs
             IsSortEnabled = true;
             try
             {
-                if (_playlistFileManager == null)
+                if (playlistFileManager == null)
                 {
                     Log.Warning("PlaylistFileManager is not initialized.");
                     return;
                 }
-                _playlistFileManager.Data.IsSortEnabled = IsSortEnabled;
-                _playlistFileManager.Save();
+                playlistFileManager.Data.IsSortEnabled = IsSortEnabled;
+                playlistFileManager.Save();
             }
             catch
             {
-                Log.Warning("Failed to save IsSortEnabled value to .wlp file.");
+                Log.Error("Failed to save IsSortEnabled value to .wlp file.");
             }
             TriggerSort();
         }
@@ -1252,21 +1292,20 @@ namespace Win_Labs
             IsSortEnabled = false;
             try
             {
-                if (_playlistFileManager == null)
+                if (playlistFileManager == null)
                 {
                     Log.Warning("PlaylistFileManager is not initialized.");
                     return;
                 }
-                _playlistFileManager.Data.IsSortEnabled = IsSortEnabled;
-                _playlistFileManager.Save();
+                playlistFileManager.Data.IsSortEnabled = IsSortEnabled;
+                playlistFileManager.Save();
             }
             catch
             {
-                Log.Warning("Failed to save IsSortEnabled value to .wlp file.");
+                Log.Error("Failed to save IsSortEnabled value to .wlp file.");
             }
             TriggerSort();
         }
-
 
         private void TriggerSort()
         {
@@ -1279,26 +1318,41 @@ namespace Win_Labs
                 }
                 else
                 {
-                    Log.Warning("Invalid SortBy index.");
+                    Log.Warning("Invalid SortBy index setting to default.");
+                    playlistFileManager.Data.LoadDefault("SortBy");
+                    playlistFileManager.Save();
+                    SortComboBox.SelectedIndex = 1;
                 }
             }
             else
             {
+                
                 Log.Info("Sort is not enabled.");
             }
         }
 
         private void SortListViewComboBoxUpdate(object sender, SelectionChangedEventArgs e)
         {
+            if (PlaylistManager.LoadingPlaylist)
+            {
+                return;
+            }
+
+            if (SortComboBox.SelectedIndex >= 0 && SortByDictionary.TryGetValue(SortComboBox.SelectedIndex, out string? sortBy))
+            {
+                SortBy = sortBy; // Update SortBy property
+            }
+
+            playlistFileManager.Save();
             TriggerSort();
-            _playlistFileManager.Save();
         }
+
         /*Funtion: SortListView
          * Description: Sorts the list view as specified by the users.
          * Parameters:
          */
         internal void SortListView(string sortBy, bool ascending = true)
-        {
+        { 
             try
             {
                 var sortingHelper = new SortingHelper();
