@@ -40,12 +40,44 @@
 
         <!-- Sidebar: Category List -->
         <ListBox x:Name="CategoryListBox"
-                 Grid.Column="0"
-                 Grid.Row="1"
-                 SelectionChanged="CategoryListBox_SelectionChanged"
-                 SelectedIndex="0"
-                 Margin="0,0,0,0"
-                 Background="Gray">
+         Grid.Column="0"
+         Grid.Row="1"
+         SelectionChanged="CategoryListBox_SelectionChanged"
+         SelectedIndex="0"
+         Margin="0,0,0,0"
+         Background="Gray">
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem">
+                    <Setter Property="Margin" Value="0,1"/>
+                    <Setter Property="Padding" Value="0"/>
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ListBoxItem">
+                                <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="4"
+                                BorderThickness="0"
+                                SnapsToDevicePixels="true">
+                                    <ContentPresenter
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                RecognizesAccessKey="True"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter TargetName="Bd" Property="Background" Value="#536878"/>
+                                    </Trigger>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="Bd" Property="Background" Value="#666"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                    <Setter Property="Background" Value="#555"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Style>
+            </ListBox.ItemContainerStyle>
             <ListBoxItem Content="General" />
             <ListBoxItem Content="Appearance" />
             <ListBoxItem Content="Advanced" />
@@ -74,5 +106,9 @@
             <!-- Save & Exit button on the far right -->
             <Button x:Name="SaveAndExitButton" Content="Save &amp; Exit" Width="100" Margin="0,0,0,0" Grid.Column="3" Click="SaveAndExitButton_Click"/>
         </Grid>
+        <Frame x:Name="MainFrame">
+
+        </Frame>
     </Grid>
+
 </local:BaseWindow>
