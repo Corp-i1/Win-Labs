@@ -14,7 +14,7 @@
         MouseDown="Window_MouseDown"
         Icon="{Binding IconIcoPath, RelativeSource={RelativeSource AncestorType=local:BaseWindow}}">
 
-    <Grid ShowGridLines="False">
+    <Grid ShowGridLines="False" Background="#222">
 
         <!-- Define rows for vertical layout -->
         <Grid.RowDefinitions>
@@ -26,21 +26,21 @@
 
         <!-- Define columns for vertical layout -->
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="{Binding ActualWidth}" />
+            <ColumnDefinition Width="*" />
             <!-- Main content area -->
         </Grid.ColumnDefinitions>
         <!-- Title Bar -->
-        <DockPanel Grid.Row="0" >
-            <Image x:Name="TitleBarIcon" MouseDown="TitleBarIcon_Click" Width="25" Height="25" Source="\resources\Icons\Win-Labs_Logo-256x256.ico" />
-            <Menu VerticalContentAlignment="Center">
-                <MenuItem Header="Window" Height="25" Width="56" HorizontalAlignment="Left" VerticalContentAlignment="Center" BorderThickness="0" Foreground="LightGray">
-                    <MenuItem Header="Close" Click="CloseMenuItem_Click" Foreground="LightGray"/>
-                    <Separator Background="DarkSlateBlue"/>
-                    <MenuItem Header="Other" Foreground="LightGray"/>
+        <DockPanel Grid.Row="0" Background="#222">
+            <Image x:Name="TitleBarIcon" MouseDown="TitleBarIcon_Click" Width="20" Height="20" Source="\resources\Icons\Win-Labs_Logo-256x256.ico" />
+            <Menu VerticalContentAlignment="Center" Background="#222" Width="60">
+                <MenuItem Header="Window" Height="25" Width="60" Background="#222" Foreground="LightGray" FontWeight="Bold" ToolTip="Cant change bckround Collor for somereason or foreground">
+                    <MenuItem Header="Close" Click="CloseMenuItem_Click" Foreground="LightGray"  Background="#222"/>
+                    <Separator Background="DarkSlateBlue" />
+                    <MenuItem Header="Other" Foreground="LightGray"  Background="#222"/>
                 </MenuItem>
             </Menu>
 
-            <Grid HorizontalAlignment="Right">
+            <Grid HorizontalAlignment="Right" Background="#222">
                 <Image x:Name="Close_Button" MouseDown="CloseButton_Click" Width="20" Height="20" Source="/resources/Icons/Close_Icon_White.png" />
             </Grid>
         </DockPanel>
