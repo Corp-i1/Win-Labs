@@ -13,11 +13,17 @@ using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using Win_Labs.Settings.AppSettings;
 using Win_Labs.Themes;
+using Win_Labs.Settings;
 
 namespace Win_Labs
 {
     public partial class SettingsWindow : BaseWindow
     {
+        // UserControl instances for each category
+        private GeneralSettingsControl generalSettingsControl;
+        private AppearanceSettingsControl appearanceSettingsControl;
+        private AdvancedSettingsControl advancedSettingsControl;
+
         /* Constructor: SettingsWindow
          * Description: Initializes a new instance of the SettingsWindow class, loads current application settings, 
          *              and populates the UI elements with the loaded settings.
@@ -26,56 +32,85 @@ namespace Win_Labs
         {
             InitializeComponent();
 
-            // Load current settings
-            var settings = AppSettingsManager.Settings;
+            // Initialize category controls
+            generalSettingsControl = new GeneralSettingsControl();
+            appearanceSettingsControl = new AppearanceSettingsControl();
+            advancedSettingsControl = new AdvancedSettingsControl();
 
-            // Set Theme ComboBox
-            ThemeComboBox.SelectedItem = ThemeComboBox.Items.OfType<ComboBoxItem>()
-                .FirstOrDefault(item => item.Content.ToString() == settings.Theme);
+            // Set default content
+            CategoryContentControl.Content = generalSettingsControl;
 
-            // Set Language ComboBox
-            LanguageComboBox.SelectedItem = LanguageComboBox.Items.OfType<ComboBoxItem>()
-                .FirstOrDefault(item => item.Content.ToString() == settings.Language);
-
-            // Set Max Log File Text Box
-            MaxLogFilesTextBox.Text = settings.MaxLogFiles.ToString();
+            // Load settings into controls
+            LoadSettings();
         }
 
-        /* Function: SaveButton_Click
-         * Description: Handles the click event for the "Save" button. Updates application settings based on user input, 
-         *              saves the settings to a file, applies the selected theme, and closes the settings window.
-         * Parameters:
-         *   - sender: The source of the event.
-         *   - e: The event data.
-         */
-        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        // Handles switching the main content area when a category is selected
+        private void CategoryListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            // Update settings
-            var settings = AppSettingsManager.Settings;
-            var selectedTheme = ThemeComboBox.SelectedItem as ComboBoxItem;
-            var selectedLanguage = LanguageComboBox.SelectedItem as ComboBoxItem;
-            var maxLogFilesText = MaxLogFilesTextBox.Text;
+            if (CategoryContentControl == null || generalSettingsControl == null) return;
 
-            if (selectedTheme?.Content == null || selectedLanguage?.Content == null)
+            switch (CategoryListBox.SelectedIndex)
+            {
+                case 0:
+                    CategoryContentControl.Content = generalSettingsControl;
+                    break;
+                case 1:
+                    CategoryContentControl.Content = appearanceSettingsControl;
+                    break;
+                case 2:
+                    CategoryContentControl.Content = advancedSettingsControl;
+                    break;
+            }
+        }
+
+        // Loads current settings into the controls
+        private void LoadSettings()
+        {
+            var settings = AppSettingsManager.Settings;
+
+            // General
+            generalSettingsControl.LanguageComboBox.SelectedItem =
+                generalSettingsControl.LanguageComboBox.Items.OfType<ComboBoxItem>()
+                .FirstOrDefault(item => item.Content.ToString() == settings.Language);
+            generalSettingsControl.MaxLogFilesTextBox.Text = settings.MaxLogFiles.ToString();
+
+            // Appearance
+            appearanceSettingsControl.ThemeComboBox.SelectedItem =
+                appearanceSettingsControl.ThemeComboBox.Items.OfType<ComboBoxItem>()
+                .FirstOrDefault(item => item.Content.ToString() == settings.Theme);
+        }
+
+        // Add this method to encapsulate the save logic
+        private bool SaveSettings()
+        {
+            var settings = AppSettingsManager.Settings;
+
+            // General
+            var selectedLanguage = (generalSettingsControl.LanguageComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString();
+            var maxLogFilesText = generalSettingsControl.MaxLogFilesTextBox.Text;
+
+            // Appearance
+            var selectedTheme = (appearanceSettingsControl.ThemeComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString();
+
+            // Validate and assign
+            if (string.IsNullOrEmpty(selectedTheme) || string.IsNullOrEmpty(selectedLanguage))
             {
                 MessageBox.Show("Please select both theme and language", "Invalid Selection", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                return false;
             }
 
             if (!int.TryParse(maxLogFilesText, out int maxLogFiles))
             {
                 MessageBox.Show("Please enter a valid number for Max Log Files", "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                return false;
             }
 
-            settings.Theme = selectedTheme.Content.ToString();
-            settings.Language = selectedLanguage.Content.ToString();
+            settings.Theme = selectedTheme;
+            settings.Language = selectedLanguage;
             settings.MaxLogFiles = maxLogFiles;
 
-            // Save settings to file
+            // Save and apply
             AppSettingsManager.SaveSettings();
-
-            // Apply the selected theme
             try
             {
                 ThemeManager.ApplyTheme(settings.Theme);
@@ -83,12 +118,44 @@ namespace Win_Labs
             catch (Exception ex)
             {
                 Log.Error($"Failed to apply theme: {ex.Message}");
-                System.Windows.MessageBox.Show("Failed to apply theme. Settings were saved.",
+                MessageBox.Show("Failed to apply theme. Settings were saved.",
                     "Theme Error", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
 
-            // Close the settings window
+            return true;
+        }
+
+        // Save button: just save, do not close
+        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            SaveSettings();
+        }
+
+        // Save & Exit button: save and close if successful
+        private void SaveAndExitButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (SaveSettings())
+            {
+                this.Close();
+            }
+        }
+        private void CancelButton_Click(object sender, RoutedEventArgs e)
+        {
             this.Close();
         }
+
+        // Allow window dragging from the top bar
+        private void Window_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton == MouseButton.Left)
+                this.DragMove();
+        }
+
+        // Handle close button click
+        private void CloseButton_Click(object sender, MouseButtonEventArgs e)
+        {
+            this.Close();
+        }
+
     }
 }

@@ -75,14 +75,19 @@ namespace Win_Labs
             string playlistFilePath = Path.Combine(playlistFolderPath, $"{Path.GetFileName(playlistFolderPath)}_playlist.wlp");
             playlistFileManager = new PlaylistFileManager(playlistFilePath);
             playlistFileManager.Load();
+            Log.Info($"Loaded playlist data: MasterVolume = {playlistFileManager.Data.MasterVolume}");
+            Log.Info($"Loaded playlist data: IsSortEnabled = {playlistFileManager.Data.IsSortEnabled}");
+            Log.Info($"Loaded playlist data: SortBy = {playlistFileManager.Data.SortBy}");
+            Log.Info($"Loaded playlist data: SortAssending = {playlistFileManager.Data.SortAssending}");
+            Log.Info($"Loaded playlist data: ExtraInfo = {playlistFileManager.Data.ExtraInfo}");
+
         }
         private void InitializeMasterVolume()
         {
             if (playlistFileManager?.Data != null)
             {
-                Log.Info("Master volume initialized from wlp file.");
+                Log.Info("Master volume initialized.");
                 MasterVolumeSliderValue = playlistFileManager.Data.MasterVolume; // Set the slider value
-                Log.Info($"Master volume set to: {MasterVolumeSliderValue}");
             }
             else
             {

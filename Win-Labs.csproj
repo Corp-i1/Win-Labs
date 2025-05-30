@@ -24,6 +24,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Templates\**" />
+    <EmbeddedResource Remove="Templates\**" />
+    <None Remove="Templates\**" />
+    <Page Remove="Templates\**" />
+  </ItemGroup>
+
+  <ItemGroup>
 	<None Remove="resources\defaultCue.json" />
 	<None Remove="resources\Icons\Close_Icon.png" />
 	<None Remove="resources\Icons\Close_Icon_White.png" />
@@ -91,7 +98,6 @@
 
   <ItemGroup>
 	<Folder Include="resources\SaveData\" />
-	<Folder Include="Templates\" />
   </ItemGroup>
 
   <ItemGroup>
