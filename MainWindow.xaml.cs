@@ -1231,10 +1231,10 @@ namespace Win_Labs
         }
 
         private bool IsSortEnabled = false;
-        private bool SortAssending = true;
+        private bool SortAscending = true;
         private void AscendingCheckBox_Checked(object sender, RoutedEventArgs e)
         {
-            SortAssending = true;
+            SortAscending = true;
             try
             {
                 if (playlistFileManager == null)
@@ -1242,19 +1242,19 @@ namespace Win_Labs
                     Log.Warning("PlaylistFileManager is not initialized.");
                     return;
                 }
-                playlistFileManager.Data.SortAssending = SortAssending;
+                playlistFileManager.Data.SortAscending = SortAscending;
                 playlistFileManager.Save();
             }
             catch
             {
-                Log.Error("Failed to save SortAssending value to .wlp file.");
+                Log.Error("Failed to save SortAscending value to .wlp file.");
             }
             TriggerSort();
         }
 
         private void AscendingCheckBox_Unchecked(object sender, RoutedEventArgs e)
         {
-            SortAssending = false;
+            SortAscending = false;
             try
             {
                 if (playlistFileManager == null)
@@ -1262,12 +1262,12 @@ namespace Win_Labs
                     Log.Warning("PlaylistFileManager is not initialized.");
                     return;
                 }
-                playlistFileManager.Data.SortAssending = SortAssending;
+                playlistFileManager.Data.SortAscending = SortAscending;
                 playlistFileManager.Save();
             }
             catch
             {
-                Log.Error("Failed to save SortAssending value to .wlp file.");
+                Log.Error("Failed to save SortAscending value to .wlp file.");
             }
             TriggerSort();
         }
@@ -1319,7 +1319,7 @@ namespace Win_Labs
                 Log.Info("Sorting Cue ListView.");
                 if (SortByDictionary.TryGetValue(SortComboBox.SelectedIndex, out string? sortBy))
                 {
-                    SortListView(sortBy, SortAssending);
+                    SortListView(sortBy, SortAscending);
                 }
                 else
                 {
