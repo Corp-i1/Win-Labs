@@ -88,8 +88,9 @@ namespace Win_Labs.Settings.PlaylistSettings
 
         public string ExtraInfo { get; set; } = string.Empty;
         public bool IsSortEnabled { get; set; } = false;
-        public string SortBy { get; set; } = "Cue_Number";
+        public string SortBy { get; set; } = DefaultSortBy;
         public bool SortAssending { get; set; } = true;
+        public const string DefaultSortBy = "Cue_Number";
 
         public PlaylistData()
         {
