@@ -156,6 +156,5 @@ namespace Win_Labs
         {
             this.Close();
         }
-
     }
 }

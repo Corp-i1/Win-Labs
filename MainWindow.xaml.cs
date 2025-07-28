@@ -1331,7 +1331,6 @@ namespace Win_Labs
             }
             else
             {
-                
                 Log.Info("Sort is not enabled.");
             }
         }
@@ -1399,11 +1398,9 @@ namespace Win_Labs
 
         internal void DetailsTab_Click(Object sender, RoutedEventArgs e)
         {
-
         }
         internal void Time_LoopsTab_Click(Object sender, RoutedEventArgs e)
         {
-
         }
 
     }

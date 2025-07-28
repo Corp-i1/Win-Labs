@@ -54,7 +54,6 @@ namespace Win_Labs.Settings.PlaylistSettings
                 Log.Exception(ex);
             }
         }
-
     }
 
     public class PlaylistData
