@@ -89,7 +89,7 @@ namespace Win_Labs.Settings.PlaylistSettings
         public string ExtraInfo { get; set; } = string.Empty;
         public bool IsSortEnabled { get; set; } = false;
         public string SortBy { get; set; } = DefaultSortBy;
-        public bool SortAssending { get; set; } = true;
+        public bool SortAscending { get; set; } = true;
         public const string DefaultSortBy = "Cue_Number";
 
         public PlaylistData()
@@ -113,8 +113,8 @@ namespace Win_Labs.Settings.PlaylistSettings
                 case nameof(SortBy):
                     SortBy = "Cue_Number"; // Default value
                     break;
-                case nameof(SortAssending):
-                    SortAssending = true; // Default value
+                case nameof(SortAscending):
+                    SortAscending = true; // Default value
                     break;
                 default:
                     Log.Warning($"Unknown option '{option}' provided. No default value set.");
