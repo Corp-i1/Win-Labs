@@ -35,7 +35,7 @@ If you want to build the project yourself, you can do so by following these step
         - Or
         1. Right click on the `Win-Labs.exe` file and select **Pin to taskbar**.
 ## License  
-This project is licensed under the **MPL-2.0 with a No Resale Clause**.  
+This project is licensed under the **Corpi1 Software License (Based on Mozilla Public License 2.0)**.  
 
 You are free to use, modify, and distribute the software. **Businesses and individuals can use it**, including in commercial activities. However, **you may not sell, repackage, or monetize the software itself**.  
 
