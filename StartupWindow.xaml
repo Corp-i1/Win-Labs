@@ -33,7 +33,7 @@
         <DockPanel Grid.Row="0" Background="#222">
             <Image x:Name="TitleBarIcon" MouseDown="TitleBarIcon_Click" Width="20" Height="20" Source="\resources\Icons\Win-Labs_Logo-256x256.ico" />
             <Menu VerticalContentAlignment="Center" Background="#222" Width="60">
-                <MenuItem Header="Window" Height="25" Width="60" Background="#222" Foreground="LightGray" FontWeight="Bold" ToolTip="Cant change bckround Collor for somereason or foreground">
+                <MenuItem Header="Window" Height="25" Width="60" Background="#222" Foreground="LightGray" FontWeight="Bold" ToolTip="Can't change background Color for some reason or foreground">
                     <MenuItem Header="Close" Click="CloseMenuItem_Click" Foreground="LightGray"  Background="#222"/>
                     <Separator Background="DarkSlateBlue" />
                     <MenuItem Header="Other" Foreground="LightGray"  Background="#222"/>

@@ -79,9 +79,9 @@
                     <Setter Property="Foreground" Value="White"/>
                 </Style>
             </ListBox.ItemContainerStyle>
-            <ListBoxItem Content="General" Foreground="White" ToolTip="Cant change bckround Collor for somereason or foreground"/>
-            <ListBoxItem Content="Appearance" Foreground="White" ToolTip="Cant change bckround Collor for somereason or foreground"/>
-            <ListBoxItem Content="Advanced" Foreground="White" ToolTip="Cant change bckround Collor for somereason or foreground"/>
+            <ListBoxItem Content="General" Foreground="White" ToolTip="Can't change background color for some reason or foreground"/>
+            <ListBoxItem Content="Appearance" Foreground="White" ToolTip="Can't change background color for some reason or foreground"/>
+            <ListBoxItem Content="Advanced" Foreground="White" ToolTip="Can't change background color for some reason or foreground"/>
         </ListBox>
 
         <!-- Main Content: Category Settings -->
