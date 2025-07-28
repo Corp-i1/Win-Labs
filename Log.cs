@@ -5,7 +5,7 @@ using Win_Labs.Settings.AppSettings;
 
 namespace Win_Labs
 {
-    public static class Log
+    internal static class Log
     {
         // Static fields for log configuration
         private static readonly string LogDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs");
@@ -29,19 +29,19 @@ namespace Win_Labs
          * Parameters:
          *   - message: The message to log.
          */
-        public static void Info(string message) => WriteLog(message, LogLevel.Info);
-         /* Function: Warning
-         * Description: Logs a warning message.
-         * Parameters:
-         *   - message: The message to log.
-         */
-        public static void Warning(string message) => WriteLog(message, LogLevel.Warning);
+        internal static void Info(string message) => WriteLog(message, LogLevel.Info);
+        /* Function: Warning
+        * Description: Logs a warning message.
+        * Parameters:
+        *   - message: The message to log.
+        */
+        internal static void Warning(string message) => WriteLog(message, LogLevel.Warning);
         /* Function: Error
          * Description: Logs an error message.
          * Parameters:
          *   - message: The message to log.
          */
-        public static void Error(string message) => WriteLog(message, LogLevel.Error);
+        internal static void Error(string message) => WriteLog(message, LogLevel.Error);
 
 
         /* Function: Exception
@@ -120,7 +120,7 @@ namespace Win_Labs
          *   - Warning: Warning messages.
          *   - Error: Error messages.
          */
-        public enum LogLevel
+        internal enum LogLevel
         {
             Info,
             Warning,

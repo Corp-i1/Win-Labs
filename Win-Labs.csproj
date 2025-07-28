@@ -3,7 +3,6 @@
   <PropertyGroup>
 	<OutputType>Exe</OutputType>
 	<TargetFramework>net8.0-windows7.0</TargetFramework>
-	 <EnableWindowsTargeting>true</EnableWindowsTargeting>
 	<RootNamespace>Win_Labs</RootNamespace>
 	<Nullable>enable</Nullable>
 	<ImplicitUsings>enable</ImplicitUsings>
@@ -11,16 +10,6 @@
 	<ApplicationIcon>resources\Icons\Win-Labs_Logo-256x256.ico</ApplicationIcon>
 	<SupportedOSPlatformVersion>7.0</SupportedOSPlatformVersion>
 	<SignAssembly>False</SignAssembly>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
-    <Optimize>False</Optimize>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <CheckForOverflowUnderflow>True</CheckForOverflowUnderflow>
-    <Optimize>False</Optimize>
   </PropertyGroup>
 
   <ItemGroup>
@@ -48,10 +37,6 @@
   </ItemGroup>
 
   <ItemGroup>
-	<Content Include="resources\defaultCue.json">
-	  <Generator>MSBuild:Compile</Generator>
-	  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	</Content>
 	<Resource Include="resources\Icons\Win-Labs_Logo-256x256.ico">
 	  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	</Resource>
@@ -91,7 +76,6 @@
 
   <ItemGroup>
 	<Folder Include="resources\SaveData\" />
-	<Folder Include="Templates\" />
   </ItemGroup>
 
   <ItemGroup>

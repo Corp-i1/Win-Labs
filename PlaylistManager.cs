@@ -16,13 +16,14 @@ namespace Win_Labs
         private string playlistImportFilePath;
         private string playlistFolderPathTemp;
         private Window _startupWindow;
+        internal static bool LoadingPlaylist;
 
         /* Constructor: PlaylistManager
          * Description: Initializes a new instance of the PlaylistManager class and sets the startup window.
          * Parameters:
          *   - startupWindow: The startup window to associate with the PlaylistManager.
          */
-        public PlaylistManager(Window startupWindow)
+        internal PlaylistManager(Window startupWindow)
         {
             _startupWindow = startupWindow;
             Log.Info($"PlaylistManager initialized with window: {_startupWindow.GetType().Name}");
@@ -50,8 +51,9 @@ namespace Win_Labs
         /* Function: CreateNewPlaylist
          * Description: Creates a new playlist by selecting a folder, closing the current MainWindow, and opening a new MainWindow.
          */
-        public void CreateNewPlaylist()
+        internal void CreateNewPlaylist()
         {
+            LoadingPlaylist = true;
             string playlistFolderPath = OpenFolderDialog("Select a folder to create a playlist in.");
             if (!string.IsNullOrEmpty(playlistFolderPath))
             {
@@ -72,22 +74,25 @@ namespace Win_Labs
                     }
                     Log.Info($"New playlist folder selected: {playlistFolderPath}");
                     OpenMainWindow(playlistFolderPath);
-
+                    LoadingPlaylist = false;
                     Log.Info("Close loading window");
                     loadingWindow.Close();
                 }
                 catch (Exception ex)
                 {
+                    LoadingPlaylist = false;
                     Log.Error($"Failed to create new playlist: {ex.Message}");
                     System.Windows.MessageBox.Show($"Error creating new playlist: {ex.Message}", "Create Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
             }
+            LoadingPlaylist = false;
         }
-         /* Function: OpenExistingPlaylist
-         * Description: Opens an existing playlist by selecting a folder and validating the presence of cue files.
-         */
-        public void OpenExistingPlaylist()
+        /* Function: OpenExistingPlaylist
+        * Description: Opens an existing playlist by selecting a folder and validating the presence of cue files.
+        */
+        internal void OpenExistingPlaylist()
         {
+            LoadingPlaylist = true;
             string playlistFolderPath = OpenFolderDialog("Select a playlist folder.");
             Log.Info($"Opening existing playlist folder: {playlistFolderPath}");
 
@@ -97,12 +102,14 @@ namespace Win_Labs
                 {
                     Log.Error("No cue files found in the selected folder: " + playlistFolderPath);
                     System.Windows.MessageBox.Show("The selected folder does not contain any cue files.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    LoadingPlaylist = false;
                     return;
                 }
             }
             catch
             {
                 Log.Error("No folder selected.");
+                LoadingPlaylist = false;
                 return;
             }
 
@@ -123,12 +130,13 @@ namespace Win_Labs
                 }
                 Log.Info("Open new Main Window.");
                 OpenMainWindow(playlistFolderPath);
-
+                LoadingPlaylist = false;
                 Log.Info("Close loading window");
                 loadingWindow.Close();
             }
             catch (Exception ex)
             {
+                LoadingPlaylist = false;
                 Log.Error($"Failed to open existing playlist: {ex.Message}");
                 System.Windows.MessageBox.Show($"Error opening existing playlist: {ex.Message}", "Open Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
@@ -137,7 +145,7 @@ namespace Win_Labs
         /* Function: ImportPlaylist
          * Description: Imports a playlist from a ZIP file to a selected directory, purging existing cue files if necessary.
          */
-        public void ImportPlaylist()
+        internal void ImportPlaylist()
         {
             var openFileDialog = new System.Windows.Forms.OpenFileDialog
             {
@@ -273,7 +281,7 @@ namespace Win_Labs
          * Parameters:
          *   - _playlistFolderPath: The path to the playlist folder to export.
          */
-        public void ExportPlaylist(string _playlistFolderPath)
+        internal void ExportPlaylist(string _playlistFolderPath)
         {
             Log.Info("Export menu item clicked.");
             var folderDialog = new System.Windows.Forms.FolderBrowserDialog

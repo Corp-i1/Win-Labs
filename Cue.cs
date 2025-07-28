@@ -268,12 +268,6 @@ namespace Win_Labs
                     return filePath;
                 }
 
-                // Ensure filePath is an absolute path
-                if (!Path.IsPathRooted(filePath))
-                {
-                    filePath = Path.GetFullPath(Path.Combine(PlaylistFolderPath, filePath));
-                }
-
                 var playlistFolderUri = new Uri(PlaylistFolderPath);
                 var fileUri = new Uri(filePath);
 
