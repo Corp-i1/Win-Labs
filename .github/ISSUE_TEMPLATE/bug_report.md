@@ -30,7 +30,7 @@ If applicable, add screenshots to help explain your problem.
 **Desktop (please complete the following information):**
  - OS:
  - Visual Studio code version:
- - Version:
+ - Release Version:
 
 **Additional context**
 Add any other context about the problem here.
