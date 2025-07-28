@@ -78,7 +78,7 @@ namespace Win_Labs
             Log.Info($"Loaded playlist data: MasterVolume = {playlistFileManager.Data.MasterVolume}");
             Log.Info($"Loaded playlist data: IsSortEnabled = {playlistFileManager.Data.IsSortEnabled}");
             Log.Info($"Loaded playlist data: SortBy = {playlistFileManager.Data.SortBy}");
-            Log.Info($"Loaded playlist data: SortAssending = {playlistFileManager.Data.SortAssending}");
+            Log.Info($"Loaded playlist data: SortAscending = {playlistFileManager.Data.SortAscending}");
             Log.Info($"Loaded playlist data: ExtraInfo = {playlistFileManager.Data.ExtraInfo}");
 
         }
@@ -136,12 +136,12 @@ namespace Win_Labs
         {
             // Load sorting settings
             IsSortEnabled = playlistFileManager.Data.IsSortEnabled;
-            SortAssending = playlistFileManager.Data.SortAssending;
+            SortAscending = playlistFileManager.Data.SortAscending;
             SortBy = playlistFileManager.Data.SortBy;
 
             // Update UI to represent saved settings
             SortEnabled.IsChecked = IsSortEnabled;
-            AscendingCheckBox.IsChecked = SortAssending;
+            AscendingCheckBox.IsChecked = SortAscending;
 
             try
             {
