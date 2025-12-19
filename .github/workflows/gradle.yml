@@ -34,6 +34,12 @@ jobs:
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v5 # v4.0.0
 
+    - name: Download Gradle Wrapper JAR if missing
+      run: |
+        if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
+          curl -L -o gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/master/gradle/wrapper/gradle-wrapper.jar
+        fi
+
     - name: Make gradlew executable
       run: chmod +x gradlew
 
