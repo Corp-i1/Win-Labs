@@ -78,6 +78,19 @@ public class AudioController {
             // Use multi-track playback to allow overlapping sounds
             currentTrackId = audioService.playTrack(filePath);
             
+            // Set up completion listener for this track
+            var track = audioService.getTrack(currentTrackId);
+            if (track != null) {
+                track.setOnEndListener(audioTrack -> {
+                    // Track has finished playing
+                    currentState = PlaybackState.STOPPED;
+                    if (stateChangeListener != null) {
+                        stateChangeListener.accept(currentState);
+                    }
+                    handleCueComplete();
+                });
+            }
+            
             currentState = PlaybackState.PLAYING;
             if (stateChangeListener != null) {
                 stateChangeListener.accept(currentState);
