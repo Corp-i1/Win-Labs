@@ -1,11 +1,13 @@
 package com.winlabs.controller;
 
+import com.winlabs.model.AudioTrack;
 import com.winlabs.model.Cue;
 import com.winlabs.model.PlaybackState;
 import com.winlabs.service.AudioService;
 import javafx.animation.PauseTransition;
 import javafx.util.Duration;
 
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -219,9 +221,32 @@ public class AudioController {
     
     /**
      * Gets the current playback state.
+     * In multi-track mode, this reflects the actual state of active tracks.
      */
     public PlaybackState getState() {
-        return currentState;
+        // In multi-track mode, determine state from active tracks
+        List<AudioTrack> activeTracks = audioService.getActiveTracks();
+        
+        if (activeTracks.isEmpty()) {
+            return PlaybackState.STOPPED;
+        }
+        
+        // If any track is playing, overall state is PLAYING
+        boolean hasPlaying = activeTracks.stream()
+            .anyMatch(track -> track.getState() == PlaybackState.PLAYING);
+        if (hasPlaying) {
+            return PlaybackState.PLAYING;
+        }
+        
+        // If all tracks are paused (and at least one exists), state is PAUSED
+        boolean allPaused = activeTracks.stream()
+            .allMatch(track -> track.getState() == PlaybackState.PAUSED);
+        if (allPaused) {
+            return PlaybackState.PAUSED;
+        }
+        
+        // Otherwise, state is STOPPED
+        return PlaybackState.STOPPED;
     }
     
     /**
