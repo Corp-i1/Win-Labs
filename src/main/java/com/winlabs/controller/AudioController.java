@@ -24,7 +24,7 @@ public class AudioController {
     private PauseTransition postWaitTimer;
     
     public AudioController() {
-        this.audioService = new AudioService();
+        this.audioService = new AudioService(true); // Enable multi-track mode
         setupAudioServiceListeners();
     }
     
@@ -80,9 +80,9 @@ public class AudioController {
      */
     private void startPlayback(Cue cue, String filePath) {
         try {
-            audioService.loadAudio(filePath);
-            audioService.play();
-            updateStatus("Playing: " + cue.getName());
+            // Use multi-track playback to allow overlapping sounds
+            String trackId = audioService.playTrack(filePath);
+            updateStatus("Playing: " + cue.getName() + " (Track: " + trackId.substring(0, 8) + "...)");
         } catch (Exception e) {
             updateStatus("Error loading audio: " + e.getMessage());
         }
@@ -149,7 +149,7 @@ public class AudioController {
      * Pauses the current playback.
      */
     public void pause() {
-        audioService.pause();
+        audioService.pauseAllTracks();
         
         // Pause any active timers
         if (preWaitTimer != null) {
@@ -166,10 +166,8 @@ public class AudioController {
      * Resumes playback.
      */
     public void resume() {
-        if (audioService.getState() == PlaybackState.PAUSED) {
-            audioService.play();
-            updateStatus("Resumed");
-        }
+        audioService.resumeAllTracks();
+        updateStatus("Resumed");
         
         // Resume any paused timers
         if (preWaitTimer != null && preWaitTimer.getStatus() == javafx.animation.Animation.Status.PAUSED) {
@@ -184,7 +182,7 @@ public class AudioController {
      * Stops the current playback.
      */
     public void stop() {
-        audioService.stop();
+        audioService.stopAllTracks();
         
         // Stop and clear timers
         if (preWaitTimer != null) {
