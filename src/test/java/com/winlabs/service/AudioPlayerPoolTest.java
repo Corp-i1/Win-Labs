@@ -1,6 +1,7 @@
 package com.winlabs.service;
 
 import com.winlabs.model.AudioTrack;
+import javafx.scene.media.MediaException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -126,7 +127,7 @@ class AudioPlayerPoolTest {
         } catch (Exception e) {
             // Expected - our test file isn't a valid media file
             // Verify it's a MediaException as expected, not some other error
-            assertTrue(e.getClass().getName().contains("MediaException"),
+            assertTrue(e instanceof MediaException,
                     "Expected MediaException but got: " + e.getClass().getName());
             // But we can verify pool mechanics worked up to the Media loading
         }
@@ -153,7 +154,7 @@ class AudioPlayerPoolTest {
         } catch (Exception e) {
             // Expected - test file isn't valid media
             // Verify it's a MediaException as expected
-            assertTrue(e.getClass().getName().contains("MediaException"),
+            assertTrue(e instanceof MediaException,
                     "Expected MediaException but got: " + e.getClass().getName());
         }
     }
@@ -184,7 +185,7 @@ class AudioPlayerPoolTest {
         } catch (Exception e) {
             // Expected - test file isn't valid media
             // Verify it's a MediaException as expected
-            assertTrue(e.getClass().getName().contains("MediaException"),
+            assertTrue(e instanceof MediaException,
                     "Expected MediaException but got: " + e.getClass().getName());
         }
     }
@@ -274,7 +275,7 @@ class AudioPlayerPoolTest {
         } catch (Exception e) {
             // Expected - test file isn't valid media
             // Verify it's a MediaException as expected
-            assertTrue(e.getClass().getName().contains("MediaException"),
+            assertTrue(e instanceof MediaException,
                     "Expected MediaException but got: " + e.getClass().getName());
             // But we can verify the exhaustion logic works
         } finally {
