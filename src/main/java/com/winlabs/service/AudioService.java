@@ -1,5 +1,6 @@
 package com.winlabs.service;
 
+import com.winlabs.model.AudioTrack;
 import com.winlabs.model.PlaybackState;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
@@ -8,9 +9,9 @@ import javafx.util.Duration;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.function.Consumer;
 
-//TODO: HIGH PRIORITY: Multi track playback support, e.g multiple media players for overlapping sounds should instance objects as needed and cull them when not needed to calculate how many are needed and spin them up before hand to avoid large pauses between intended playback time and actual playbacks
 //TODO: Add support for playlists, 
 // TODO: gapless playback,
 // TODO: equalizer settings, 
@@ -19,19 +20,45 @@ import java.util.function.Consumer;
 
 /**
  * Service for audio playback using JavaFX MediaPlayer.
- * Handles loading, playing, pausing, and stopping audio files.
+ * Supports both single-track (legacy) and multi-track playback modes.
+ * 
+ * Single-track mode: Traditional single MediaPlayer for simple playback.
+ * Multi-track mode: Uses AudioPlayerPool for simultaneous overlapping audio.
  */
 public class AudioService {
     
+    // Single-track mode fields (legacy support)
     private MediaPlayer mediaPlayer;
     private PlaybackState state;
     private String currentFilePath;
     private Consumer<PlaybackState> stateChangeListener;
     private Consumer<Duration> progressListener;
     
+    // Multi-track mode fields
+    private AudioPlayerPool playerPool;
+    private boolean multiTrackMode;
+    
+    /**
+     * Creates a new AudioService in single-track mode (default).
+     */
     public AudioService() {
+        this(false);
+    }
+    
+    /**
+     * Creates a new AudioService with specified mode.
+     * 
+     * @param multiTrackMode If true, enables multi-track playback support
+     */
+    public AudioService(boolean multiTrackMode) {
         this.state = PlaybackState.STOPPED;
         this.currentFilePath = null;
+        this.multiTrackMode = multiTrackMode;
+        
+        if (multiTrackMode) {
+            this.playerPool = new AudioPlayerPool();
+            this.playerPool.prewarm();
+        }
     }
     
     /**
@@ -227,11 +254,168 @@ public class AudioService {
      * Disposes of the media player and releases resources.
      */
     public void dispose() {
+        if (multiTrackMode && playerPool != null) {
+            playerPool.dispose();
+        }
+        
         if (mediaPlayer != null) {
             mediaPlayer.dispose();
             mediaPlayer = null;
         }
         currentFilePath = null;
         setState(PlaybackState.STOPPED);
+    }
+    
+    // ========== Multi-track Mode Methods ==========
+    
+    /**
+     * Checks if multi-track mode is enabled.
+     */
+    public boolean isMultiTrackMode() {
+        return multiTrackMode;
+    }
+    
+    /**
+     * Plays an audio file on a new track (multi-track mode only).
+     * Returns the track ID for managing the playback.
+     * 
+     * @param filePath Path to the audio file
+     * @return Track ID for the new playback
+     * @throws Exception if audio loading fails or not in multi-track mode
+     */
+    public String playTrack(String filePath) throws Exception {
+        if (!multiTrackMode) {
+            throw new IllegalStateException("Multi-track playback requires multi-track mode");
+        }
+        
+        AudioTrack track = playerPool.acquireTrack(filePath);
+        track.play();
+        return track.getTrackId();
+    }
+    
+    /**
+     * Plays an audio file on a new track with specified volume (multi-track mode only).
+     * 
+     * @param filePath Path to the audio file
+     * @param volume Volume level (0.0 to 1.0)
+     * @return Track ID for the new playback
+     * @throws Exception if audio loading fails or not in multi-track mode
+     */
+    public String playTrack(String filePath, double volume) throws Exception {
+        if (!multiTrackMode) {
+            throw new IllegalStateException("Multi-track playback requires multi-track mode");
+        }
+        
+        AudioTrack track = playerPool.acquireTrack(filePath);
+        track.setVolume(volume);
+        track.play();
+        return track.getTrackId();
+    }
+    
+    /**
+     * Gets a specific track by ID (multi-track mode only).
+     * 
+     * @param trackId The track ID
+     * @return The AudioTrack, or null if not found
+     */
+    public AudioTrack getTrack(String trackId) {
+        if (!multiTrackMode) {
+            return null;
+        }
+        return playerPool.getTrack(trackId);
+    }
+    
+    /**
+     * Gets all currently active tracks (multi-track mode only).
+     * 
+     * @return List of active tracks
+     */
+    public List<AudioTrack> getActiveTracks() {
+        if (!multiTrackMode) {
+            throw new IllegalStateException("Active tracks only available in multi-track mode");
+        }
+        return playerPool.getActiveTracks();
+    }
+    
+    /**
+     * Gets the count of active tracks (multi-track mode only).
+     */
+    public int getActiveTrackCount() {
+        if (!multiTrackMode) {
+            return 0;
+        }
+        return playerPool.getActiveTrackCount();
+    }
+    
+    /**
+     * Stops a specific track by ID (multi-track mode only).
+     * 
+     * @param trackId The track ID to stop
+     */
+    public void stopTrack(String trackId) {
+        if (multiTrackMode) {
+            playerPool.forceReleaseTrack(trackId);
+        }
+    }
+    
+    /**
+     * Stops all active tracks (multi-track mode only).
+     */
+    public void stopAllTracks() {
+        if (multiTrackMode) {
+            playerPool.stopAll();
+        }
+    }
+    
+    /**
+     * Pauses all active tracks (multi-track mode only).
+     */
+    public void pauseAllTracks() {
+        if (multiTrackMode) {
+            playerPool.pauseAll();
+        }
+    }
+    
+    /**
+     * Resumes all paused tracks (multi-track mode only).
+     */
+    public void resumeAllTracks() {
+        if (multiTrackMode) {
+            playerPool.resumeAll();
+        }
+    }
+    
+    /**
+     * Sets the volume for all tracks (multi-track mode only).
+     * 
+     * @param volume Volume level (0.0 to 1.0)
+     */
+    public void setVolumeAllTracks(double volume) {
+        if (multiTrackMode) {
+            playerPool.setVolumeAll(volume);
+        }
+    }
+    
+    /**
+     * Culls unused tracks from the pool (multi-track mode only).
+     * This helps manage memory by disposing of tracks that haven't been used recently.
+     * 
+     * @return Number of tracks culled
+     */
+    public int cullUnusedTracks() {
+        if (!multiTrackMode) {
+            return 0;
+        }
+        return playerPool.cullUnusedTracks();
+    }
+    
+    /**
+     * Gets the audio player pool (multi-track mode only).
+     * Use with caution - direct pool manipulation can affect service state.
+     * 
+     * @return The AudioPlayerPool, or null if not in multi-track mode
+     */
+    public AudioPlayerPool getPlayerPool() {
+        return playerPool;
     }
 }
