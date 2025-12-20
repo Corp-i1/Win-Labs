@@ -16,15 +16,15 @@ import java.util.List;
 //TODO: Make Scope adjustable (e.g., show only audio files, show all files, show only in same directory as cue list, adjust default scope shown)
 
 /**
- * TreeView component for browsing the file system.
+ * Tree view component for browsing the file system.
  * Shows directories and audio files with lazy loading.
  * Note: This component is now wrapped by FileView which provides browser/tree toggle functionality.
  */
-public class FileTreeView extends TreeView<Path> {
+public class TreeFileView extends TreeView<Path> {
     
     private final FileSystemService fileSystemService;
     
-    public FileTreeView() {
+    public TreeFileView() {
         this.fileSystemService = new FileSystemService();
         
         // Create root node
@@ -37,7 +37,7 @@ public class FileTreeView extends TreeView<Path> {
         loadFileSystemRoots();
         
         // Custom cell factory to display file/folder names
-        setCellFactory(tv -> new FileTreeCell());
+        setCellFactory(tv -> new TreeFileCell());
     }
     
     /**
@@ -114,7 +114,7 @@ public class FileTreeView extends TreeView<Path> {
     /**
      * Custom tree cell to display file/folder names nicely.
      */
-    private static class FileTreeCell extends TreeCell<Path> {
+    private static class TreeFileCell extends TreeCell<Path> {
         @Override
         protected void updateItem(Path path, boolean empty) {
             super.updateItem(path, empty);

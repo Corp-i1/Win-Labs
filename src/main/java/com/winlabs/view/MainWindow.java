@@ -99,14 +99,14 @@ public class MainWindow extends Stage {
         fileView = new FileView();
         
         // Handle double-click for tree view
-        fileView.getTreeView().setOnMouseClicked(e -> {
+        fileView.getTreeFileView().setOnMouseClicked(e -> {
             if (e.getClickCount() == 2) {
                 handleFileDoubleClick();
             }
         });
         
         // Handle double-click for browser view
-        fileView.getBrowserView().setOnMouseClicked(e -> {
+        fileView.getBrowserFileView().setOnMouseClicked(e -> {
             if (e.getClickCount() == 2) {
                 handleFileDoubleClick();
             }

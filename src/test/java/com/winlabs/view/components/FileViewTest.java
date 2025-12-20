@@ -30,9 +30,9 @@ public class FileViewTest {
         // Verify the required methods exist
         assertNotNull(FileView.class.getMethod("getSelectedPath"),
             "getSelectedPath method should exist");
-        assertNotNull(FileView.class.getMethod("getTreeView"),
-            "getTreeView method should exist");
-        assertNotNull(FileView.class.getMethod("getBrowserView"),
-            "getBrowserView method should exist");
+        assertNotNull(FileView.class.getMethod("getTreeFileView"),
+            "getTreeFileView method should exist");
+        assertNotNull(FileView.class.getMethod("getBrowserFileView"),
+            "getBrowserFileView method should exist");
     }
 }

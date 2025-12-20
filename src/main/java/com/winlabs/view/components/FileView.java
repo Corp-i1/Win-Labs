@@ -1,17 +1,12 @@
 package com.winlabs.view.components;
 
-import com.winlabs.service.FileSystemService;
-import com.winlabs.util.PathUtil;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 
 /**
  * File view component that can toggle between tree view and browser view.
@@ -19,19 +14,14 @@ import java.util.List;
  */
 public class FileView extends BorderPane {
     
-    private final FileSystemService fileSystemService;
-    private final FileTreeView fileTreeView;
-    private final ListView<Path> fileBrowserView;
+    private final TreeFileView treeFileView;
+    private final BrowserFileView browserFileView;
     private final ToggleButton viewToggle;
     private boolean isTreeView = true;
     
     public FileView() {
-        this.fileSystemService = new FileSystemService();
-        this.fileTreeView = new FileTreeView();
-        this.fileBrowserView = new ListView<>();
-        
-        // Setup browser view
-        setupBrowserView();
+        this.treeFileView = new TreeFileView();
+        this.browserFileView = new BrowserFileView();
         
         // Create toggle button
         viewToggle = new ToggleButton("Browser View");
@@ -46,39 +36,7 @@ public class FileView extends BorderPane {
         
         // Set initial view
         setTop(header);
-        setCenter(fileTreeView);
-    }
-    
-    /**
-     * Sets up the browser view with custom cell factory.
-     */
-    private void setupBrowserView() {
-        fileBrowserView.setCellFactory(lv -> new ListCell<Path>() {
-            @Override
-            protected void updateItem(Path path, boolean empty) {
-                super.updateItem(path, empty);
-                
-                if (empty || path == null) {
-                    setText(null);
-                    setGraphic(null);
-                } else {
-                    String displayName;
-                    if (path.getFileName() == null) {
-                        displayName = path.toString();
-                    } else {
-                        displayName = path.getFileName().toString();
-                    }
-                    
-                    setText(displayName);
-                    
-                    if (Files.isDirectory(path)) {
-                        setStyle("-fx-font-weight: bold;");
-                    } else {
-                        setStyle("-fx-font-weight: normal;");
-                    }
-                }
-            }
-        });
+        setCenter(treeFileView);
     }
     
     /**
@@ -88,46 +46,14 @@ public class FileView extends BorderPane {
         isTreeView = !isTreeView;
         
         if (isTreeView) {
-            setCenter(fileTreeView);
+            setCenter(treeFileView);
             viewToggle.setText("Browser View");
             viewToggle.setSelected(false);
         } else {
-            loadBrowserView();
-            setCenter(fileBrowserView);
+            browserFileView.loadFiles();
+            setCenter(browserFileView);
             viewToggle.setText("Tree View");
             viewToggle.setSelected(true);
-        }
-    }
-    
-    /**
-     * Loads files into the browser view.
-     * Shows files from common locations (home and music directories).
-     */
-    private void loadBrowserView() {
-        fileBrowserView.getItems().clear();
-        
-        // Load from music directory if it exists
-        Path musicDir = fileSystemService.getMusicDirectory();
-        if (Files.exists(musicDir)) {
-            try {
-                List<Path> files = fileSystemService.listAudioFilesRecursive(musicDir);
-                fileBrowserView.getItems().addAll(files);
-            } catch (IOException e) {
-                System.err.println("Failed to load music directory: " + e.getMessage());
-            }
-        }
-        
-        // If no files found, try home directory
-        if (fileBrowserView.getItems().isEmpty()) {
-            Path homeDir = fileSystemService.getHomeDirectory();
-            if (Files.exists(homeDir)) {
-                try {
-                    List<Path> files = fileSystemService.listAudioFilesRecursive(homeDir);
-                    fileBrowserView.getItems().addAll(files);
-                } catch (IOException e) {
-                    System.err.println("Failed to load home directory: " + e.getMessage());
-                }
-            }
         }
     }
     
@@ -136,23 +62,24 @@ public class FileView extends BorderPane {
      */
     public Path getSelectedPath() {
         if (isTreeView) {
-            return fileTreeView.getSelectedPath();
+            return treeFileView.getSelectedPath();
         } else {
-            return fileBrowserView.getSelectionModel().getSelectedItem();
+            return browserFileView.getSelectedPath();
         }
     }
     
     /**
-     * Gets the internal tree view component.
+     * Gets the internal tree file view component.
      */
-    public FileTreeView getTreeView() {
-        return fileTreeView;
+    public TreeFileView getTreeFileView() {
+        return treeFileView;
     }
     
     /**
-     * Gets the internal browser view component.
+     * Gets the internal browser file view component.
      */
-    public ListView<Path> getBrowserView() {
-        return fileBrowserView;
+    public BrowserFileView getBrowserFileView() {
+        return browserFileView;
     }
 }
+
