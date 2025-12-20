@@ -77,10 +77,10 @@ public class AudioPlayerPool {
      * When enabled, the pool will automatically remove tracks that haven't been
      * used for longer than CULL_TIMEOUT_MS.
      */
-    public void enableAutoCulling() {
+    public synchronized void enableAutoCulling() {
         if (!autoCullEnabled) {
             autoCullEnabled = true;
-            cullTask = cullScheduler.scheduleAtFixedRate(
+            cullTask = cullScheduler.scheduleWithFixedDelay(
                 this::cullUnusedTracksInternal,
                 CULL_INTERVAL_MS,
                 CULL_INTERVAL_MS,
@@ -92,7 +92,7 @@ public class AudioPlayerPool {
     /**
      * Disables automatic periodic culling of unused tracks.
      */
-    public void disableAutoCulling() {
+    public synchronized void disableAutoCulling() {
         if (autoCullEnabled) {
             autoCullEnabled = false;
             if (cullTask != null) {
