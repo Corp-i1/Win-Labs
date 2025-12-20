@@ -236,6 +236,57 @@ class AudioPlayerPoolTest {
     }
     
     @Test
+    void testAutoCullingEnabled() {
+        // Pool should have auto-culling disabled by default
+        assertFalse(pool.isAutoCullEnabled());
+        
+        // After prewarm, auto-culling should be enabled
+        pool.prewarm();
+        assertTrue(pool.isAutoCullEnabled());
+    }
+    
+    @Test
+    void testEnableAutoCulling() {
+        assertFalse(pool.isAutoCullEnabled());
+        
+        pool.enableAutoCulling();
+        assertTrue(pool.isAutoCullEnabled());
+    }
+    
+    @Test
+    void testDisableAutoCulling() {
+        pool.enableAutoCulling();
+        assertTrue(pool.isAutoCullEnabled());
+        
+        pool.disableAutoCulling();
+        assertFalse(pool.isAutoCullEnabled());
+    }
+    
+    @Test
+    void testAutoCullingToggle() {
+        pool.prewarm();
+        assertTrue(pool.isAutoCullEnabled());
+        
+        // Disable and re-enable
+        pool.disableAutoCulling();
+        assertFalse(pool.isAutoCullEnabled());
+        
+        pool.enableAutoCulling();
+        assertTrue(pool.isAutoCullEnabled());
+    }
+    
+    @Test
+    void testAutoCullingAfterDispose() {
+        pool.prewarm();
+        assertTrue(pool.isAutoCullEnabled());
+        
+        pool.dispose();
+        
+        // After dispose, auto-culling should be disabled
+        assertFalse(pool.isAutoCullEnabled());
+    }
+    
+    @Test
     void testDispose() {
         pool.prewarm();
         assertEquals(5, pool.getAvailableTrackCount());

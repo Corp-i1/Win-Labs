@@ -399,6 +399,7 @@ public class AudioService {
     /**
      * Culls unused tracks from the pool (multi-track mode only).
      * This helps manage memory by disposing of tracks that haven't been used recently.
+     * Note: Automatic culling is enabled by default when the pool is prewarmed.
      * 
      * @return Number of tracks culled
      */
@@ -407,6 +408,35 @@ public class AudioService {
             return 0;
         }
         return playerPool.cullUnusedTracks();
+    }
+    
+    /**
+     * Enables automatic periodic culling of unused tracks (multi-track mode only).
+     * When enabled, the pool automatically removes tracks that haven't been used recently.
+     */
+    public void enableAutoCulling() {
+        if (multiTrackMode) {
+            playerPool.enableAutoCulling();
+        }
+    }
+    
+    /**
+     * Disables automatic periodic culling of unused tracks (multi-track mode only).
+     */
+    public void disableAutoCulling() {
+        if (multiTrackMode) {
+            playerPool.disableAutoCulling();
+        }
+    }
+    
+    /**
+     * Checks if automatic culling is currently enabled (multi-track mode only).
+     */
+    public boolean isAutoCullEnabled() {
+        if (!multiTrackMode) {
+            return false;
+        }
+        return playerPool.isAutoCullEnabled();
     }
     
     /**

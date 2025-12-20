@@ -193,6 +193,42 @@ class AudioServiceMultiTrackTest {
     }
     
     @Test
+    void testAutoCullingInSingleTrackMode() {
+        // Single-track mode shouldn't support auto-culling
+        assertFalse(singleTrackService.isAutoCullEnabled());
+        
+        // Should not throw, but should have no effect
+        assertDoesNotThrow(() -> singleTrackService.enableAutoCulling());
+        assertFalse(singleTrackService.isAutoCullEnabled());
+        
+        assertDoesNotThrow(() -> singleTrackService.disableAutoCulling());
+        assertFalse(singleTrackService.isAutoCullEnabled());
+    }
+    
+    @Test
+    void testAutoCullingInMultiTrackMode() {
+        // Multi-track mode should have auto-culling enabled after initialization
+        assertTrue(multiTrackService.isAutoCullEnabled());
+    }
+    
+    @Test
+    void testEnableAutoCulling() {
+        multiTrackService.disableAutoCulling();
+        assertFalse(multiTrackService.isAutoCullEnabled());
+        
+        multiTrackService.enableAutoCulling();
+        assertTrue(multiTrackService.isAutoCullEnabled());
+    }
+    
+    @Test
+    void testDisableAutoCulling() {
+        assertTrue(multiTrackService.isAutoCullEnabled());
+        
+        multiTrackService.disableAutoCulling();
+        assertFalse(multiTrackService.isAutoCullEnabled());
+    }
+    
+    @Test
     void testGetPlayerPool() {
         assertNull(singleTrackService.getPlayerPool());
         assertNotNull(multiTrackService.getPlayerPool());
