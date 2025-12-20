@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -35,6 +36,7 @@ public class AudioPlayerPool {
     private final int maxPoolSize;
     private final ScheduledExecutorService cullScheduler;
     private volatile boolean autoCullEnabled;
+    private volatile ScheduledFuture<?> cullTask;
     
     public AudioPlayerPool() {
         this(DEFAULT_POOL_SIZE, MAX_POOL_SIZE);
@@ -51,6 +53,7 @@ public class AudioPlayerPool {
             return thread;
         });
         this.autoCullEnabled = false;
+        this.cullTask = null;
     }
     
     /**
@@ -77,8 +80,8 @@ public class AudioPlayerPool {
     public void enableAutoCulling() {
         if (!autoCullEnabled) {
             autoCullEnabled = true;
-            cullScheduler.scheduleAtFixedRate(
-                this::cullUnusedTracks,
+            cullTask = cullScheduler.scheduleAtFixedRate(
+                this::cullUnusedTracksInternal,
                 CULL_INTERVAL_MS,
                 CULL_INTERVAL_MS,
                 TimeUnit.MILLISECONDS
@@ -90,9 +93,13 @@ public class AudioPlayerPool {
      * Disables automatic periodic culling of unused tracks.
      */
     public void disableAutoCulling() {
-        autoCullEnabled = false;
-        // Note: We don't cancel the scheduled task, just set the flag
-        // The task will check this flag and do nothing if disabled
+        if (autoCullEnabled) {
+            autoCullEnabled = false;
+            if (cullTask != null) {
+                cullTask.cancel(false);
+                cullTask = null;
+            }
+        }
     }
     
     /**
@@ -232,18 +239,12 @@ public class AudioPlayerPool {
     }
     
     /**
+     * Internal method for automatic culling called by the scheduler.
      * Culls unused tracks from the pool that have exceeded the timeout.
-     * This helps manage memory by disposing of tracks that haven't been used recently.
-     * This method can be called manually or is called automatically when auto-culling is enabled.
      * 
      * @return Number of tracks culled
      */
-    public int cullUnusedTracks() {
-        // If auto-culling is disabled and this is being called from the scheduler, skip
-        if (!autoCullEnabled && Thread.currentThread().getName().contains("AudioPlayerPool-Culler")) {
-            return 0;
-        }
-        
+    private int cullUnusedTracksInternal() {
         long now = System.currentTimeMillis();
         int culled = 0;
         
@@ -258,6 +259,17 @@ public class AudioPlayerPool {
         }
         
         return culled;
+    }
+    
+    /**
+     * Culls unused tracks from the pool that have exceeded the timeout.
+     * This helps manage memory by disposing of tracks that haven't been used recently.
+     * This method can be called manually to trigger culling on demand.
+     * 
+     * @return Number of tracks culled
+     */
+    public int cullUnusedTracks() {
+        return cullUnusedTracksInternal();
     }
     
     /**
@@ -313,8 +325,10 @@ public class AudioPlayerPool {
      * The pool should not be used after calling this method.
      */
     public void dispose() {
+        // Disable auto-culling and cancel the scheduled task
+        disableAutoCulling();
+        
         // Shutdown the cull scheduler
-        autoCullEnabled = false;
         cullScheduler.shutdown();
         try {
             if (!cullScheduler.awaitTermination(1, TimeUnit.SECONDS)) {
