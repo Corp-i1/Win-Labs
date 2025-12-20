@@ -30,6 +30,11 @@ public class Cue {
     
     /**
      * Creates a new Cue with specified values.
+     * TODO: Add validation as needed.
+     * TODO: Add for other properties in overloaded constructors.
+     * TODO: Consider using a Builder pattern for more complex construction.
+     * TODO: Add Javadoc comments for parameters.
+     * TODO: Add unit tests for this constructor.
      */
     public Cue(int number, String name, String filePath) {
         this();

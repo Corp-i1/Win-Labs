@@ -11,16 +11,21 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+//COMPLETED: Made toggleable between tree view and browser view - see FileView.java
+//TODO: Make so that the visibility of this can be toggled from the main window via a icon at the bottem right corner Default to hidden
+//TODO: Make Scope adjustable (e.g., show only audio files, show all files, show only in same directory as cue list, adjust default scope shown)
+
 /**
- * TreeView component for browsing the file system.
+ * Tree view component for browsing the file system.
  * Shows directories and audio files with lazy loading.
+ * Note: This component is now wrapped by FileView which provides browser/tree toggle functionality.
  */
-public class FileTreeView extends TreeView<Path> {
+public class TreeFileView extends TreeView<Path> {
     
     private final FileSystemService fileSystemService;
     
-    public FileTreeView() {
-        this.fileSystemService = new FileSystemService();
+    public TreeFileView(FileSystemService fileSystemService) {
+        this.fileSystemService = fileSystemService;
         
         // Create root node
         TreeItem<Path> rootItem = new TreeItem<>(null);
@@ -32,7 +37,7 @@ public class FileTreeView extends TreeView<Path> {
         loadFileSystemRoots();
         
         // Custom cell factory to display file/folder names
-        setCellFactory(tv -> new FileTreeCell());
+        setCellFactory(tv -> new TreeFileCell());
     }
     
     /**
@@ -108,8 +113,9 @@ public class FileTreeView extends TreeView<Path> {
     
     /**
      * Custom tree cell to display file/folder names nicely.
+     * Uses shared display logic from FileView.
      */
-    private static class FileTreeCell extends TreeCell<Path> {
+    private static class TreeFileCell extends TreeCell<Path> {
         @Override
         protected void updateItem(Path path, boolean empty) {
             super.updateItem(path, empty);
@@ -118,22 +124,8 @@ public class FileTreeView extends TreeView<Path> {
                 setText(null);
                 setGraphic(null);
             } else {
-                String displayName;
-                if (path.getFileName() == null) {
-                    // Root directory (e.g., C:\ or /)
-                    displayName = path.toString();
-                } else {
-                    displayName = path.getFileName().toString();
-                }
-                
-                setText(displayName);
-                
-                // Could add icons here for folders vs files
-                if (Files.isDirectory(path)) {
-                    setStyle("-fx-font-weight: bold;");
-                } else {
-                    setStyle("-fx-font-weight: normal;");
-                }
+                setText(FileView.getDisplayName(path));
+                setStyle(FileView.getPathStyle(path));
             }
         }
     }

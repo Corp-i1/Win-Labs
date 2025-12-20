@@ -7,7 +7,7 @@ import com.winlabs.model.Playlist;
 import com.winlabs.service.PlaylistService;
 import com.winlabs.util.PathUtil;
 import com.winlabs.util.TimeUtil;
-import com.winlabs.view.components.FileTreeView;
+import com.winlabs.view.components.FileView;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
@@ -22,6 +22,12 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 
+//TODO: Add context menu for file operations (open, delete, properties, etc.)
+//TODO: Add drag-and-drop support for adding files to cue list
+//TODO: Add keyboard shortcuts for common actions (play, pause, stop, next cue, etc.) These should be configurable in settings.
+//TODO: Make Settings Functional
+//TODO: Add search/filter functionality to file browser
+//TODO: Add context menu for opening files/folders
 /**
  * Main application window for Win-Labs.
  * Contains the cue list, controls, and file browser.
@@ -38,7 +44,7 @@ public class MainWindow extends Stage {
     
     private AudioController audioController;
     private PlaylistService playlistService;
-    private FileTreeView fileTreeView;
+    private FileView fileView;
     
     public MainWindow() {
         this.playlist = new Playlist();
@@ -90,14 +96,24 @@ public class MainWindow extends Stage {
         Label fileBrowserLabel = new Label("File Browser");
         fileBrowserLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
         fileBrowserLabel.setPadding(new Insets(5));
-        fileTreeView = new FileTreeView();
-        fileTreeView.setOnMouseClicked(e -> {
+        fileView = new FileView();
+        
+        // Handle double-click for tree view
+        fileView.getTreeFileView().setOnMouseClicked(e -> {
             if (e.getClickCount() == 2) {
                 handleFileDoubleClick();
             }
         });
-        fileBrowserContainer.getChildren().addAll(fileBrowserLabel, fileTreeView);
-        VBox.setVgrow(fileTreeView, Priority.ALWAYS);
+        
+        // Handle double-click for browser view
+        fileView.getBrowserFileView().setOnMouseClicked(e -> {
+            if (e.getClickCount() == 2) {
+                handleFileDoubleClick();
+            }
+        });
+        
+        fileBrowserContainer.getChildren().addAll(fileBrowserLabel, fileView);
+        VBox.setVgrow(fileView, Priority.ALWAYS);
         
         splitPane.getItems().addAll(cueListContainer, fileBrowserContainer);
         splitPane.setDividerPositions(0.7);
@@ -117,6 +133,7 @@ public class MainWindow extends Stage {
         setScene(scene);
         
         // Add sample data for testing
+        // TODO: Make so that this is only in debug mode
         addSampleCues();
     }
     
@@ -150,6 +167,7 @@ public class MainWindow extends Stage {
         );
         
         // Edit menu
+        //TODO: Make functional
         Menu editMenu = new Menu("Edit");
         MenuItem addCueItem = new MenuItem("Add Cue");
         MenuItem deleteCueItem = new MenuItem("Delete Cue");
@@ -164,13 +182,14 @@ public class MainWindow extends Stage {
         
         MenuItem lightThemeItem = new MenuItem("Light Theme");
         lightThemeItem.setOnAction(e -> applyTheme("/css/light-theme.css"));
-        
+        //TODO: Fix Rainbow theme CSS
         MenuItem rainbowThemeItem = new MenuItem("Rainbow Theme");
         rainbowThemeItem.setOnAction(e -> applyTheme("/css/rainbow-theme.css"));
         
         viewMenu.getItems().addAll(darkThemeItem, lightThemeItem, rainbowThemeItem);
         
         // Help menu
+        //TODO: Make functional
         Menu helpMenu = new Menu("Help");
         MenuItem aboutItem = new MenuItem("About");
         MenuItem documentationItem = new MenuItem("Documentation");
@@ -184,6 +203,7 @@ public class MainWindow extends Stage {
     /**
      * Creates the toolbar.
      */
+    //TODO: Add More toolbar buttons and functionality
     private ToolBar createToolbar() {
         ToolBar toolbar = new ToolBar();
         
@@ -324,6 +344,7 @@ public class MainWindow extends Stage {
         
         Button skipButton = new Button("Skip");
         skipButton.setPrefWidth(100);
+        //TODO: Implement skip functionality
         
         controls.getChildren().addAll(playButton, pauseButton, stopButton, skipButton);
         return controls;
@@ -451,7 +472,7 @@ public class MainWindow extends Stage {
      * Handles double-click on file browser.
      */
     private void handleFileDoubleClick() {
-        Path selectedPath = fileTreeView.getSelectedPath();
+        Path selectedPath = fileView.getSelectedPath();
         if (selectedPath != null && PathUtil.isAudioFile(selectedPath)) {
             addCueFromFile(selectedPath);
         }
@@ -580,11 +601,6 @@ public class MainWindow extends Stage {
         scene.getStylesheets().add(getClass().getResource(themePath).toExternalForm());
         updateStatus("Theme changed");
     }
-    
-    /**
-     * Updates the status label.
-     */
-    
     
     /**
      * Updates the status label.
