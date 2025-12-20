@@ -1,0 +1,167 @@
+/* Rainbow Theme for Win-Labs - Fun colorful theme! */
+
+.root {
+    -fx-base: #1a1a2e;
+    -fx-background: linear-gradient(to bottom, #0f3460, #16213e);
+    -fx-control-inner-background: #16213e;
+    -fx-control-inner-background-alt: #1a1a2e;
+    -fx-accent: #e94560;
+    -fx-focus-color: #00d9ff;
+    -fx-faint-focus-color: #00d9ff22;
+}
+
+/* Text colors */
+.label {
+    -fx-text-fill: #f0f0f0;
+}
+
+.text-field {
+    -fx-text-fill: #f0f0f0;
+    -fx-prompt-text-fill: #888888;
+}
+
+/* Menu and menu bar */
+.menu-bar {
+    -fx-background-color: linear-gradient(to right, #e94560, #ff6b9d, #ffa07a);
+}
+
+.menu-item {
+    -fx-background-color: #16213e;
+}
+
+.menu-item:focused {
+    -fx-background-color: #e94560;
+}
+
+.menu-item .label {
+    -fx-text-fill: #f0f0f0;
+}
+
+/* Toolbar */
+.tool-bar {
+    -fx-background-color: linear-gradient(to right, #e94560, #ff6b9d);
+    -fx-border-color: #e94560;
+    -fx-border-width: 0 0 2 0;
+}
+
+.tool-bar .label {
+    -fx-text-fill: #ffffff;
+}
+
+/* Buttons */
+.button {
+    -fx-background-color: linear-gradient(to bottom, #e94560, #c72c41);
+    -fx-text-fill: white;
+    -fx-background-radius: 5;
+    -fx-padding: 5 15 5 15;
+    -fx-font-weight: bold;
+}
+
+.button:hover {
+    -fx-background-color: linear-gradient(to bottom, #ff5577, #e94560);
+}
+
+.button:pressed {
+    -fx-background-color: #c72c41;
+}
+
+.button:disabled {
+    -fx-opacity: 0.4;
+}
+
+/* Table view */
+.table-view {
+    -fx-background-color: #16213e;
+    -fx-border-color: #e94560;
+    -fx-border-width: 2;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: linear-gradient(to bottom, #1a1a2e, #0f3460);
+}
+
+.table-view .column-header {
+    -fx-background-color: transparent;
+    -fx-border-color: #e94560;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: #00d9ff;
+    -fx-font-weight: bold;
+}
+
+.table-view .table-cell {
+    -fx-text-fill: #f0f0f0;
+    -fx-border-color: transparent;
+}
+
+.table-row-cell {
+    -fx-background-color: #16213e;
+}
+
+.table-row-cell:odd {
+    -fx-background-color: #1a1a2e;
+}
+
+.table-row-cell:selected {
+    -fx-background-color: linear-gradient(to right, #e94560, #ff6b9d);
+}
+
+.table-row-cell:hover {
+    -fx-background-color: #0f3460;
+}
+
+/* Tree view */
+.tree-view {
+    -fx-background-color: #16213e;
+    -fx-border-color: #e94560;
+    -fx-border-width: 2;
+}
+
+.tree-cell {
+    -fx-background-color: #16213e;
+    -fx-text-fill: #f0f0f0;
+}
+
+.tree-cell:selected {
+    -fx-background-color: linear-gradient(to right, #e94560, #ff6b9d);
+}
+
+.tree-cell:hover {
+    -fx-background-color: #0f3460;
+}
+
+/* Split pane */
+.split-pane {
+    -fx-background-color: #16213e;
+}
+
+.split-pane-divider {
+    -fx-background-color: #e94560;
+    -fx-padding: 0 2 0 2;
+}
+
+/* Scroll bar */
+.scroll-bar {
+    -fx-background-color: #1a1a2e;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: linear-gradient(to bottom, #e94560, #ff6b9d);
+    -fx-background-radius: 5;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: linear-gradient(to bottom, #ff5577, #ffa07a);
+}
+
+/* Status bar */
+.status-bar {
+    -fx-background-color: linear-gradient(to right, #e94560, #ff6b9d, #ffa07a);
+    -fx-padding: 5;
+}
+
+.status-bar .label {
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+}

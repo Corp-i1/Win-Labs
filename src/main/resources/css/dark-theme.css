@@ -1,0 +1,155 @@
+/* Dark Theme for Win-Labs */
+
+.root {
+    -fx-base: #1e1e1e;
+    -fx-background: #252526;
+    -fx-control-inner-background: #1e1e1e;
+    -fx-control-inner-background-alt: #2d2d30;
+    -fx-accent: #0e639c;
+    -fx-focus-color: #007acc;
+    -fx-faint-focus-color: #007acc22;
+}
+
+/* Text colors */
+.label {
+    -fx-text-fill: #cccccc;
+}
+
+.text-field {
+    -fx-text-fill: #cccccc;
+    -fx-prompt-text-fill: #888888;
+}
+
+/* Menu and menu bar */
+.menu-bar {
+    -fx-background-color: #2d2d30;
+}
+
+.menu-item {
+    -fx-background-color: #2d2d30;
+}
+
+.menu-item:focused {
+    -fx-background-color: #0e639c;
+}
+
+.menu-item .label {
+    -fx-text-fill: #cccccc;
+}
+
+/* Toolbar */
+.tool-bar {
+    -fx-background-color: #2d2d30;
+    -fx-border-color: #3e3e42;
+    -fx-border-width: 0 0 1 0;
+}
+
+/* Buttons */
+.button {
+    -fx-background-color: #0e639c;
+    -fx-text-fill: white;
+    -fx-background-radius: 3;
+    -fx-padding: 5 15 5 15;
+}
+
+.button:hover {
+    -fx-background-color: #1177bb;
+}
+
+.button:pressed {
+    -fx-background-color: #0d5689;
+}
+
+.button:disabled {
+    -fx-opacity: 0.4;
+}
+
+/* Table view */
+.table-view {
+    -fx-background-color: #1e1e1e;
+    -fx-border-color: #3e3e42;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: #2d2d30;
+}
+
+.table-view .column-header {
+    -fx-background-color: #2d2d30;
+    -fx-border-color: #3e3e42;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: #cccccc;
+    -fx-font-weight: bold;
+}
+
+.table-view .table-cell {
+    -fx-text-fill: #cccccc;
+    -fx-border-color: transparent;
+}
+
+.table-row-cell {
+    -fx-background-color: #1e1e1e;
+}
+
+.table-row-cell:odd {
+    -fx-background-color: #252526;
+}
+
+.table-row-cell:selected {
+    -fx-background-color: #0e639c;
+}
+
+.table-row-cell:hover {
+    -fx-background-color: #2a2d2e;
+}
+
+/* Tree view */
+.tree-view {
+    -fx-background-color: #1e1e1e;
+    -fx-border-color: #3e3e42;
+}
+
+.tree-cell {
+    -fx-background-color: #1e1e1e;
+    -fx-text-fill: #cccccc;
+}
+
+.tree-cell:selected {
+    -fx-background-color: #0e639c;
+}
+
+.tree-cell:hover {
+    -fx-background-color: #2a2d2e;
+}
+
+/* Split pane */
+.split-pane {
+    -fx-background-color: #1e1e1e;
+}
+
+.split-pane-divider {
+    -fx-background-color: #3e3e42;
+    -fx-padding: 0 1 0 1;
+}
+
+/* Scroll bar */
+.scroll-bar {
+    -fx-background-color: #1e1e1e;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: #3e3e42;
+    -fx-background-radius: 5;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: #4e4e52;
+}
+
+/* Status bar styling */
+.status-bar {
+    -fx-background-color: #2d2d30;
+    -fx-padding: 5;
+}

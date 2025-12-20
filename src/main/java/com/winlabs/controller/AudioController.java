@@ -1,0 +1,282 @@
+package com.winlabs.controller;
+
+import com.winlabs.model.Cue;
+import com.winlabs.model.PlaybackState;
+import com.winlabs.service.AudioService;
+import javafx.animation.PauseTransition;
+import javafx.util.Duration;
+
+import java.util.function.Consumer;
+
+/**
+ * Controller for managing audio playback logic.
+ * Handles play, pause, stop, and auto-follow functionality.
+ */
+public class AudioController {
+    
+    private final AudioService audioService;
+    private Cue currentCue;
+    private Consumer<String> statusUpdateListener;
+    private Consumer<PlaybackState> stateChangeListener;
+    private Runnable onCueCompleteListener;
+    
+    private PauseTransition preWaitTimer;
+    private PauseTransition postWaitTimer;
+    
+    public AudioController() {
+        this.audioService = new AudioService();
+        setupAudioServiceListeners();
+    }
+    
+    /**
+     * Sets up listeners for the audio service.
+     */
+    private void setupAudioServiceListeners() {
+        audioService.setStateChangeListener(state -> {
+            if (stateChangeListener != null) {
+                stateChangeListener.accept(state);
+            }
+            
+            // Handle end of playback
+            if (state == PlaybackState.STOPPED && currentCue != null) {
+                handleCueComplete();
+            }
+        });
+    }
+    
+    /**
+     * Plays a cue.
+     */
+    public void playCue(Cue cue) {
+        if (cue == null) {
+            updateStatus("No cue to play");
+            return;
+        }
+        
+        currentCue = cue;
+        String filePath = cue.getFilePath();
+        
+        if (filePath == null || filePath.isEmpty()) {
+            updateStatus("Cue has no audio file");
+            return;
+        }
+        
+        try {
+            // Check for pre-wait
+            double preWait = cue.getPreWait();
+            if (preWait > 0) {
+                updateStatus(String.format("Pre-wait: %.1fs for %s", preWait, cue.getName()));
+                startPreWait(preWait, () -> startPlayback(cue, filePath));
+            } else {
+                startPlayback(cue, filePath);
+            }
+        } catch (Exception e) {
+            updateStatus("Error playing cue: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Starts the actual audio playback.
+     */
+    private void startPlayback(Cue cue, String filePath) {
+        try {
+            audioService.loadAudio(filePath);
+            audioService.play();
+            updateStatus("Playing: " + cue.getName());
+        } catch (Exception e) {
+            updateStatus("Error loading audio: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Starts the pre-wait timer.
+     */
+    private void startPreWait(double seconds, Runnable onComplete) {
+        if (preWaitTimer != null) {
+            preWaitTimer.stop();
+        }
+        
+        preWaitTimer = new PauseTransition(Duration.seconds(seconds));
+        preWaitTimer.setOnFinished(e -> onComplete.run());
+        preWaitTimer.play();
+    }
+    
+    /**
+     * Handles cue completion and post-wait/auto-follow logic.
+     */
+    private void handleCueComplete() {
+        if (currentCue == null) {
+            return;
+        }
+        
+        updateStatus("Cue complete: " + currentCue.getName());
+        
+        double postWait = currentCue.getPostWait();
+        boolean autoFollow = currentCue.isAutoFollow();
+        
+        if (postWait > 0 && autoFollow) {
+            // Wait, then trigger next cue
+            updateStatus(String.format("Post-wait: %.1fs", postWait));
+            startPostWait(postWait, () -> {
+                if (onCueCompleteListener != null) {
+                    onCueCompleteListener.run();
+                }
+            });
+        } else if (autoFollow) {
+            // No post-wait, trigger next cue immediately
+            if (onCueCompleteListener != null) {
+                onCueCompleteListener.run();
+            }
+        }
+        
+        currentCue = null;
+    }
+    
+    /**
+     * Starts the post-wait timer.
+     */
+    private void startPostWait(double seconds, Runnable onComplete) {
+        if (postWaitTimer != null) {
+            postWaitTimer.stop();
+        }
+        
+        postWaitTimer = new PauseTransition(Duration.seconds(seconds));
+        postWaitTimer.setOnFinished(e -> onComplete.run());
+        postWaitTimer.play();
+    }
+    
+    /**
+     * Pauses the current playback.
+     */
+    public void pause() {
+        audioService.pause();
+        
+        // Pause any active timers
+        if (preWaitTimer != null) {
+            preWaitTimer.pause();
+        }
+        if (postWaitTimer != null) {
+            postWaitTimer.pause();
+        }
+        
+        updateStatus("Paused");
+    }
+    
+    /**
+     * Resumes playback.
+     */
+    public void resume() {
+        if (audioService.getState() == PlaybackState.PAUSED) {
+            audioService.play();
+            updateStatus("Resumed");
+        }
+        
+        // Resume any paused timers
+        if (preWaitTimer != null && preWaitTimer.getStatus() == javafx.animation.Animation.Status.PAUSED) {
+            preWaitTimer.play();
+        }
+        if (postWaitTimer != null && postWaitTimer.getStatus() == javafx.animation.Animation.Status.PAUSED) {
+            postWaitTimer.play();
+        }
+    }
+    
+    /**
+     * Stops the current playback.
+     */
+    public void stop() {
+        audioService.stop();
+        
+        // Stop and clear timers
+        if (preWaitTimer != null) {
+            preWaitTimer.stop();
+            preWaitTimer = null;
+        }
+        if (postWaitTimer != null) {
+            postWaitTimer.stop();
+            postWaitTimer = null;
+        }
+        
+        currentCue = null;
+        updateStatus("Stopped");
+    }
+    
+    /**
+     * Gets the current playback state.
+     */
+    public PlaybackState getState() {
+        return audioService.getState();
+    }
+    
+    /**
+     * Gets the current cue being played.
+     */
+    public Cue getCurrentCue() {
+        return currentCue;
+    }
+    
+    /**
+     * Sets the volume (0.0 to 1.0).
+     */
+    public void setVolume(double volume) {
+        audioService.setVolume(volume);
+    }
+    
+    /**
+     * Gets the current volume.
+     */
+    public double getVolume() {
+        return audioService.getVolume();
+    }
+    
+    /**
+     * Gets the current playback time in seconds.
+     */
+    public double getCurrentTime() {
+        return audioService.getCurrentTime();
+    }
+    
+    /**
+     * Gets the total duration in seconds.
+     */
+    public double getDuration() {
+        return audioService.getDuration();
+    }
+    
+    /**
+     * Sets a listener for status updates.
+     */
+    public void setStatusUpdateListener(Consumer<String> listener) {
+        this.statusUpdateListener = listener;
+    }
+    
+    /**
+     * Sets a listener for state changes.
+     */
+    public void setStateChangeListener(Consumer<PlaybackState> listener) {
+        this.stateChangeListener = listener;
+    }
+    
+    /**
+     * Sets a listener for when a cue completes (for auto-follow).
+     */
+    public void setOnCueCompleteListener(Runnable listener) {
+        this.onCueCompleteListener = listener;
+    }
+    
+    /**
+     * Updates status and notifies listeners.
+     */
+    private void updateStatus(String message) {
+        if (statusUpdateListener != null) {
+            statusUpdateListener.accept(message);
+        }
+    }
+    
+    /**
+     * Disposes of resources.
+     */
+    public void dispose() {
+        stop();
+        audioService.dispose();
+    }
+}

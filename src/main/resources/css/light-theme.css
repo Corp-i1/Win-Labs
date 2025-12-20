@@ -1,0 +1,160 @@
+/* Light Theme for Win-Labs */
+
+.root {
+    -fx-base: #f0f0f0;
+    -fx-background: #ffffff;
+    -fx-control-inner-background: #ffffff;
+    -fx-control-inner-background-alt: #f4f4f4;
+    -fx-accent: #0078d4;
+    -fx-focus-color: #0078d4;
+    -fx-faint-focus-color: #0078d422;
+}
+
+/* Text colors */
+.label {
+    -fx-text-fill: #000000;
+}
+
+.text-field {
+    -fx-text-fill: #000000;
+    -fx-prompt-text-fill: #666666;
+}
+
+/* Menu and menu bar */
+.menu-bar {
+    -fx-background-color: #f0f0f0;
+}
+
+.menu-item {
+    -fx-background-color: #ffffff;
+}
+
+.menu-item:focused {
+    -fx-background-color: #0078d4;
+}
+
+.menu-item:focused .label {
+    -fx-text-fill: #ffffff;
+}
+
+/* Toolbar */
+.tool-bar {
+    -fx-background-color: #f0f0f0;
+    -fx-border-color: #cccccc;
+    -fx-border-width: 0 0 1 0;
+}
+
+/* Buttons */
+.button {
+    -fx-background-color: #0078d4;
+    -fx-text-fill: white;
+    -fx-background-radius: 3;
+    -fx-padding: 5 15 5 15;
+}
+
+.button:hover {
+    -fx-background-color: #106ebe;
+}
+
+.button:pressed {
+    -fx-background-color: #005a9e;
+}
+
+.button:disabled {
+    -fx-opacity: 0.4;
+}
+
+/* Table view */
+.table-view {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #cccccc;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: #f0f0f0;
+}
+
+.table-view .column-header {
+    -fx-background-color: #f0f0f0;
+    -fx-border-color: #cccccc;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: #000000;
+    -fx-font-weight: bold;
+}
+
+.table-view .table-cell {
+    -fx-text-fill: #000000;
+    -fx-border-color: transparent;
+}
+
+.table-row-cell {
+    -fx-background-color: #ffffff;
+}
+
+.table-row-cell:odd {
+    -fx-background-color: #f4f4f4;
+}
+
+.table-row-cell:selected {
+    -fx-background-color: #0078d4;
+}
+
+.table-row-cell:selected .table-cell {
+    -fx-text-fill: #ffffff;
+}
+
+.table-row-cell:hover {
+    -fx-background-color: #e5f3ff;
+}
+
+/* Tree view */
+.tree-view {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #cccccc;
+}
+
+.tree-cell {
+    -fx-background-color: #ffffff;
+    -fx-text-fill: #000000;
+}
+
+.tree-cell:selected {
+    -fx-background-color: #0078d4;
+    -fx-text-fill: #ffffff;
+}
+
+.tree-cell:hover {
+    -fx-background-color: #e5f3ff;
+}
+
+/* Split pane */
+.split-pane {
+    -fx-background-color: #ffffff;
+}
+
+.split-pane-divider {
+    -fx-background-color: #cccccc;
+    -fx-padding: 0 1 0 1;
+}
+
+/* Scroll bar */
+.scroll-bar {
+    -fx-background-color: #f0f0f0;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: #cccccc;
+    -fx-background-radius: 5;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: #999999;
+}
+
+/* Status bar */
+.status-bar {
+    -fx-background-color: #f0f0f0;
+    -fx-padding: 5;
+}
