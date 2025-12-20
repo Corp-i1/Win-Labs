@@ -331,7 +331,7 @@ public class MainWindow extends Stage {
         controls.setPadding(new Insets(10));
         controls.setAlignment(Pos.CENTER);
         
-        playButton = new Button("GO");
+        playButton = new Button("Play");
         playButton.setPrefWidth(100);
         playButton.setOnAction(e -> onGoClicked());
         
