@@ -29,7 +29,7 @@ public class FileView extends BorderPane {
         this.browserFileView = new BrowserFileView(fileSystemService);
         
         // Create toggle button
-        viewToggle = new ToggleButton("Browser View");
+        viewToggle = new ToggleButton("Tree View");
         viewToggle.setSelected(false); // Start with tree view
         viewToggle.setOnAction(e -> toggleView());
         
@@ -52,12 +52,12 @@ public class FileView extends BorderPane {
         
         if (isTreeView) {
             setCenter(treeFileView);
-            viewToggle.setText("Browser View");
+            viewToggle.setText("Tree View");
             viewToggle.setSelected(false);
         } else {
             browserFileView.loadFiles();
             setCenter(browserFileView);
-            viewToggle.setText("Tree View");
+            viewToggle.setText("Browser View");
             viewToggle.setSelected(true);
         }
     }
