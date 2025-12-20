@@ -7,7 +7,7 @@ import com.winlabs.model.Playlist;
 import com.winlabs.service.PlaylistService;
 import com.winlabs.util.PathUtil;
 import com.winlabs.util.TimeUtil;
-import com.winlabs.view.components.FileBrowserView;
+import com.winlabs.view.components.FileView;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
@@ -44,7 +44,7 @@ public class MainWindow extends Stage {
     
     private AudioController audioController;
     private PlaylistService playlistService;
-    private FileBrowserView fileBrowserView;
+    private FileView fileView;
     
     public MainWindow() {
         this.playlist = new Playlist();
@@ -96,24 +96,24 @@ public class MainWindow extends Stage {
         Label fileBrowserLabel = new Label("File Browser");
         fileBrowserLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
         fileBrowserLabel.setPadding(new Insets(5));
-        fileBrowserView = new FileBrowserView();
+        fileView = new FileView();
         
         // Handle double-click for tree view
-        fileBrowserView.getTreeView().setOnMouseClicked(e -> {
+        fileView.getTreeView().setOnMouseClicked(e -> {
             if (e.getClickCount() == 2) {
                 handleFileDoubleClick();
             }
         });
         
-        // Handle double-click for list view
-        fileBrowserView.getListView().setOnMouseClicked(e -> {
+        // Handle double-click for browser view
+        fileView.getBrowserView().setOnMouseClicked(e -> {
             if (e.getClickCount() == 2) {
                 handleFileDoubleClick();
             }
         });
         
-        fileBrowserContainer.getChildren().addAll(fileBrowserLabel, fileBrowserView);
-        VBox.setVgrow(fileBrowserView, Priority.ALWAYS);
+        fileBrowserContainer.getChildren().addAll(fileBrowserLabel, fileView);
+        VBox.setVgrow(fileView, Priority.ALWAYS);
         
         splitPane.getItems().addAll(cueListContainer, fileBrowserContainer);
         splitPane.setDividerPositions(0.7);
@@ -472,7 +472,7 @@ public class MainWindow extends Stage {
      * Handles double-click on file browser.
      */
     private void handleFileDoubleClick() {
-        Path selectedPath = fileBrowserView.getSelectedPath();
+        Path selectedPath = fileView.getSelectedPath();
         if (selectedPath != null && PathUtil.isAudioFile(selectedPath)) {
             addCueFromFile(selectedPath);
         }

@@ -14,27 +14,27 @@ import java.nio.file.Path;
 import java.util.List;
 
 /**
- * File browser component that can toggle between tree view and list view.
- * Replaces FileTreeView with added list view functionality.
+ * File view component that can toggle between tree view and browser view.
+ * Tree view provides hierarchical navigation, while browser view shows a flat list.
  */
-public class FileBrowserView extends BorderPane {
+public class FileView extends BorderPane {
     
     private final FileSystemService fileSystemService;
     private final FileTreeView fileTreeView;
-    private final ListView<Path> fileListView;
+    private final ListView<Path> fileBrowserView;
     private final ToggleButton viewToggle;
     private boolean isTreeView = true;
     
-    public FileBrowserView() {
+    public FileView() {
         this.fileSystemService = new FileSystemService();
         this.fileTreeView = new FileTreeView();
-        this.fileListView = new ListView<>();
+        this.fileBrowserView = new ListView<>();
         
-        // Setup list view
-        setupListView();
+        // Setup browser view
+        setupBrowserView();
         
         // Create toggle button
-        viewToggle = new ToggleButton("List View");
+        viewToggle = new ToggleButton("Browser View");
         viewToggle.setSelected(false); // Start with tree view
         viewToggle.setOnAction(e -> toggleView());
         
@@ -50,10 +50,10 @@ public class FileBrowserView extends BorderPane {
     }
     
     /**
-     * Sets up the list view with custom cell factory.
+     * Sets up the browser view with custom cell factory.
      */
-    private void setupListView() {
-        fileListView.setCellFactory(lv -> new ListCell<Path>() {
+    private void setupBrowserView() {
+        fileBrowserView.setCellFactory(lv -> new ListCell<Path>() {
             @Override
             protected void updateItem(Path path, boolean empty) {
                 super.updateItem(path, empty);
@@ -82,48 +82,48 @@ public class FileBrowserView extends BorderPane {
     }
     
     /**
-     * Toggles between tree view and list view.
+     * Toggles between tree view and browser view.
      */
     private void toggleView() {
         isTreeView = !isTreeView;
         
         if (isTreeView) {
             setCenter(fileTreeView);
-            viewToggle.setText("List View");
+            viewToggle.setText("Browser View");
             viewToggle.setSelected(false);
         } else {
-            loadListView();
-            setCenter(fileListView);
+            loadBrowserView();
+            setCenter(fileBrowserView);
             viewToggle.setText("Tree View");
             viewToggle.setSelected(true);
         }
     }
     
     /**
-     * Loads files into the list view.
+     * Loads files into the browser view.
      * Shows files from common locations (home and music directories).
      */
-    private void loadListView() {
-        fileListView.getItems().clear();
+    private void loadBrowserView() {
+        fileBrowserView.getItems().clear();
         
         // Load from music directory if it exists
         Path musicDir = fileSystemService.getMusicDirectory();
         if (Files.exists(musicDir)) {
             try {
                 List<Path> files = fileSystemService.listAudioFilesRecursive(musicDir);
-                fileListView.getItems().addAll(files);
+                fileBrowserView.getItems().addAll(files);
             } catch (IOException e) {
                 System.err.println("Failed to load music directory: " + e.getMessage());
             }
         }
         
         // If no files found, try home directory
-        if (fileListView.getItems().isEmpty()) {
+        if (fileBrowserView.getItems().isEmpty()) {
             Path homeDir = fileSystemService.getHomeDirectory();
             if (Files.exists(homeDir)) {
                 try {
                     List<Path> files = fileSystemService.listAudioFilesRecursive(homeDir);
-                    fileListView.getItems().addAll(files);
+                    fileBrowserView.getItems().addAll(files);
                 } catch (IOException e) {
                     System.err.println("Failed to load home directory: " + e.getMessage());
                 }
@@ -138,7 +138,7 @@ public class FileBrowserView extends BorderPane {
         if (isTreeView) {
             return fileTreeView.getSelectedPath();
         } else {
-            return fileListView.getSelectionModel().getSelectedItem();
+            return fileBrowserView.getSelectionModel().getSelectedItem();
         }
     }
     
@@ -150,9 +150,9 @@ public class FileBrowserView extends BorderPane {
     }
     
     /**
-     * Gets the internal list view component.
+     * Gets the internal browser view component.
      */
-    public ListView<Path> getListView() {
-        return fileListView;
+    public ListView<Path> getBrowserView() {
+        return fileBrowserView;
     }
 }

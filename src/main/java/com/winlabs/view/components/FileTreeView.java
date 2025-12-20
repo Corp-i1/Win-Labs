@@ -11,14 +11,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-//COMPLETED: Made toggleable between list view and tree view - see FileBrowserView.java
+//COMPLETED: Made toggleable between tree view and browser view - see FileView.java
 //TODO: Make so that the visibility of this can be toggled from the main window via a icon at the bottem right corner Default to hidden
 //TODO: Make Scope adjustable (e.g., show only audio files, show all files, show only in same directory as cue list, adjust default scope shown)
 
 /**
  * TreeView component for browsing the file system.
  * Shows directories and audio files with lazy loading.
- * Note: This component is now wrapped by FileBrowserView which provides list/tree toggle functionality.
+ * Note: This component is now wrapped by FileView which provides browser/tree toggle functionality.
  */
 public class FileTreeView extends TreeView<Path> {
     
