@@ -12,6 +12,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -24,11 +28,15 @@ public class AudioPlayerPool {
     private static final int DEFAULT_POOL_SIZE = 5;
     private static final int MAX_POOL_SIZE = 20;
     private static final long CULL_TIMEOUT_MS = 30000; // 30 seconds
+    private static final long CULL_INTERVAL_MS = 10000; // 10 seconds - how often to check
     
     private final CopyOnWriteArrayList<AudioTrack> availableTracks;
     private final ConcurrentHashMap<String, AudioTrack> activeTracks;
     private final int initialPoolSize;
     private final int maxPoolSize;
+    private final ScheduledExecutorService cullScheduler;
+    private volatile boolean autoCullEnabled;
+    private volatile ScheduledFuture<?> cullTask;
     
     public AudioPlayerPool() {
         this(DEFAULT_POOL_SIZE, MAX_POOL_SIZE);
@@ -39,11 +47,19 @@ public class AudioPlayerPool {
         this.maxPoolSize = Math.max(this.initialPoolSize, maxPoolSize);
         this.availableTracks = new CopyOnWriteArrayList<>();
         this.activeTracks = new ConcurrentHashMap<>();
+        this.cullScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread thread = new Thread(r, "AudioPlayerPool-Culler");
+            thread.setDaemon(true);
+            return thread;
+        });
+        this.autoCullEnabled = false;
+        this.cullTask = null;
     }
     
     /**
      * Pre-warms the pool by creating initial track instances.
      * This should be called during initialization to avoid delays on first playback.
+     * Also starts automatic culling of unused tracks.
      */
     public void prewarm() {
         for (int i = 0; i < initialPoolSize; i++) {
@@ -51,6 +67,46 @@ public class AudioPlayerPool {
             track.setPooled(true);
             availableTracks.add(track);
         }
+        
+        // Enable automatic culling
+        enableAutoCulling();
+    }
+    
+    /**
+     * Enables automatic periodic culling of unused tracks.
+     * When enabled, the pool will automatically remove tracks that haven't been
+     * used for longer than CULL_TIMEOUT_MS.
+     */
+    public synchronized void enableAutoCulling() {
+        if (!autoCullEnabled) {
+            autoCullEnabled = true;
+            cullTask = cullScheduler.scheduleWithFixedDelay(
+                this::cullUnusedTracksInternal,
+                CULL_INTERVAL_MS,
+                CULL_INTERVAL_MS,
+                TimeUnit.MILLISECONDS
+            );
+        }
+    }
+    
+    /**
+     * Disables automatic periodic culling of unused tracks.
+     */
+    public synchronized void disableAutoCulling() {
+        if (autoCullEnabled) {
+            autoCullEnabled = false;
+            if (cullTask != null) {
+                cullTask.cancel(false);
+                cullTask = null;
+            }
+        }
+    }
+    
+    /**
+     * Checks if automatic culling is currently enabled.
+     */
+    public boolean isAutoCullEnabled() {
+        return autoCullEnabled;
     }
     
     /**
@@ -183,12 +239,12 @@ public class AudioPlayerPool {
     }
     
     /**
+     * Internal method for automatic culling called by the scheduler.
      * Culls unused tracks from the pool that have exceeded the timeout.
-     * This helps manage memory by disposing of tracks that haven't been used recently.
      * 
      * @return Number of tracks culled
      */
-    public int cullUnusedTracks() {
+    private int cullUnusedTracksInternal() {
         long now = System.currentTimeMillis();
         int culled = 0;
         
@@ -203,6 +259,17 @@ public class AudioPlayerPool {
         }
         
         return culled;
+    }
+    
+    /**
+     * Culls unused tracks from the pool that have exceeded the timeout.
+     * This helps manage memory by disposing of tracks that haven't been used recently.
+     * This method can be called manually to trigger culling on demand.
+     * 
+     * @return Number of tracks culled
+     */
+    public int cullUnusedTracks() {
+        return cullUnusedTracksInternal();
     }
     
     /**
@@ -258,6 +325,20 @@ public class AudioPlayerPool {
      * The pool should not be used after calling this method.
      */
     public void dispose() {
+        // Disable auto-culling and cancel the scheduled task
+        disableAutoCulling();
+        
+        // Shutdown the cull scheduler
+        cullScheduler.shutdown();
+        try {
+            if (!cullScheduler.awaitTermination(1, TimeUnit.SECONDS)) {
+                cullScheduler.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            cullScheduler.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
+        
         // Dispose active tracks
         for (AudioTrack track : activeTracks.values()) {
             track.dispose();

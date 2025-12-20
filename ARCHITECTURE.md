@@ -128,7 +128,7 @@ Each state is independent, allowing pre-wait timers to run before audio loads, a
 - Manages pool of reusable AudioTrack instances
 - Pre-warms 5 tracks on initialization (zero-latency playback)
 - Dynamic growth up to 20 tracks maximum
-- Automatic culling of unused tracks after 30 seconds
+- Automatic periodic culling of unused tracks (runs every 10 seconds, removes tracks idle >30 seconds)
 - Thread-safe with `CopyOnWriteArrayList` and `ConcurrentHashMap`
 
 **AudioService Multi-Track Mode** (`service/AudioService.java`)
@@ -168,18 +168,20 @@ Practical considerations:
 
 Future: May become configurable via constructor: `new AudioService(true, initialSize, maxSize)`
 
-**Why 30-Second Culling Timeout?**
+**Why Automatic Periodic Culling?**
 
 Memory management:
 - Idle tracks consume memory without benefit
-- Automatic cleanup reduces memory footprint
+- Automatic background cleanup reduces memory footprint
 - Only culls **available** tracks (never active ones)
+- Runs every 10 seconds to check for tracks idle >30 seconds
 
-Why 30 seconds?
-- Short enough to reclaim memory quickly during idle periods
-- Long enough to avoid thrashing (constant create/destroy)
+Why these intervals?
+- **10-second check interval**: Frequent enough for responsive cleanup, infrequent enough to avoid overhead
+- **30-second idle timeout**: Short enough to reclaim memory quickly, long enough to avoid thrashing
 - Balances responsiveness vs. memory efficiency
 - Pool regrows on demand if culled tracks are needed again
+- Can be disabled via `disableAutoCulling()` if manual control is preferred
 
 **Why Thread-Safe Collections?**
 
