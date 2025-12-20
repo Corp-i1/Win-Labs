@@ -24,7 +24,7 @@ import java.util.List;
 
 //TODO: Add context menu for file operations (open, delete, properties, etc.)
 //TODO: Add drag-and-drop support for adding files to cue list
-//TODO: Add keyboard shortcuts for common actions (play, pause, stop, next cue, etc.) These should be configurable in settings.
+//TODO: Add keyboard shortcuts for common actions (go, pause, stop, next cue, etc.) These should be configurable in settings.
 //TODO: Make Settings Functional
 //TODO: Add search/filter functionality to file browser
 //TODO: Add context menu for opening files/folders
@@ -36,7 +36,7 @@ public class MainWindow extends Stage {
     
     private Playlist playlist;
     private TableView<Cue> cueTable;
-    private Button playButton;
+    private Button goButton;
     private Button pauseButton;
     private Button stopButton;
     private Label statusLabel;
@@ -331,14 +331,14 @@ public class MainWindow extends Stage {
         controls.setPadding(new Insets(10));
         controls.setAlignment(Pos.CENTER);
         
-        playButton = new Button("Play");
-        playButton.setPrefWidth(100);
-        playButton.setOnAction(e -> onGoClicked());
+        goButton = new Button("Go");
+        goButton.setPrefWidth(100);
+        goButton.setOnAction(e -> onGoClicked());
         
         pauseButton = new Button("Pause");
         pauseButton.setPrefWidth(100);
         pauseButton.setDisable(true);
-        pauseButton.setOnAction(e -> onPauseClicked());
+        pauseButton.setOnAction(e -> onPauseResumeToggle());
         
         stopButton = new Button("Stop");
         stopButton.setPrefWidth(100);
@@ -349,7 +349,7 @@ public class MainWindow extends Stage {
         skipButton.setPrefWidth(100);
         //TODO: Implement skip functionality
         
-        controls.getChildren().addAll(playButton, pauseButton, stopButton, skipButton);
+        controls.getChildren().addAll(goButton, pauseButton, stopButton, skipButton);
         return controls;
     }
     
@@ -448,10 +448,10 @@ public class MainWindow extends Stage {
     }
     
     /**
-     * Handles pause button click.
+     * Handles pause/resume toggle button click.
      * Toggles between pause and resume states.
      */
-    private void onPauseClicked() {
+    private void onPauseResumeToggle() {
         if (audioController.getState() == PlaybackState.PAUSED) {
             audioController.resume();
         } else {
