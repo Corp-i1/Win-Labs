@@ -45,6 +45,9 @@ public class MainWindow extends Stage {
     private AudioController audioController;
     private PlaylistService playlistService;
     private FileView fileView;
+    private VBox fileViewContainer;
+    private SplitPane splitPane;
+    private boolean isFileViewVisible = false;
     
     public MainWindow() {
         this.playlist = new Playlist();
@@ -80,7 +83,7 @@ public class MainWindow extends Stage {
         root.setTop(topContainer);
         
         // Center: Split pane with cue list and file browser
-        SplitPane splitPane = new SplitPane();
+        splitPane = new SplitPane();
         splitPane.setOrientation(Orientation.HORIZONTAL);
         
         // Left: Cue list table
@@ -92,10 +95,10 @@ public class MainWindow extends Stage {
         VBox.setVgrow(cueTable, Priority.ALWAYS);
         
         // Right: File browser
-        VBox fileBrowserContainer = new VBox();
-        Label fileBrowserLabel = new Label("File Browser");
-        fileBrowserLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
-        fileBrowserLabel.setPadding(new Insets(5));
+        fileViewContainer = new VBox();
+        Label fileViewLabel = new Label("File Browser");
+        fileViewLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
+        fileViewLabel.setPadding(new Insets(5));
         fileView = new FileView();
         
         // Handle double-click for tree view
@@ -112,11 +115,11 @@ public class MainWindow extends Stage {
             }
         });
         
-        fileBrowserContainer.getChildren().addAll(fileBrowserLabel, fileView);
+        fileViewContainer.getChildren().addAll(fileViewLabel, fileView);
         VBox.setVgrow(fileView, Priority.ALWAYS);
         
-        splitPane.getItems().addAll(cueListContainer, fileBrowserContainer);
-        splitPane.setDividerPositions(0.7);
+        // Start with only cue list (file view hidden by default)
+        splitPane.getItems().add(cueListContainer);
         root.setCenter(splitPane);
         
         // Bottom: Playback controls and status
@@ -368,8 +371,32 @@ public class MainWindow extends Stage {
         cueCountLabel.setStyle("-fx-text-fill: white;");
         updateCueCount();
         
-        statusBar.getChildren().addAll(statusLabel, spacer, cueCountLabel);
+        // File view toggle button
+        Button fileViewToggle = new Button("📁");
+        fileViewToggle.setTooltip(new Tooltip("Toggle File View"));
+        fileViewToggle.setStyle("-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 16px;");
+        fileViewToggle.setOnAction(e -> toggleFileView());
+        
+        statusBar.getChildren().addAll(statusLabel, spacer, cueCountLabel, fileViewToggle);
         return statusBar;
+    }
+    
+    /**
+     * Toggles the visibility of the file view.
+     */
+    private void toggleFileView() {
+        isFileViewVisible = !isFileViewVisible;
+        
+        if (isFileViewVisible) {
+            // Show file view
+            if (!splitPane.getItems().contains(fileViewContainer)) {
+                splitPane.getItems().add(fileViewContainer);
+                splitPane.setDividerPositions(0.7);
+            }
+        } else {
+            // Hide file view
+            splitPane.getItems().remove(fileViewContainer);
+        }
     }
     
     /**

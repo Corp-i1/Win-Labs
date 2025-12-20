@@ -10,6 +10,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.function.Consumer;
 
+//TODO: HIGH PRIORITY: Multi track playback support, e.g multiple media players for overlapping sounds should instance objects as needed and cull them when not needed to calculate how many are needed and spin them up before hand to avoid large pauses between intended playback time and actual playbacks
+//TODO: Add support for playlists, 
+// TODO: gapless playback,
+// TODO: equalizer settings, 
+//TODO: Crossfade between tracks
+
+
 /**
  * Service for audio playback using JavaFX MediaPlayer.
  * Handles loading, playing, pausing, and stopping audio files.

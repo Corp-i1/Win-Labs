@@ -12,7 +12,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 //COMPLETED: Made toggleable between tree view and browser view - see FileView.java
-//TODO: Make so that the visibility of this can be toggled from the main window via a icon at the bottem right corner Default to hidden
+//COMPLETED: Made visibility toggleable from main window via icon in bottom right corner, defaults to hidden - see MainWindow.java
 //TODO: Make Scope adjustable (e.g., show only audio files, show all files, show only in same directory as cue list, adjust default scope shown)
 
 /**
