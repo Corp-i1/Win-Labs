@@ -19,7 +19,6 @@ public class AudioController {
     private final AudioService audioService;
     private Cue currentCue;
     private String currentTrackId; // Track ID for current cue playback
-    private PlaybackState currentState; // Local state tracking for multi-track mode
     private Consumer<String> statusUpdateListener;
     private Consumer<PlaybackState> stateChangeListener;
     private Runnable onCueCompleteListener;
@@ -29,7 +28,6 @@ public class AudioController {
     
     public AudioController() {
         this.audioService = new AudioService(true); // Enable multi-track mode
-        this.currentState = PlaybackState.STOPPED;
         setupAudioServiceListeners();
     }
     
@@ -80,9 +78,8 @@ public class AudioController {
             // Use multi-track playback to allow overlapping sounds
             currentTrackId = audioService.playTrack(filePath);
             
-            currentState = PlaybackState.PLAYING;
             if (stateChangeListener != null) {
-                stateChangeListener.accept(currentState);
+                stateChangeListener.accept(getState());
             }
             
             updateStatus("Playing: " + cue.getName());
@@ -162,9 +159,8 @@ public class AudioController {
             postWaitTimer.pause();
         }
         
-        currentState = PlaybackState.PAUSED;
         if (stateChangeListener != null) {
-            stateChangeListener.accept(currentState);
+            stateChangeListener.accept(getState());
         }
         
         updateStatus("Paused");
@@ -184,9 +180,8 @@ public class AudioController {
             postWaitTimer.play();
         }
         
-        currentState = PlaybackState.PLAYING;
         if (stateChangeListener != null) {
-            stateChangeListener.accept(currentState);
+            stateChangeListener.accept(getState());
         }
         
         updateStatus("Resumed");
@@ -210,10 +205,9 @@ public class AudioController {
         
         currentCue = null;
         currentTrackId = null;
-        currentState = PlaybackState.STOPPED;
         
         if (stateChangeListener != null) {
-            stateChangeListener.accept(currentState);
+            stateChangeListener.accept(getState());
         }
         
         updateStatus("Stopped");
@@ -221,9 +215,23 @@ public class AudioController {
     
     /**
      * Gets the current playback state.
-     * In multi-track mode, this reflects the actual state of active tracks.
+     * In multi-track mode, this reflects the actual state of active tracks and running timers.
      */
     public PlaybackState getState() {
+        // Check if we're in a wait state (pre-wait or post-wait)
+        if (preWaitTimer != null && preWaitTimer.getStatus() == javafx.animation.Animation.Status.RUNNING) {
+            return PlaybackState.PRE_WAIT;
+        }
+        if (postWaitTimer != null && postWaitTimer.getStatus() == javafx.animation.Animation.Status.RUNNING) {
+            return PlaybackState.POST_WAIT;
+        }
+        
+        // If timers are paused, we're in a paused state
+        if ((preWaitTimer != null && preWaitTimer.getStatus() == javafx.animation.Animation.Status.PAUSED) ||
+            (postWaitTimer != null && postWaitTimer.getStatus() == javafx.animation.Animation.Status.PAUSED)) {
+            return PlaybackState.PAUSED;
+        }
+        
         // In multi-track mode, determine state from active tracks
         List<AudioTrack> activeTracks = audioService.getActiveTracks();
         
