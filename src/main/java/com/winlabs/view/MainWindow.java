@@ -338,7 +338,7 @@ public class MainWindow extends Stage {
         pauseButton = new Button("Pause");
         pauseButton.setPrefWidth(100);
         pauseButton.setDisable(true);
-        pauseButton.setOnAction(e -> onPauseClicked());
+        pauseButton.setOnAction(e -> onPauseResumeToggle());
         
         stopButton = new Button("Stop");
         stopButton.setPrefWidth(100);
@@ -448,10 +448,10 @@ public class MainWindow extends Stage {
     }
     
     /**
-     * Handles pause button click.
+     * Handles pause/resume toggle button click.
      * Toggles between pause and resume states.
      */
-    private void onPauseClicked() {
+    private void onPauseResumeToggle() {
         if (audioController.getState() == PlaybackState.PAUSED) {
             audioController.resume();
         } else {
