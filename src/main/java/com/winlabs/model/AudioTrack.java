@@ -110,6 +110,13 @@ public class AudioTrack {
     }
     
     /**
+     * Gets the current end listener.
+     */
+    public Consumer<AudioTrack> getOnEndListener() {
+        return onEndListener;
+    }
+    
+    /**
      * Sets a listener for progress updates.
      */
     public void setProgressListener(Consumer<Duration> listener) {

@@ -75,8 +75,30 @@ public class AudioController {
      */
     private void startPlayback(Cue cue, String filePath) {
         try {
-            // Use multi-track playback to allow overlapping sounds
-            currentTrackId = audioService.playTrack(filePath);
+            // Get the track before playing to set up listeners
+            // This avoids a race condition with very short audio files
+            var track = audioService.getPlayerPool().acquireTrack(filePath);
+            currentTrackId = track.getTrackId();
+            
+            // Set up completion listener for this track
+            // Store the pool's original listener to chain them
+            var poolListener = track.getOnEndListener();
+            track.setOnEndListener(audioTrack -> {
+                // Track has finished playing
+                currentState = PlaybackState.STOPPED;
+                if (stateChangeListener != null) {
+                    stateChangeListener.accept(currentState);
+                }
+                handleCueComplete();
+                
+                // Call the pool's listener to properly release the track
+                if (poolListener != null) {
+                    poolListener.accept(audioTrack);
+                }
+            });
+            
+            // Now start playback
+            track.play();
             
             if (stateChangeListener != null) {
                 stateChangeListener.accept(getState());
