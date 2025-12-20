@@ -335,12 +335,13 @@ public class AudioService {
     
     /**
      * Gets all currently active tracks (multi-track mode only).
+     * Returns an empty list if not in multi-track mode.
      * 
-     * @return List of active tracks
+     * @return List of active tracks, or empty list if not in multi-track mode
      */
     public List<AudioTrack> getActiveTracks() {
         if (!multiTrackMode) {
-            throw new IllegalStateException("Active tracks only available in multi-track mode");
+            return List.of();
         }
         return playerPool.getActiveTracks();
     }
