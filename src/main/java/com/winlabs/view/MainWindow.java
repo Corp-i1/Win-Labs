@@ -22,6 +22,12 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 
+//TODO: Add context menu for file operations (open, delete, properties, etc.)
+//TODO: Add drag-and-drop support for adding files to cue list
+//TODO: Add keyboard shortcuts for common actions (play, pause, stop, next cue, etc.) These should be configurable in settings.
+//TODO: Make Settings Functional
+//TODO: Add search/filter functionality to file browser
+//TODO: Add context menu for opening files/folders
 /**
  * Main application window for Win-Labs.
  * Contains the cue list, controls, and file browser.
@@ -117,6 +123,7 @@ public class MainWindow extends Stage {
         setScene(scene);
         
         // Add sample data for testing
+        // TODO: Make so that this is only in debug mode
         addSampleCues();
     }
     
@@ -150,6 +157,7 @@ public class MainWindow extends Stage {
         );
         
         // Edit menu
+        //TODO: Make functional
         Menu editMenu = new Menu("Edit");
         MenuItem addCueItem = new MenuItem("Add Cue");
         MenuItem deleteCueItem = new MenuItem("Delete Cue");
@@ -164,13 +172,14 @@ public class MainWindow extends Stage {
         
         MenuItem lightThemeItem = new MenuItem("Light Theme");
         lightThemeItem.setOnAction(e -> applyTheme("/css/light-theme.css"));
-        
+        //TODO: Fix Rainbow theme CSS
         MenuItem rainbowThemeItem = new MenuItem("Rainbow Theme");
         rainbowThemeItem.setOnAction(e -> applyTheme("/css/rainbow-theme.css"));
         
         viewMenu.getItems().addAll(darkThemeItem, lightThemeItem, rainbowThemeItem);
         
         // Help menu
+        //TODO: Make functional
         Menu helpMenu = new Menu("Help");
         MenuItem aboutItem = new MenuItem("About");
         MenuItem documentationItem = new MenuItem("Documentation");
@@ -184,6 +193,7 @@ public class MainWindow extends Stage {
     /**
      * Creates the toolbar.
      */
+    //TODO: Add More toolbar buttons and functionality
     private ToolBar createToolbar() {
         ToolBar toolbar = new ToolBar();
         
@@ -324,6 +334,7 @@ public class MainWindow extends Stage {
         
         Button skipButton = new Button("Skip");
         skipButton.setPrefWidth(100);
+        //TODO: Implement skip functionality
         
         controls.getChildren().addAll(playButton, pauseButton, stopButton, skipButton);
         return controls;
@@ -580,11 +591,6 @@ public class MainWindow extends Stage {
         scene.getStylesheets().add(getClass().getResource(themePath).toExternalForm());
         updateStatus("Theme changed");
     }
-    
-    /**
-     * Updates the status label.
-     */
-    
     
     /**
      * Updates the status label.
