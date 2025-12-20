@@ -1,3 +1,28 @@
+
+
+
+
+
+
+
+
+
+
+# DEPRECIATED THIS IS OLD CODE AND IN C# IT IS HERE FOR ARCHIVAL REASONS ONLY AND IS NOT ACTIVELY MAINTAINED
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Win-Labs
 ### My Website: [Corpi1.uk](https://Corpi1.uk)
 This project is my window alternative for Q-Labs for Sound technicians that dont want to or have to opertunity to use the real thing.
