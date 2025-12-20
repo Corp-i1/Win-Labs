@@ -85,9 +85,8 @@ public class AudioController {
             var poolListener = track.getOnEndListener();
             track.setOnEndListener(audioTrack -> {
                 // Track has finished playing
-                currentState = PlaybackState.STOPPED;
                 if (stateChangeListener != null) {
-                    stateChangeListener.accept(currentState);
+                    stateChangeListener.accept(getState());
                 }
                 handleCueComplete();
                 
