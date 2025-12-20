@@ -17,8 +17,8 @@ public class BrowserFileView extends ListView<Path> {
     
     private final FileSystemService fileSystemService;
     
-    public BrowserFileView() {
-        this.fileSystemService = new FileSystemService();
+    public BrowserFileView(FileSystemService fileSystemService) {
+        this.fileSystemService = fileSystemService;
         
         // Setup custom cell factory
         setCellFactory(lv -> new BrowserFileCell());
@@ -65,6 +65,7 @@ public class BrowserFileView extends ListView<Path> {
     
     /**
      * Custom cell renderer for browser view.
+     * Uses shared display logic from FileView.
      */
     private static class BrowserFileCell extends ListCell<Path> {
         @Override
@@ -75,20 +76,8 @@ public class BrowserFileView extends ListView<Path> {
                 setText(null);
                 setGraphic(null);
             } else {
-                String displayName;
-                if (path.getFileName() == null) {
-                    displayName = path.toString();
-                } else {
-                    displayName = path.getFileName().toString();
-                }
-                
-                setText(displayName);
-                
-                if (Files.isDirectory(path)) {
-                    setStyle("-fx-font-weight: bold;");
-                } else {
-                    setStyle("-fx-font-weight: normal;");
-                }
+                setText(FileView.getDisplayName(path));
+                setStyle(FileView.getPathStyle(path));
             }
         }
     }

@@ -1,27 +1,32 @@
 package com.winlabs.view.components;
 
+import com.winlabs.service.FileSystemService;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
  * File view component that can toggle between tree view and browser view.
  * Tree view provides hierarchical navigation, while browser view shows a flat list.
+ * Provides shared functionality for both view types.
  */
 public class FileView extends BorderPane {
     
+    private final FileSystemService fileSystemService;
     private final TreeFileView treeFileView;
     private final BrowserFileView browserFileView;
     private final ToggleButton viewToggle;
     private boolean isTreeView = true;
     
     public FileView() {
-        this.treeFileView = new TreeFileView();
-        this.browserFileView = new BrowserFileView();
+        this.fileSystemService = new FileSystemService();
+        this.treeFileView = new TreeFileView(fileSystemService);
+        this.browserFileView = new BrowserFileView(fileSystemService);
         
         // Create toggle button
         viewToggle = new ToggleButton("Browser View");
@@ -80,6 +85,39 @@ public class FileView extends BorderPane {
      */
     public BrowserFileView getBrowserFileView() {
         return browserFileView;
+    }
+    
+    /**
+     * Gets the shared file system service.
+     */
+    public FileSystemService getFileSystemService() {
+        return fileSystemService;
+    }
+    
+    /**
+     * Gets the display name for a path.
+     * Common method used by both TreeFileView and BrowserFileView for rendering.
+     */
+    public static String getDisplayName(Path path) {
+        if (path == null) {
+            return "";
+        }
+        if (path.getFileName() == null) {
+            // Root directory (e.g., C:\ or /)
+            return path.toString();
+        }
+        return path.getFileName().toString();
+    }
+    
+    /**
+     * Gets the CSS style for a path based on whether it's a directory.
+     * Common method used by both TreeFileView and BrowserFileView for rendering.
+     */
+    public static String getPathStyle(Path path) {
+        if (path != null && Files.isDirectory(path)) {
+            return "-fx-font-weight: bold;";
+        }
+        return "-fx-font-weight: normal;";
     }
 }
 

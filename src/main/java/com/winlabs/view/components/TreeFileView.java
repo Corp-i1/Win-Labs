@@ -24,8 +24,8 @@ public class TreeFileView extends TreeView<Path> {
     
     private final FileSystemService fileSystemService;
     
-    public TreeFileView() {
-        this.fileSystemService = new FileSystemService();
+    public TreeFileView(FileSystemService fileSystemService) {
+        this.fileSystemService = fileSystemService;
         
         // Create root node
         TreeItem<Path> rootItem = new TreeItem<>(null);
@@ -113,6 +113,7 @@ public class TreeFileView extends TreeView<Path> {
     
     /**
      * Custom tree cell to display file/folder names nicely.
+     * Uses shared display logic from FileView.
      */
     private static class TreeFileCell extends TreeCell<Path> {
         @Override
@@ -123,22 +124,8 @@ public class TreeFileView extends TreeView<Path> {
                 setText(null);
                 setGraphic(null);
             } else {
-                String displayName;
-                if (path.getFileName() == null) {
-                    // Root directory (e.g., C:\ or /)
-                    displayName = path.toString();
-                } else {
-                    displayName = path.getFileName().toString();
-                }
-                
-                setText(displayName);
-                
-                // Could add icons here for folders vs files
-                if (Files.isDirectory(path)) {
-                    setStyle("-fx-font-weight: bold;");
-                } else {
-                    setStyle("-fx-font-weight: normal;");
-                }
+                setText(FileView.getDisplayName(path));
+                setStyle(FileView.getPathStyle(path));
             }
         }
     }
