@@ -43,15 +43,39 @@ class AudioServiceMultiTrackTest {
         }
         
         if (testAudioFile != null && Files.exists(testAudioFile)) {
+            deleteTestFileWithRetry();
+        }
+    }
+    
+    /**
+     * Attempt to delete the temporary test file, retrying for a limited time
+     * to allow file handles to be released on slower systems.
+     */
+    private void deleteTestFileWithRetry() {
+        final long timeoutMillis = 5000L; // overall timeout for cleanup
+        final long pollIntervalMillis = 50L;
+        final long deadline = System.currentTimeMillis() + timeoutMillis;
+
+        while (System.currentTimeMillis() < deadline) {
             try {
-                // Wait a bit for file handles to release
-                Thread.sleep(50);
                 Files.deleteIfExists(testAudioFile);
-            } catch (Exception e) {
-                // Ignore cleanup errors in tests
-                testAudioFile.toFile().deleteOnExit();
+                if (!Files.exists(testAudioFile)) {
+                    return;
+                }
+            } catch (IOException e) {
+                // Ignore and retry until timeout
+            }
+
+            try {
+                Thread.sleep(pollIntervalMillis);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                break;
             }
         }
+
+        // If we get here, the file still exists; schedule deletion on JVM exit.
+        testAudioFile.toFile().deleteOnExit();
     }
     
     @Test
