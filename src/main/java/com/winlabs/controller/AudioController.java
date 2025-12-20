@@ -218,42 +218,51 @@ public class AudioController {
      * In multi-track mode, this reflects the actual state of active tracks and running timers.
      */
     public PlaybackState getState() {
+        // Get active tracks and their states
+        List<AudioTrack> activeTracks = audioService.getActiveTracks();
+        
+        // If we have active tracks, determine state based on them
+        if (!activeTracks.isEmpty()) {
+            // If any track is playing, overall state is PLAYING
+            boolean hasPlaying = activeTracks.stream()
+                .anyMatch(track -> track.getState() == PlaybackState.PLAYING);
+            if (hasPlaying) {
+                return PlaybackState.PLAYING;
+            }
+            
+            // If all tracks are paused (and at least one exists), state is PAUSED
+            boolean allPaused = activeTracks.stream()
+                .allMatch(track -> track.getState() == PlaybackState.PAUSED);
+            if (allPaused) {
+                return PlaybackState.PAUSED;
+            }
+            
+            // Otherwise, tracks exist but are in other states (e.g., STOPPED)
+            // Fall through to check timer states
+        }
+        
+        // No active tracks or tracks are stopped - check timer states
+        // Store timer statuses to avoid repeated method calls
+        javafx.animation.Animation.Status preWaitStatus = 
+            (preWaitTimer != null) ? preWaitTimer.getStatus() : null;
+        javafx.animation.Animation.Status postWaitStatus = 
+            (postWaitTimer != null) ? postWaitTimer.getStatus() : null;
+        
         // Check if we're in a wait state (pre-wait or post-wait)
-        if (preWaitTimer != null && preWaitTimer.getStatus() == javafx.animation.Animation.Status.RUNNING) {
+        if (preWaitStatus == javafx.animation.Animation.Status.RUNNING) {
             return PlaybackState.PRE_WAIT;
         }
-        if (postWaitTimer != null && postWaitTimer.getStatus() == javafx.animation.Animation.Status.RUNNING) {
+        if (postWaitStatus == javafx.animation.Animation.Status.RUNNING) {
             return PlaybackState.POST_WAIT;
         }
         
         // If timers are paused, we're in a paused state
-        if ((preWaitTimer != null && preWaitTimer.getStatus() == javafx.animation.Animation.Status.PAUSED) ||
-            (postWaitTimer != null && postWaitTimer.getStatus() == javafx.animation.Animation.Status.PAUSED)) {
+        if (preWaitStatus == javafx.animation.Animation.Status.PAUSED ||
+            postWaitStatus == javafx.animation.Animation.Status.PAUSED) {
             return PlaybackState.PAUSED;
         }
         
-        // In multi-track mode, determine state from active tracks
-        List<AudioTrack> activeTracks = audioService.getActiveTracks();
-        
-        if (activeTracks.isEmpty()) {
-            return PlaybackState.STOPPED;
-        }
-        
-        // If any track is playing, overall state is PLAYING
-        boolean hasPlaying = activeTracks.stream()
-            .anyMatch(track -> track.getState() == PlaybackState.PLAYING);
-        if (hasPlaying) {
-            return PlaybackState.PLAYING;
-        }
-        
-        // If all tracks are paused (and at least one exists), state is PAUSED
-        boolean allPaused = activeTracks.stream()
-            .allMatch(track -> track.getState() == PlaybackState.PAUSED);
-        if (allPaused) {
-            return PlaybackState.PAUSED;
-        }
-        
-        // Otherwise, state is STOPPED
+        // No active tracks and no timers running - state is STOPPED
         return PlaybackState.STOPPED;
     }
     
