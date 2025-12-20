@@ -125,6 +125,9 @@ class AudioPlayerPoolTest {
             assertEquals(0, pool.getActiveTrackCount());
         } catch (Exception e) {
             // Expected - our test file isn't a valid media file
+            // Verify it's a MediaException as expected, not some other error
+            assertTrue(e.getClass().getName().contains("MediaException"),
+                    "Expected MediaException but got: " + e.getClass().getName());
             // But we can verify pool mechanics worked up to the Media loading
         }
     }
@@ -149,6 +152,9 @@ class AudioPlayerPoolTest {
             assertNull(pool.getTrack("non-existent-id"));
         } catch (Exception e) {
             // Expected - test file isn't valid media
+            // Verify it's a MediaException as expected
+            assertTrue(e.getClass().getName().contains("MediaException"),
+                    "Expected MediaException but got: " + e.getClass().getName());
         }
     }
     
@@ -177,6 +183,9 @@ class AudioPlayerPoolTest {
             assertNull(pool.getTrack(trackId));
         } catch (Exception e) {
             // Expected - test file isn't valid media
+            // Verify it's a MediaException as expected
+            assertTrue(e.getClass().getName().contains("MediaException"),
+                    "Expected MediaException but got: " + e.getClass().getName());
         }
     }
     
@@ -264,6 +273,9 @@ class AudioPlayerPoolTest {
             assertTrue(exception.getMessage().contains("pool exhausted"));
         } catch (Exception e) {
             // Expected - test file isn't valid media
+            // Verify it's a MediaException as expected
+            assertTrue(e.getClass().getName().contains("MediaException"),
+                    "Expected MediaException but got: " + e.getClass().getName());
             // But we can verify the exhaustion logic works
         } finally {
             smallPool.dispose();
