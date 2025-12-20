@@ -278,10 +278,14 @@ public class AudioService {
     /**
      * Plays an audio file on a new track (multi-track mode only).
      * Returns the track ID for managing the playback.
+     * <p>
+     * This method requires the AudioService to be in multi-track mode. If called
+     * when not in multi-track mode, an IllegalStateException will be thrown.
      * 
      * @param filePath Path to the audio file
      * @return Track ID for the new playback
-     * @throws Exception if audio loading fails or not in multi-track mode
+     * @throws IllegalStateException if not in multi-track mode
+     * @throws Exception if audio loading fails
      */
     public String playTrack(String filePath) throws Exception {
         if (!multiTrackMode) {
@@ -295,11 +299,15 @@ public class AudioService {
     
     /**
      * Plays an audio file on a new track with specified volume (multi-track mode only).
+     * <p>
+     * This method requires the AudioService to be in multi-track mode. If called
+     * when not in multi-track mode, an IllegalStateException will be thrown.
      * 
      * @param filePath Path to the audio file
      * @param volume Volume level (0.0 to 1.0)
      * @return Track ID for the new playback
-     * @throws Exception if audio loading fails or not in multi-track mode
+     * @throws IllegalStateException if not in multi-track mode
+     * @throws Exception if audio loading fails
      */
     public String playTrack(String filePath, double volume) throws Exception {
         if (!multiTrackMode) {
