@@ -16,6 +16,7 @@ public class AudioController {
     
     private final AudioService audioService;
     private Cue currentCue;
+    private String currentTrackId; // Track ID for current cue playback
     private Consumer<String> statusUpdateListener;
     private Consumer<PlaybackState> stateChangeListener;
     private Runnable onCueCompleteListener;
@@ -30,18 +31,10 @@ public class AudioController {
     
     /**
      * Sets up listeners for the audio service.
+     * In multi-track mode, listeners are set per-track in startPlayback.
      */
     private void setupAudioServiceListeners() {
-        audioService.setStateChangeListener(state -> {
-            if (stateChangeListener != null) {
-                stateChangeListener.accept(state);
-            }
-            
-            // Handle end of playback
-            if (state == PlaybackState.STOPPED && currentCue != null) {
-                handleCueComplete();
-            }
-        });
+        // Multi-track mode uses per-track listeners instead of service-level listeners
     }
     
     /**
@@ -81,8 +74,26 @@ public class AudioController {
     private void startPlayback(Cue cue, String filePath) {
         try {
             // Use multi-track playback to allow overlapping sounds
-            String trackId = audioService.playTrack(filePath);
-            updateStatus("Playing: " + cue.getName() + " (Track: " + trackId.substring(0, 8) + "...)");
+            currentTrackId = audioService.playTrack(filePath);
+            
+            // Set up listener for when this track ends
+            var track = audioService.getTrack(currentTrackId);
+            if (track != null) {
+                track.setOnEndListener(t -> {
+                    if (stateChangeListener != null) {
+                        stateChangeListener.accept(PlaybackState.STOPPED);
+                    }
+                    if (t.getTrackId().equals(currentTrackId)) {
+                        handleCueComplete();
+                    }
+                });
+            }
+            
+            if (stateChangeListener != null) {
+                stateChangeListener.accept(PlaybackState.PLAYING);
+            }
+            
+            updateStatus("Playing: " + cue.getName());
         } catch (Exception e) {
             updateStatus("Error loading audio: " + e.getMessage());
         }
@@ -159,6 +170,10 @@ public class AudioController {
             postWaitTimer.pause();
         }
         
+        if (stateChangeListener != null) {
+            stateChangeListener.accept(PlaybackState.PAUSED);
+        }
+        
         updateStatus("Paused");
     }
     
@@ -167,7 +182,6 @@ public class AudioController {
      */
     public void resume() {
         audioService.resumeAllTracks();
-        updateStatus("Resumed");
         
         // Resume any paused timers
         if (preWaitTimer != null && preWaitTimer.getStatus() == javafx.animation.Animation.Status.PAUSED) {
@@ -176,6 +190,12 @@ public class AudioController {
         if (postWaitTimer != null && postWaitTimer.getStatus() == javafx.animation.Animation.Status.PAUSED) {
             postWaitTimer.play();
         }
+        
+        if (stateChangeListener != null) {
+            stateChangeListener.accept(PlaybackState.PLAYING);
+        }
+        
+        updateStatus("Resumed");
     }
     
     /**
@@ -195,6 +215,12 @@ public class AudioController {
         }
         
         currentCue = null;
+        currentTrackId = null;
+        
+        if (stateChangeListener != null) {
+            stateChangeListener.accept(PlaybackState.STOPPED);
+        }
+        
         updateStatus("Stopped");
     }
     
