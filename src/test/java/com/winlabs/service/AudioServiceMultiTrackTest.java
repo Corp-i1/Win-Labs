@@ -125,11 +125,9 @@ class AudioServiceMultiTrackTest {
     
     @Test
     void testGetActiveTracksInSingleTrackMode() {
-        Exception exception = assertThrows(IllegalStateException.class, () -> {
-            singleTrackService.getActiveTracks();
-        });
-        
-        assertTrue(exception.getMessage().contains("multi-track mode"));
+        List<AudioTrack> tracks = singleTrackService.getActiveTracks();
+        assertNotNull(tracks);
+        assertEquals(0, tracks.size());
     }
     
     @Test
