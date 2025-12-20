@@ -331,9 +331,9 @@ public class MainWindow extends Stage {
         controls.setPadding(new Insets(10));
         controls.setAlignment(Pos.CENTER);
         
-        playButton = new Button("Play");
+        playButton = new Button("GO");
         playButton.setPrefWidth(100);
-        playButton.setOnAction(e -> onPlayClicked());
+        playButton.setOnAction(e -> onGoClicked());
         
         pauseButton = new Button("Pause");
         pauseButton.setPrefWidth(100);
@@ -424,26 +424,39 @@ public class MainWindow extends Stage {
     }
     
     /**
-     * Handles play button click.
+     * Handles GO button click.
+     * Plays the currently selected cue and advances selection to next cue.
      */
-    private void onPlayClicked() {
-        if (audioController.getState() == PlaybackState.PAUSED) {
-            audioController.resume();
-        } else {
-            Cue selectedCue = cueTable.getSelectionModel().getSelectedItem();
-            if (selectedCue != null) {
-                audioController.playCue(selectedCue);
+    private void onGoClicked() {
+        Cue selectedCue = cueTable.getSelectionModel().getSelectedItem();
+        if (selectedCue != null) {
+            // Play the selected cue
+            audioController.playCue(selectedCue);
+            
+            // Immediately advance to next cue
+            int currentIndex = playlist.getCues().indexOf(selectedCue);
+            if (currentIndex >= 0 && currentIndex < playlist.size() - 1) {
+                Cue nextCue = playlist.getCue(currentIndex + 1);
+                cueTable.getSelectionModel().select(nextCue);
+                updateStatus("Playing: " + selectedCue.getName() + " | Next: " + nextCue.getName());
             } else {
-                updateStatus("No cue selected");
+                updateStatus("Playing: " + selectedCue.getName() + " (Last cue)");
             }
+        } else {
+            updateStatus("No cue selected");
         }
     }
     
     /**
      * Handles pause button click.
+     * Toggles between pause and resume states.
      */
     private void onPauseClicked() {
-        audioController.pause();
+        if (audioController.getState() == PlaybackState.PAUSED) {
+            audioController.resume();
+        } else {
+            audioController.pause();
+        }
     }
     
     /**
@@ -476,19 +489,21 @@ public class MainWindow extends Stage {
     private void handleStateChange(PlaybackState state) {
         switch (state) {
             case PLAYING:
-                playButton.setDisable(true);
+                // GO button stays enabled for multi-track
+                pauseButton.setText("Pause");
                 pauseButton.setDisable(false);
                 stopButton.setDisable(false);
                 break;
             case PAUSED:
-                playButton.setDisable(false);
-                pauseButton.setDisable(true);
+                pauseButton.setText("Resume");
+                pauseButton.setDisable(false);
                 stopButton.setDisable(false);
                 break;
             case STOPPED:
             case PRE_WAIT:
             case POST_WAIT:
-                playButton.setDisable(false);
+                // GO button stays enabled for multi-track
+                pauseButton.setText("Pause");
                 pauseButton.setDisable(true);
                 stopButton.setDisable(true);
                 break;
