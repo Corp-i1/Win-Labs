@@ -519,9 +519,19 @@ public class MainWindow extends Stage {
                 pauseButton.setDisable(false);
                 stopButton.setDisable(false);
                 break;
-            case STOPPED:
             case PRE_WAIT:
+                // During pre-wait, allow pausing the timer
+                pauseButton.setText("Pause");
+                pauseButton.setDisable(false);
+                stopButton.setDisable(false);
+                break;
             case POST_WAIT:
+                // During post-wait, allow pausing the timer
+                pauseButton.setText("Pause");
+                pauseButton.setDisable(false);
+                stopButton.setDisable(false);
+                break;
+            case STOPPED:
                 // GO button stays enabled for multi-track
                 pauseButton.setText("Pause");
                 pauseButton.setDisable(true);
