@@ -53,7 +53,7 @@ public class WelcomeScreen extends Stage {
     
     private void initializeUI() {
         BorderPane root = new BorderPane();
-        root.setStyle("-fx-background-color: #ffffff;");
+        root.getStyleClass().add("root");
         
         // Top: Title section
         VBox headerSection = createHeaderSection();
@@ -77,7 +77,7 @@ public class WelcomeScreen extends Stage {
     private VBox createHeaderSection() {
         VBox header = new VBox(4);
         header.setPadding(new Insets(25));
-        header.setStyle("-fx-background-color: #f8f8f8; -fx-border-color: #cccccc; -fx-border-width: 0 0 1 0;");
+        header.getStyleClass().add("header-section");
         header.setAlignment(Pos.CENTER);
         
         Label titleLabel = new Label("Win-Labs");
@@ -85,7 +85,7 @@ public class WelcomeScreen extends Stage {
         
         Label subtitleLabel = new Label("Cue List Manager for Sound Technicians");
         subtitleLabel.setFont(Font.font("System", 14));
-        subtitleLabel.setStyle("-fx-text-fill: #666666;");
+        subtitleLabel.getStyleClass().add("subtitle-label");
         
         header.getChildren().addAll(titleLabel, subtitleLabel);
         return header;
@@ -97,7 +97,7 @@ public class WelcomeScreen extends Stage {
     private HBox createCenterSection() {
         HBox center = new HBox(20);
         center.setPadding(new Insets(20));
-        center.setStyle("-fx-background-color: #ffffff;");
+        center.getStyleClass().add("center-section");
         
         // LEFT COLUMN: Action buttons
         VBox leftColumn = createLeftColumn();
@@ -123,13 +123,13 @@ public class WelcomeScreen extends Stage {
      */
     private VBox createLeftColumn() {
         VBox column = new VBox(15);
-        column.setStyle("-fx-background-color: #f9f9f9;");
+        column.getStyleClass().add("action-column");
         column.setPadding(new Insets(15));
         column.setPrefWidth(250);
         
         Label actionsLabel = new Label("Start");
         actionsLabel.setFont(Font.font("System", FontWeight.BOLD, 16));
-        actionsLabel.setStyle("-fx-text-fill: #333333;");
+        actionsLabel.getStyleClass().add("section-title");
         
         // New Playlist button
         Button newPlaylistBtn = createLargeActionButton("+ New Playlist");
@@ -137,7 +137,7 @@ public class WelcomeScreen extends Stage {
             try {
                 playlistSelected = true;
                 onNewPlaylist.run();
-                close();
+                // Don't close here - callback will close if successful
             } catch (Exception ex) {
                 showError("Failed to create new playlist", ex.getMessage());
                 playlistSelected = false;
@@ -151,8 +151,7 @@ public class WelcomeScreen extends Stage {
                 // Mark that we're attempting to open
                 playlistSelected = false;
                 onOpenPlaylist.run();
-                // Don't close yet - let the callback handle it
-                close();
+                // Don't close here - callback will close if successful
             } catch (Exception ex) {
                 showError("Failed to open playlist", ex.getMessage());
                 playlistSelected = false;
@@ -177,20 +176,21 @@ public class WelcomeScreen extends Stage {
         
         Label titleLabel = new Label("Recently Opened");
         titleLabel.setFont(Font.font("System", FontWeight.BOLD, 14));
-        titleLabel.setStyle("-fx-text-fill: #333333;");
+        titleLabel.getStyleClass().add("section-title");
         
         // Recent playlists container with scroll
         recentPlaylistsContainer = new VBox(8);
-        recentPlaylistsContainer.setStyle("-fx-background-color: #f5f5f5; -fx-border-color: #dddddd; -fx-border-width: 1; -fx-border-radius: 4;");
+        recentPlaylistsContainer.getStyleClass().add("recent-playlists-container");
         recentPlaylistsContainer.setPadding(new Insets(12));
         
         Label placeholderLabel = new Label("No recent playlists");
-        placeholderLabel.setStyle("-fx-text-fill: #999999; -fx-font-size: 12;");
+        placeholderLabel.setStyle("-fx-font-size: 12;");
+        placeholderLabel.getStyleClass().add("placeholder-label");
         recentPlaylistsContainer.getChildren().add(placeholderLabel);
         
         ScrollPane scrollPane = new ScrollPane(recentPlaylistsContainer);
         scrollPane.setFitToWidth(true);
-        scrollPane.setStyle("-fx-control-inner-background: #ffffff; -fx-border-color: #dddddd;");
+        scrollPane.getStyleClass().add("recent-playlists-scroll");
         
         column.getChildren().addAll(titleLabel, scrollPane);
         VBox.setVgrow(scrollPane, Priority.ALWAYS);
@@ -204,7 +204,7 @@ public class WelcomeScreen extends Stage {
     private VBox createFooterSection() {
         VBox footer = new VBox(8);
         footer.setPadding(new Insets(15));
-        footer.setStyle("-fx-border-color: #cccccc; -fx-border-width: 1 0 0 0; -fx-background-color: #f8f8f8;");
+        footer.getStyleClass().add("footer-section");
         
         HBox buttonBox = new HBox(10);
         buttonBox.setAlignment(Pos.CENTER_RIGHT);
@@ -228,7 +228,7 @@ public class WelcomeScreen extends Stage {
         });
         
         Button exitBtn = createFooterButton("✕ Exit");
-        exitBtn.setStyle(exitBtn.getStyle() + "; -fx-text-fill: #cc0000;");
+        exitBtn.getStyleClass().add("exit-button");
         exitBtn.setOnAction(e -> {
             try {
                 onExit.run();
@@ -289,7 +289,8 @@ public class WelcomeScreen extends Stage {
             // Defensive: check if list is null or empty
             if (recentPlaylists == null || recentPlaylists.isEmpty()) {
                 Label emptyLabel = new Label("No recent playlists");
-                emptyLabel.setStyle("-fx-text-fill: #999999; -fx-font-size: 12;");
+                emptyLabel.setStyle("-fx-font-size: 12;");
+                emptyLabel.getStyleClass().add("placeholder-label");
                 recentPlaylistsContainer.getChildren().add(emptyLabel);
             } else {
                 for (RecentPlaylist playlist : recentPlaylists) {
@@ -364,6 +365,13 @@ public class WelcomeScreen extends Stage {
      */
     public boolean wasPlaylistSelected() {
         return playlistSelected;
+    }
+    
+    /**
+     * Closes the welcome screen (called by successful callbacks).
+     */
+    public void closeWelcomeScreen() {
+        close();
     }
 }
 

@@ -8,6 +8,7 @@ import com.winlabs.view.WelcomeScreen;
 import javafx.application.Application;
 import javafx.scene.control.Alert;
 import javafx.stage.Stage;
+import java.util.ArrayList;
 
 /**
  * Main entry point for Win-Labs application.
@@ -16,6 +17,7 @@ import javafx.stage.Stage;
 public class Main extends Application {
     
     private static String playlistFileToOpen;
+    private WelcomeScreen welcomeScreen;
     
     @Override
     public void start(Stage primaryStage) {
@@ -36,7 +38,7 @@ public class Main extends Application {
             mainWindow.show();
         } else {
             // Show welcome screen at startup (with theme applied)
-            WelcomeScreen welcomeScreen = new WelcomeScreen(
+            welcomeScreen = new WelcomeScreen(
                 this::showNewPlaylistWindow,
                 this::showOpenPlaylistWindow,
                 this::showSettings,
@@ -45,19 +47,31 @@ public class Main extends Application {
             );
             // Apply theme AFTER the stage is created but before showing
             welcomeScreen.applyTheme(settings.getTheme());
+            // Load and display recent playlists
+            // TODO: Implement recent playlists storage in ApplicationSettings
+            welcomeScreen.updateRecentPlaylists(new ArrayList<>());
             welcomeScreen.show();
         }
     }
     
     /**
      * Opens a new playlist window.
+     * Only closes welcome screen if user confirms the dialog.
      */
     private void showNewPlaylistWindow() {
         try {
             MainWindow mainWindow = new MainWindow();
-            mainWindow.newPlaylist();
-            // newPlaylist() creates an empty playlist ready for user input
-            mainWindow.show();
+            mainWindow.newPlaylist(true); // Skip confirmation - nothing to lose from welcome screen
+            // Check if a playlist was actually created (user didn't cancel)
+            if (mainWindow.hasPlaylistLoaded()) {
+                mainWindow.show();
+                if (welcomeScreen != null) {
+                    welcomeScreen.closeWelcomeScreen();
+                }
+            } else {
+                // User cancelled - close the empty window
+                mainWindow.close();
+            }
         } catch (Exception e) {
             System.err.println("Error creating new playlist: " + e.getMessage());
             e.printStackTrace();
@@ -66,7 +80,7 @@ public class Main extends Application {
     
     /**
      * Opens a playlist from the file browser.
-     * User can cancel the file dialog without closing the app.
+     * Only closes welcome screen if user actually selects a file.
      */
     private void showOpenPlaylistWindow() {
         try {
@@ -75,8 +89,11 @@ public class Main extends Application {
             // Only show the window if a playlist was successfully loaded
             if (mainWindow.hasPlaylistLoaded()) {
                 mainWindow.show();
+                if (welcomeScreen != null) {
+                    welcomeScreen.closeWelcomeScreen();
+                }
             } else {
-                // User cancelled the file dialog - close the window but keep welcome screen open
+                // User cancelled the file dialog - close the empty window, keep welcome screen
                 mainWindow.close();
             }
         } catch (Exception e) {

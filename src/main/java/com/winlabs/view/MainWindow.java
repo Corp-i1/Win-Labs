@@ -51,6 +51,7 @@ public class MainWindow extends Stage {
     private Playlist playlist;
     private PlaylistSettings playlistSettings;
     private Path currentPlaylistPath;
+    private boolean playlistInitialized = false; // Track if playlist was intentionally created/loaded
     
     private TableView<Cue> cueTable;
     private Button goButton;
@@ -572,21 +573,37 @@ public class MainWindow extends Stage {
     /**
      * Creates a new empty playlist.
      */
-    public void newPlaylist() {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("New Playlist");
-        alert.setHeaderText("Create new playlist?");
-        alert.setContentText("Any unsaved changes will be lost.");
-        applyThemeToDialog(alert);
-        
-        if (alert.showAndWait().get() == ButtonType.OK) {
-            playlist.clear();
-            playlist.setName("Untitled Playlist");
-            currentPlaylistPath = null;
-            playlistSettings.resetToDefaults();
-            updateCueCount();
-            updateStatus("New playlist created");
+    /**
+     * Creates a new playlist.
+     * Shows confirmation dialog if skipConfirmation is false.
+     */
+    public void newPlaylist(boolean skipConfirmation) {
+        if (!skipConfirmation) {
+            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+            alert.setTitle("New Playlist");
+            alert.setHeaderText("Create new playlist?");
+            alert.setContentText("Any unsaved changes will be lost.");
+            applyThemeToDialog(alert);
+            
+            if (alert.showAndWait().get() != ButtonType.OK) {
+                return; // User cancelled
+            }
         }
+        
+        playlist.clear();
+        playlist.setName("Untitled Playlist");
+        currentPlaylistPath = null;
+        playlistSettings.resetToDefaults();
+        playlistInitialized = true;
+        updateCueCount();
+        updateStatus("New playlist created");
+    }
+    
+    /**
+     * Creates a new playlist (with confirmation).
+     */
+    public void newPlaylist() {
+        newPlaylist(false);
     }
     
     /**
@@ -623,6 +640,7 @@ public class MainWindow extends Stage {
                 // Load playlist settings
                 currentPlaylistPath = filePath;
                 playlistSettings = playlistSettingsService.load(filePath);
+                playlistInitialized = true;
                 
                 updateCueCount();
                 updateStatus("Loaded playlist: " + loadedPlaylist.getName());
@@ -862,6 +880,7 @@ public class MainWindow extends Stage {
             for (Cue cue : loadedPlaylist.getCues()) {
                 playlist.addCue(cue);
             }
+            playlistInitialized = true;
             updateStatus("Opened playlist: " + filePath);
         } catch (Exception e) {
             showError("Failed to open playlist", e.getMessage());
@@ -870,11 +889,12 @@ public class MainWindow extends Stage {
     }
     
     /**
-     * Checks if a playlist has been loaded.
+     * Checks if a playlist has been loaded or created.
+     * Returns true if a playlist was intentionally created or loaded.
      * 
-     * @return true if a playlist is loaded, false otherwise
+     * @return true if a playlist is loaded or created, false otherwise
      */
     public boolean hasPlaylistLoaded() {
-        return currentPlaylistPath != null && !playlist.getCues().isEmpty();
+        return playlistInitialized;
     }
 }
