@@ -6,6 +6,7 @@ import com.winlabs.model.Settings;
 import com.winlabs.view.MainWindow;
 import com.winlabs.view.WelcomeScreen;
 import javafx.application.Application;
+import javafx.scene.control.Alert;
 import javafx.stage.Stage;
 
 /**
@@ -42,6 +43,7 @@ public class Main extends Application {
                 this::showDocumentation,
                 this::closeApplication
             );
+            // Apply theme AFTER the stage is created but before showing
             welcomeScreen.applyTheme(settings.getTheme());
             welcomeScreen.show();
         }
@@ -54,6 +56,7 @@ public class Main extends Application {
         try {
             MainWindow mainWindow = new MainWindow();
             mainWindow.newPlaylist();
+            // newPlaylist() creates an empty playlist ready for user input
             mainWindow.show();
         } catch (Exception e) {
             System.err.println("Error creating new playlist: " + e.getMessage());
@@ -63,6 +66,7 @@ public class Main extends Application {
     
     /**
      * Opens a playlist from the file browser.
+     * User can cancel the file dialog without closing the app.
      */
     private void showOpenPlaylistWindow() {
         try {
@@ -72,7 +76,7 @@ public class Main extends Application {
             if (mainWindow.hasPlaylistLoaded()) {
                 mainWindow.show();
             } else {
-                // User cancelled the file dialog, close the window
+                // User cancelled the file dialog - close the window but keep welcome screen open
                 mainWindow.close();
             }
         } catch (Exception e) {
@@ -85,16 +89,38 @@ public class Main extends Application {
      * Shows the settings window.
      */
     private void showSettings() {
-        // Settings dialog will be shown from WelcomeScreen
-        // This is a placeholder for future expansion
+        try {
+            SettingsService settingsService = new SettingsService();
+            Settings settings = settingsService.load();
+            MainWindow tempWindow = new MainWindow();
+            tempWindow.openSettings(settings, settingsService);
+        } catch (Exception e) {
+            System.err.println("Error opening settings: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
     
     /**
      * Shows documentation.
      */
     private void showDocumentation() {
-        // Documentation will be shown from WelcomeScreen
-        // This is a placeholder for future expansion
+        try {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Win-Labs Documentation");
+            alert.setHeaderText("Help & Documentation");
+            alert.setContentText("Documentation is available at:\n" +
+                "https://github.com/Corp-i1/Win-Labs\n\n" +
+                "Features:\n" +
+                "• Create and manage audio cue lists\n" +
+                "• Set pre-wait and post-wait timers\n" +
+                "• Auto-follow functionality\n" +
+                "• Multi-track playback\n" +
+                "• Theme customization\n\n" +
+                "For more information, visit the repository.");
+            alert.showAndWait();
+        } catch (Exception e) {
+            System.err.println("Error showing documentation: " + e.getMessage());
+        }
     }
     
     /**

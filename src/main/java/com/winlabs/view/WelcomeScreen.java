@@ -159,20 +159,10 @@ public class WelcomeScreen extends Stage {
             }
         });
         
-        Label orLabel = new Label("─ or ─");
-        orLabel.setStyle("-fx-text-fill: #999999; -fx-font-size: 11;");
-        orLabel.setAlignment(Pos.CENTER);
-        
-        Label recentLabel = new Label("Recent Playlists");
-        recentLabel.setFont(Font.font("System", FontWeight.BOLD, 14));
-        recentLabel.setStyle("-fx-text-fill: #333333;");
-        
         column.getChildren().addAll(
             actionsLabel,
             newPlaylistBtn,
-            openPlaylistBtn,
-            orLabel,
-            recentLabel
+            openPlaylistBtn
         );
         
         return column;

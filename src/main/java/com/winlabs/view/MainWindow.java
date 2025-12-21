@@ -170,9 +170,9 @@ public class MainWindow extends Stage {
         // Apply saved theme or default to dark
         applyThemeFromSettings();
         
-        // Add sample data for testing
-        // TODO: Make so that this is only in debug mode
-        addSampleCues();
+        // Sample cues are commented out - remove this when in production
+        // Users should start with empty playlist for new playlists
+        // addSampleCues();
     }
     
     /**
@@ -695,8 +695,23 @@ public class MainWindow extends Stage {
         alert.showAndWait();
     }
     
+    
     /**
-     * Opens the settings window.
+     * Opens the settings dialog (public version for external callers).
+     * Can be called from WelcomeScreen or other windows.
+     */
+    public void openSettings(Settings settings, SettingsService settingsService) {
+        try {
+            this.settings = settings;
+            this.settingsService = settingsService;
+            openSettings();
+        } catch (Exception e) {
+            showError("Settings Error", "Failed to open settings: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Opens the settings dialog (private internal version).
      */
     private void openSettings() {
         SettingsWindow settingsWindow = new SettingsWindow(settings, settingsService);
