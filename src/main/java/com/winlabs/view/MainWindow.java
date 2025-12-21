@@ -33,7 +33,6 @@ import java.util.List;
 //TODO: make the cue table columns reorderable and resizable, and save/load their state with the playlist
 //TODO: Add multi-select support for cue table (for batch operations like delete, move, etc.) - make it so that Ctrl+Click and Shift+Click work as expected
 //TODO: Add drag-and-drop reordering of cues in the cue table
-//TODO: Add Settings window for configuring application preferences (themes, audio settings, etc.)
 //TODO: Make sure all specific key presses and actions can be remapped in settings
 //TODO: Make Debug Mode that enables extra logging and features for testing
 //TODO: Add Basic Logging functionality to log important events and errors to a file for troubleshooting - Diffrentiate between info, warning, and error logs - adjust what gets reported in the application in settings + log level + log file location + log rotation + log format + log viewer + export logs + toggle logging on/off
