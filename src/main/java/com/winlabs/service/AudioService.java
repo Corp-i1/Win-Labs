@@ -5,6 +5,8 @@ import com.winlabs.model.PlaybackState;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.util.Duration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,6 +28,8 @@ import java.util.function.Consumer;
  * Multi-track mode: Uses AudioPlayerPool for simultaneous overlapping audio.
  */
 public class AudioService {
+    
+    private static final Logger logger = LoggerFactory.getLogger(AudioService.class);
     
     // Single-track mode fields (legacy support)
     private MediaPlayer mediaPlayer;
@@ -111,6 +115,7 @@ public class AudioService {
         
         // Handle errors
         mediaPlayer.setOnError(() -> {
+            logger.error("Media playback error: {}", mediaPlayer.getError().getMessage());
             System.err.println("Media error: " + mediaPlayer.getError().getMessage());
             setState(PlaybackState.STOPPED);
         });
@@ -121,9 +126,11 @@ public class AudioService {
      */
     public void play() {
         if (mediaPlayer == null) {
+            logger.error("Attempted to play with no audio loaded");
             throw new IllegalStateException("No audio loaded");
         }
         
+        logger.debug("Starting playback");
         mediaPlayer.play();
         setState(PlaybackState.PLAYING);
     }

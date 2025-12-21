@@ -4,6 +4,8 @@ import com.winlabs.model.AudioTrack;
 import com.winlabs.model.PlaybackState;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,6 +26,8 @@ import java.util.stream.Collectors;
  * to minimize latency and resource usage.
  */
 public class AudioPlayerPool {
+    
+    private static final Logger logger = LoggerFactory.getLogger(AudioPlayerPool.class);
     
     private static final int DEFAULT_POOL_SIZE = 5;
     private static final int MAX_POOL_SIZE = 20;
@@ -47,6 +51,7 @@ public class AudioPlayerPool {
         this.maxPoolSize = Math.max(this.initialPoolSize, maxPoolSize);
         this.availableTracks = new CopyOnWriteArrayList<>();
         this.activeTracks = new ConcurrentHashMap<>();
+        logger.info("AudioPlayerPool created: initialSize={}, maxSize={}", this.initialPoolSize, this.maxPoolSize);
         this.cullScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread thread = new Thread(r, "AudioPlayerPool-Culler");
             thread.setDaemon(true);
@@ -168,6 +173,7 @@ public class AudioPlayerPool {
             return;
         }
         
+        logger.debug("Releasing track: {}", track.getTrackId());
         // Remove from active tracks
         activeTracks.remove(track.getTrackId());
         
@@ -191,6 +197,7 @@ public class AudioPlayerPool {
      * @param trackId The ID of the track to release
      */
     public void forceReleaseTrack(String trackId) {
+        logger.debug("Force releasing track: {}", trackId);
         AudioTrack track = activeTracks.get(trackId);
         if (track != null) {
             track.stop();

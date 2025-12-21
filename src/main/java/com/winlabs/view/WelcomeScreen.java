@@ -14,6 +14,9 @@ import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.List;
 
 /**
@@ -22,6 +25,8 @@ import java.util.List;
  * Features two-column layout: actions on left, recent playlists on right.
  */
 public class WelcomeScreen extends Stage {
+    
+    private static final Logger logger = LoggerFactory.getLogger(WelcomeScreen.class);
     
     private final Runnable onNewPlaylist;
     private final Runnable onOpenPlaylist;
@@ -41,6 +46,7 @@ public class WelcomeScreen extends Stage {
         this.onOpenDocumentation = onOpenDocumentation != null ? onOpenDocumentation : () -> {};
         this.onExit = onExit != null ? onExit : () -> System.exit(0);
         
+        logger.info("WelcomeScreen initialized");
         setTitle("Win-Labs - Welcome");
         setWidth(900);
         setHeight(600);
@@ -135,10 +141,12 @@ public class WelcomeScreen extends Stage {
         Button newPlaylistBtn = createLargeActionButton("+ New Playlist");
         newPlaylistBtn.setOnAction(e -> {
             try {
+                logger.info("New Playlist button clicked");
                 playlistSelected = true;
                 onNewPlaylist.run();
                 // Don't close here - callback will close if successful
             } catch (Exception ex) {
+                logger.error("Failed to create new playlist: {}", ex.getMessage(), ex);
                 showError("Failed to create new playlist", ex.getMessage());
                 playlistSelected = false;
             }

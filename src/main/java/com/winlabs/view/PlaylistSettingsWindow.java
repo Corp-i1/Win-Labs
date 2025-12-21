@@ -11,6 +11,9 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Window;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.nio.file.Path;
 
@@ -20,6 +23,8 @@ import java.nio.file.Path;
  * Accessed from MainWindow when a playlist is open.
  */
 public class PlaylistSettingsWindow extends Dialog<Boolean> {
+    
+    private static final Logger logger = LoggerFactory.getLogger(PlaylistSettingsWindow.class);
     
     private final PlaylistSettings playlistSettings;
     private final PlaylistSettingsService playlistSettingsService;
@@ -40,6 +45,7 @@ public class PlaylistSettingsWindow extends Dialog<Boolean> {
         this.playlistSettingsService = playlistSettingsService;
         this.playlistPath = playlistPath;
         
+        logger.info("Opening playlist settings for: {}", playlistPath.getFileName());
         setTitle("Playlist Settings");
         initOwner(owner);
         setResizable(true);
@@ -202,8 +208,10 @@ public class PlaylistSettingsWindow extends Dialog<Boolean> {
         
         // Save to .wlp file
         try {
+            logger.info("Applying and saving playlist settings");
             playlistSettingsService.save(playlistPath, playlistSettings);
         } catch (Exception e) {
+            logger.error("Failed to save playlist settings: {}", e.getMessage(), e);
             Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to save playlist settings: " + e.getMessage());
             alert.setTitle("Error");
             alert.showAndWait();

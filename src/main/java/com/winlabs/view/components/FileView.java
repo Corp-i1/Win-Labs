@@ -6,6 +6,8 @@ import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,6 +18,8 @@ import java.nio.file.Path;
  * Provides shared functionality for both view types.
  */
 public class FileView extends BorderPane {
+    
+    private static final Logger logger = LoggerFactory.getLogger(FileView.class);
     
     private final FileSystemService fileSystemService;
     private final TreeFileView treeFileView;

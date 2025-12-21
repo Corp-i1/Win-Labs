@@ -6,6 +6,8 @@ import com.winlabs.model.PlaybackState;
 import com.winlabs.service.AudioService;
 import javafx.animation.PauseTransition;
 import javafx.util.Duration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -15,6 +17,8 @@ import java.util.function.Consumer;
  * Handles play, pause, stop, and auto-follow functionality.
  */
 public class AudioController {
+    
+    private static final Logger logger = LoggerFactory.getLogger(AudioController.class);
     
     private final AudioService audioService;
     private Cue currentCue;
@@ -28,6 +32,7 @@ public class AudioController {
     
     public AudioController() {
         this.audioService = new AudioService(true); // Enable multi-track mode
+        logger.info("AudioController initialized with multi-track mode enabled");
     }
     
     /**
@@ -35,14 +40,17 @@ public class AudioController {
      */
     public void playCue(Cue cue) {
         if (cue == null) {
+            logger.warn("Attempted to play null cue");
             updateStatus("No cue to play");
             return;
         }
         
+        logger.info("Playing cue: {} ({})", cue.getNumber(), cue.getName());
         currentCue = cue;
         String filePath = cue.getFilePath();
         
         if (filePath == null || filePath.isEmpty()) {
+            logger.warn("Cue {} has no audio file path", cue.getNumber());
             updateStatus("Cue has no audio file");
             return;
         }
@@ -96,6 +104,7 @@ public class AudioController {
             
             updateStatus("Playing: " + cue.getName());
         } catch (Exception e) {
+            logger.error("Error playing cue {}: {}", cue.getNumber(), e.getMessage(), e);
             updateStatus("Error loading audio: " + e.getMessage());
         }
     }
@@ -133,6 +142,7 @@ public class AudioController {
             return;
         }
         
+        logger.info("Cue completed: {} ({})", currentCue.getNumber(), currentCue.getName());
         updateStatus("Cue complete: " + currentCue.getName());
         
         double postWait = currentCue.getPostWait();

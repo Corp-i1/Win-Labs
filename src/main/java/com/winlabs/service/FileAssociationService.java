@@ -1,5 +1,8 @@
 package com.winlabs.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 
 /**
@@ -7,6 +10,8 @@ import java.io.IOException;
  * Allows double-clicking .wlp files to open them directly in Win-Labs.
  */
 public class FileAssociationService {
+    
+    private static final Logger logger = LoggerFactory.getLogger(FileAssociationService.class);
     
     private static final String FILE_TYPE = ".wlp";
     private static final String PROGRAM_ID = "WinLabs.PlaylistFile";
@@ -20,9 +25,11 @@ public class FileAssociationService {
      */
     public static void registerFileType() {
         if (!isWindows()) {
+            logger.debug("File association registration skipped (not Windows)");
             return;
         }
         
+        logger.info("Registering .wlp file type association");
         try {
             // Get the path to the current executable
             String executablePath = getExecutablePath();
@@ -61,8 +68,10 @@ public class FileAssociationService {
                 "/f"
             );
             
+            logger.info(".wlp file type registration completed successfully");
             System.out.println("File type association registered successfully.");
         } catch (Exception e) {
+            logger.error("Failed to register file type association: {}", e.getMessage(), e);
             System.err.println("Failed to register file type association: " + e.getMessage());
         }
     }
@@ -72,9 +81,11 @@ public class FileAssociationService {
      */
     public static void unregisterFileType() {
         if (!isWindows()) {
+            logger.debug("File association unregistration skipped (not Windows)");
             return;
         }
         
+        logger.info("Unregistering .wlp file type association");
         try {
             executeWindowsCommand(
                 "reg",

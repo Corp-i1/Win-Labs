@@ -1,6 +1,8 @@
 package com.winlabs.service;
 
 import com.winlabs.util.PathUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -15,20 +17,25 @@ import java.util.stream.Stream;
  */
 public class FileSystemService {
     
+    private static final Logger logger = LoggerFactory.getLogger(FileSystemService.class);
+    
     /**
      * Lists all audio files in a directory (non-recursive).
      */
     public List<Path> listAudioFiles(Path directory) throws IOException {
         if (!Files.exists(directory) || !Files.isDirectory(directory)) {
+            logger.debug("Directory does not exist or is not a directory: {}", directory);
             return new ArrayList<>();
         }
         
         try (Stream<Path> paths = Files.list(directory)) {
-            return paths
+            List<Path> audioFiles = paths
                 .filter(Files::isRegularFile)
                 .filter(PathUtil::isAudioFile)
                 .sorted()
                 .collect(Collectors.toList());
+            logger.debug("Found {} audio files in {}", audioFiles.size(), directory);
+            return audioFiles;
         }
     }
     
