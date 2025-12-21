@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
 /**
  * Service for saving and loading application and workspace settings.
@@ -73,6 +74,12 @@ public class SettingsService {
         json.addProperty("preWaitDefault", settings.getPreWaitDefault());
         json.addProperty("postWaitDefault", settings.getPostWaitDefault());
         json.addProperty("autoFollowDefault", settings.isAutoFollowDefault());
+        
+        // Recent files
+        json.add("recentFiles", gson.toJsonTree(settings.getRecentFiles()));
+        
+        // Pinned playlists
+        json.add("pinnedPlaylists", gson.toJsonTree(settings.getPinnedPlaylists()));
         
         String jsonString = gson.toJson(json);
         Files.writeString(appSettingsPath, jsonString);
@@ -156,6 +163,28 @@ public class SettingsService {
         }
         if (json.has("autoFollowDefault")) {
             settings.setAutoFollowDefault(json.get("autoFollowDefault").getAsBoolean());
+        }
+        
+        // Load recent files
+        if (json.has("recentFiles")) {
+            try {
+                List<String> recentFiles = gson.fromJson(json.get("recentFiles"), 
+                    new com.google.gson.reflect.TypeToken<List<String>>(){}.getType());
+                settings.setRecentFiles(recentFiles);
+            } catch (Exception e) {
+                System.err.println("Failed to load recent files: " + e.getMessage());
+            }
+        }
+        
+        // Load pinned playlists
+        if (json.has("pinnedPlaylists")) {
+            try {
+                java.util.Set<String> pinnedPlaylists = gson.fromJson(json.get("pinnedPlaylists"), 
+                    new com.google.gson.reflect.TypeToken<java.util.Set<String>>(){}.getType());
+                settings.setPinnedPlaylists(pinnedPlaylists);
+            } catch (Exception e) {
+                System.err.println("Failed to load pinned playlists: " + e.getMessage());
+            }
         }
     }
     

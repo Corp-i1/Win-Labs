@@ -1,5 +1,8 @@
 package com.winlabs.model;
 
+import java.util.List;
+import java.util.Set;
+
 /**
  * Container for both application and workspace settings.
  * Provides backward compatibility with legacy Settings API.
@@ -145,6 +148,50 @@ public class Settings {
     
     public void setLogRetentionDays(int days) {
         applicationSettings.setLogRetentionDays(days);
+    }
+    
+    // Recent files methods
+    
+    public List<String> getRecentFiles() {
+        return applicationSettings.getRecentFiles();
+    }
+    
+    public void setRecentFiles(List<String> files) {
+        applicationSettings.setRecentFiles(files);
+    }
+    
+    public void addRecentFile(String filePath) {
+        applicationSettings.addRecentFile(filePath);
+    }
+    
+    public void removeRecentFile(String filePath) {
+        applicationSettings.removeRecentFile(filePath);
+    }
+    
+    public void clearRecentFiles() {
+        applicationSettings.clearRecentFiles();
+    }
+    
+    // Pinned playlists methods
+    
+    public Set<String> getPinnedPlaylists() {
+        return applicationSettings.getPinnedPlaylists();
+    }
+    
+    public void setPinnedPlaylists(Set<String> playlists) {
+        applicationSettings.setPinnedPlaylists(playlists);
+    }
+    
+    public boolean isPinned(String filePath) {
+        return applicationSettings.isPinned(filePath);
+    }
+    
+    public boolean togglePinned(String filePath) {
+        return applicationSettings.togglePinned(filePath);
+    }
+    
+    public void clearPinnedPlaylists() {
+        applicationSettings.clearPinnedPlaylists();
     }
     
     /**

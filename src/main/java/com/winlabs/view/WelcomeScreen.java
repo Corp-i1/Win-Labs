@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Welcome screen displayed at application startup as a separate window.
@@ -34,8 +35,10 @@ public class WelcomeScreen extends Stage {
     private final Runnable onOpenDocumentation;
     private final Runnable onExit;
     
-    private VBox recentPlaylistsContainer;
+    private FlowPane recentPlaylistsContainer;
     private boolean playlistSelected = false;
+    private Consumer<String> onOpenRecentPlaylist; // Callback with file path
+    private Consumer<String> onTogglePin; // Callback to toggle pin status
     
     public WelcomeScreen(Runnable onNewPlaylist, Runnable onOpenPlaylist, 
                         Runnable onOpenSettings, Runnable onOpenDocumentation, Runnable onExit) {
@@ -55,6 +58,21 @@ public class WelcomeScreen extends Stage {
         setMinHeight(500);
         
         initializeUI();
+    }
+    
+    /**
+     * Sets the callback for opening a recent playlist by path.
+     */
+    public void setOnOpenRecentPlaylist(Consumer<String> callback) {
+        this.onOpenRecentPlaylist = callback;
+    }
+    
+    /**
+     * Sets the callback for toggling pin status of a playlist.
+     * @param callback The callback to invoke with the file path
+     */
+    public void setOnTogglePin(Consumer<String> callback) {
+        this.onTogglePin = callback;
     }
     
     private void initializeUI() {
@@ -188,8 +206,10 @@ public class WelcomeScreen extends Stage {
         titleLabel.setFont(Font.font("System", FontWeight.BOLD, 14));
         titleLabel.getStyleClass().add("section-title");
         
-        // Recent playlists container with scroll
-        recentPlaylistsContainer = new VBox(8);
+        // Recent playlists container with grid layout
+        recentPlaylistsContainer = new FlowPane();
+        recentPlaylistsContainer.setHgap(10);
+        recentPlaylistsContainer.setVgap(10);
         recentPlaylistsContainer.getStyleClass().add("recent-playlists-container");
         recentPlaylistsContainer.setPadding(new Insets(12));
         
@@ -312,14 +332,29 @@ public class WelcomeScreen extends Stage {
                                 () -> {
                                     try {
                                         playlistSelected = true;
-                                        onOpenPlaylist.run();
+                                        // Open the specific recent playlist by path
+                                        if (onOpenRecentPlaylist != null) {
+                                            onOpenRecentPlaylist.accept(playlist.getPlaylistPath());
+                                        } else {
+                                            // Fallback to generic open dialog
+                                            onOpenPlaylist.run();
+                                        }
                                         close();
                                     } catch (Exception ex) {
                                         showError("Failed to open playlist", ex.getMessage());
                                         playlistSelected = false;
                                     }
                                 },
-                                () -> {} // Pin callback
+                                (filePath) -> {
+                                    // Toggle pin callback
+                                    if (onTogglePin != null) {
+                                        try {
+                                            onTogglePin.accept(filePath);
+                                        } catch (Exception ex) {
+                                            showError("Failed to toggle pin", ex.getMessage());
+                                        }
+                                    }
+                                }
                             );
                             recentPlaylistsContainer.getChildren().add(card);
                         } catch (Exception ex) {

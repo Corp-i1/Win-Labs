@@ -5,6 +5,7 @@ import com.winlabs.model.Cue;
 import com.winlabs.model.PlaybackState;
 import com.winlabs.model.Playlist;
 import com.winlabs.model.PlaylistSettings;
+import com.winlabs.model.RecentPlaylist;
 import com.winlabs.model.Settings;
 import com.winlabs.service.PlaylistService;
 import com.winlabs.service.PlaylistSettingsService;
@@ -25,10 +26,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 //TODO: Add context menu for file operations (open, delete, properties, etc.)
 //TODO: Add drag-and-drop support for adding files to cue list
@@ -40,8 +43,6 @@ import java.util.List;
 //TODO: Add multi-select support for cue table (for batch operations like delete, move, etc.) - make it so that Ctrl+Click and Shift+Click work as expected
 //TODO: Add drag-and-drop reordering of cues in the cue table
 //TODO: Make sure all specific key presses and actions can be remapped in settings
-//TDOO: Add Recent Files menu to quickly access recently opened playlists
-//TODO: Make Debug Mode that enables extra logging and features for testing
 /**
  * Main application window for Win-Labs.
  * Contains the cue list, controls, and file browser.
@@ -201,6 +202,10 @@ public class MainWindow extends Stage {
         MenuItem openItem = new MenuItem("Open Playlist...");
         openItem.setOnAction(e -> openPlaylist());
         
+        // Recent Files submenu
+        Menu recentFilesMenu = new Menu("Recent Files");
+        updateRecentFilesMenu(recentFilesMenu);
+        
         MenuItem saveItem = new MenuItem("Save Playlist");
         saveItem.setOnAction(e -> savePlaylist());
         
@@ -215,7 +220,8 @@ public class MainWindow extends Stage {
         
         fileMenu.getItems().addAll(
             newItem, new SeparatorMenuItem(),
-            openItem, saveItem, saveAsItem, new SeparatorMenuItem(),
+            openItem, recentFilesMenu, new SeparatorMenuItem(),
+            saveItem, saveAsItem, new SeparatorMenuItem(),
             backToWelcomeItem, new SeparatorMenuItem(),
             exitItem
         );
@@ -665,6 +671,14 @@ public class MainWindow extends Stage {
                 playlistSettings = playlistSettingsService.load(filePath);
                 playlistInitialized = true;
                 
+                // Add to recent files
+                settings.addRecentFile(filePath.toString());
+                try {
+                    settingsService.save(settings);
+                } catch (Exception ex) {
+                    logger.error("Failed to save recent file to settings", ex);
+                }
+                
                 updateCueCount();
                 updateStatus("Loaded playlist: " + loadedPlaylist.getName());
             } catch (Exception e) {
@@ -793,7 +807,79 @@ public class MainWindow extends Stage {
         );
         
         welcomeScreenRef[0].applyTheme(settings.getTheme());
-        welcomeScreenRef[0].updateRecentPlaylists(new ArrayList<>());
+        
+        // Set callback for opening recent playlists
+        welcomeScreenRef[0].setOnOpenRecentPlaylist((filePath) -> {
+            welcomeScreenRef[0].closeWelcomeScreen();
+            this.show();
+            this.openRecentFile(filePath);
+        });
+        
+        // Set callback for toggling pin status
+        welcomeScreenRef[0].setOnTogglePin((filePath) -> {
+            try {
+                boolean nowPinned = settings.togglePinned(filePath);
+                settingsService.save(settings);
+                logger.info("Toggled pin for {}: {}", filePath, nowPinned);
+                
+                // Refresh the welcome screen to update the display
+                welcomeScreenRef[0].close();
+                showWelcomeScreen();
+            } catch (Exception e) {
+                logger.error("Failed to toggle pin for {}", filePath, e);
+                showError("Failed to toggle pin", e.getMessage());
+            }
+        });
+        
+        // Build combined list: pinned playlists + recent playlists
+        List<RecentPlaylist> allPlaylists = new ArrayList<>();
+        
+        // First, add all pinned playlists
+        Set<String> pinnedFiles = settings.getPinnedPlaylists();
+        logger.info("Loading pinned playlists: {}", pinnedFiles != null ? pinnedFiles.size() : 0);
+        if (pinnedFiles != null) {
+            for (String filePath : pinnedFiles) {
+                try {
+                    Path path = Paths.get(filePath);
+                    String fileName = path.getFileName().toString();
+                    String playlistName = fileName.replaceFirst("[.][^.]+$", "");
+                    
+                    RecentPlaylist playlist = new RecentPlaylist(playlistName, filePath);
+                    playlist.setIsPinned(true);
+                    allPlaylists.add(playlist);
+                    logger.debug("Added pinned playlist: {}", filePath);
+                } catch (Exception e) {
+                    logger.warn("Failed to add pinned playlist: {}", filePath, e);
+                }
+            }
+        }
+        
+        // Then, add recent (non-pinned) playlists
+        List<String> recentFiles = settings.getRecentFiles();
+        logger.info("Loading recent files: {}", recentFiles != null ? recentFiles.size() : 0);
+        if (recentFiles != null) {
+            for (String filePath : recentFiles) {
+                // Skip if already added as pinned
+                if (pinnedFiles != null && pinnedFiles.contains(filePath)) {
+                    continue;
+                }
+                
+                try {
+                    Path path = Paths.get(filePath);
+                    String fileName = path.getFileName().toString();
+                    String playlistName = fileName.replaceFirst("[.][^.]+$", "");
+                    
+                    RecentPlaylist playlist = new RecentPlaylist(playlistName, filePath);
+                    playlist.setIsPinned(false);
+                    allPlaylists.add(playlist);
+                } catch (Exception e) {
+                    logger.warn("Failed to add recent playlist: {}", filePath, e);
+                }
+            }
+        }
+        
+        welcomeScreenRef[0].updateRecentPlaylists(allPlaylists);
+        
         this.hide();
         welcomeScreenRef[0].show();
     }
@@ -954,5 +1040,132 @@ public class MainWindow extends Stage {
      */
     public boolean hasPlaylistLoaded() {
         return playlistInitialized;
+    }
+    
+    /**
+     * Updates the Recent Files submenu with the current list of recent files.
+     * 
+     * @param recentFilesMenu The Recent Files menu to update
+     */
+    private void updateRecentFilesMenu(Menu recentFilesMenu) {
+        recentFilesMenu.getItems().clear();
+        
+        List<String> recentFiles = settings.getRecentFiles();
+        
+        if (recentFiles == null || recentFiles.isEmpty()) {
+            MenuItem emptyItem = new MenuItem("(No recent files)");
+            emptyItem.setDisable(true);
+            recentFilesMenu.getItems().add(emptyItem);
+            return;
+        }
+        
+        // Add menu items for each recent file
+        for (String filePath : recentFiles) {
+            Path path = Paths.get(filePath);
+            String fileName = path.getFileName().toString();
+            
+            MenuItem fileItem = new MenuItem(fileName);
+            fileItem.setOnAction(e -> openRecentFile(filePath));
+            
+            // Set tooltip with full path
+            Tooltip tooltip = new Tooltip(filePath);
+            Tooltip.install(fileItem.getGraphic(), tooltip);
+            
+            recentFilesMenu.getItems().add(fileItem);
+        }
+        
+        // Add separator and "Clear Recent Files" option
+        if (!recentFiles.isEmpty()) {
+            recentFilesMenu.getItems().add(new SeparatorMenuItem());
+            MenuItem clearItem = new MenuItem("Clear Recent Files");
+            clearItem.setOnAction(e -> clearRecentFiles());
+            recentFilesMenu.getItems().add(clearItem);
+        }
+    }
+    
+    /**
+     * Opens a recent file from the recent files list.
+     * 
+     * @param filePath The absolute path to the playlist file
+     */
+    private void openRecentFile(String filePath) {
+        try {
+            Path path = Paths.get(filePath);
+            
+            // Check if file exists
+            if (!Files.exists(path)) {
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setTitle("File Not Found");
+                alert.setHeaderText("Recent file not found");
+                alert.setContentText("The file no longer exists:\\n" + filePath + "\\n\\nRemove from recent files?");
+                applyThemeToDialog(alert);
+                
+                ButtonType removeButton = new ButtonType("Remove");
+                ButtonType cancelButton = ButtonType.CANCEL;
+                alert.getButtonTypes().setAll(removeButton, cancelButton);
+                
+                if (alert.showAndWait().get() == removeButton) {
+                    settings.removeRecentFile(filePath);
+                    try {
+                        settingsService.save(settings);
+                    } catch (Exception ex) {
+                        logger.error("Failed to save settings after removing recent file", ex);
+                    }
+                }
+                return;
+            }
+            
+            // Load the playlist
+            Playlist loadedPlaylist = playlistService.load(filePath);
+            playlist.clear();
+            playlist.setName(loadedPlaylist.getName());
+            playlist.setFilePath(filePath);
+            for (Cue cue : loadedPlaylist.getCues()) {
+                playlist.addCue(cue);
+            }
+            
+            // Load playlist settings
+            currentPlaylistPath = path;
+            playlistSettings = playlistSettingsService.load(path);
+            playlistInitialized = true;
+            
+            // Move to front of recent files list
+            settings.addRecentFile(filePath);
+            try {
+                settingsService.save(settings);
+            } catch (Exception ex) {
+                logger.error("Failed to save recent file to settings", ex);
+            }
+            
+            updateCueCount();
+            updateStatus("Loaded playlist: " + loadedPlaylist.getName());
+            logger.info("Opened recent playlist: {}", filePath);
+        } catch (Exception e) {
+            logger.error("Failed to open recent file: {}", filePath, e);
+            showError("Failed to open playlist", e.getMessage());
+        }
+    }
+    
+    /**
+     * Clears all recent files from the list.
+     */
+    private void clearRecentFiles() {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Clear Recent Files");
+        alert.setHeaderText("Clear all recent files?");
+        alert.setContentText("This will remove all recent files from the list.");
+        applyThemeToDialog(alert);
+        
+        if (alert.showAndWait().get() == ButtonType.OK) {
+            settings.clearRecentFiles();
+            try {
+                settingsService.save(settings);
+                updateStatus("Recent files cleared");
+                logger.info("Recent files list cleared");
+            } catch (Exception e) {
+                logger.error("Failed to save settings after clearing recent files", e);
+                showError("Failed to clear recent files", e.getMessage());
+            }
+        }
     }
 }
