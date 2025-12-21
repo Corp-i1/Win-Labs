@@ -20,165 +20,305 @@ import java.util.function.Consumer;
 
 /**
  * Service for audio playback using JavaFX MediaPlayer.
- * Uses AudioPlayerPool for simultaneous multi-track playback.
- * Supports up to 20 concurrent audio tracks.
+ * Supports both single-track (legacy) and multi-track playback modes.
+ * 
+ * Single-track mode: Traditional single MediaPlayer for simple playback.
+ * Multi-track mode: Uses AudioPlayerPool for simultaneous overlapping audio.
  */
 public class AudioService {
     
+    // Single-track mode fields (legacy support)
+    private MediaPlayer mediaPlayer;
+    private PlaybackState state;
+    private String currentFilePath;
+    private Consumer<PlaybackState> stateChangeListener;
+    private Consumer<Duration> progressListener;
+    
+    // Multi-track mode fields
     private AudioPlayerPool playerPool;
-    private double currentVolume = 1.0; // Current volume level for all tracks
+    private boolean multiTrackMode;
     
     /**
-     * Creates a new AudioService with multi-track playback enabled.
+     * Creates a new AudioService in single-track mode (default).
      */
     public AudioService() {
-        this.playerPool = new AudioPlayerPool();
-        this.playerPool.prewarm();
+        this(false);
     }
     
     /**
-     * Disposes of the player pool and releases resources.
+     * Creates a new AudioService with specified mode.
+     * 
+     * @param multiTrackMode If true, enables multi-track playback support
      */
-    public void dispose() {
-        if (playerPool != null) {
-            playerPool.dispose();
+    public AudioService(boolean multiTrackMode) {
+        this.state = PlaybackState.STOPPED;
+        this.currentFilePath = null;
+        this.multiTrackMode = multiTrackMode;
+        
+        if (multiTrackMode) {
+            this.playerPool = new AudioPlayerPool();
+            this.playerPool.prewarm();
         }
     }
     
     /**
-     * Plays an audio file on a new track.
-     * Returns the track ID for managing the playback.
-     * 
-     * @param filePath Path to the audio file
-     * @return Track ID for the new playback
-     * @throws Exception if audio loading fails
+     * Loads an audio file from the given path.
+     * Disposes of any currently playing media.
      */
-    public String playTrack(String filePath) throws Exception {
-        AudioTrack track = playerPool.acquireTrack(filePath);
-        track.play();
-        return track.getTrackId();
+    public void loadAudio(String filePath) throws Exception {
+        if (filePath == null || filePath.isEmpty()) {
+            throw new IllegalArgumentException("File path cannot be null or empty");
+        }
+        
+        Path path = Paths.get(filePath);
+        if (!Files.exists(path)) {
+            throw new IllegalArgumentException("File does not exist: " + filePath);
+        }
+        
+        // Dispose of existing player
+        if (mediaPlayer != null) {
+            mediaPlayer.dispose();
+        }
+        
+        // Create new media player
+        String mediaUrl = path.toUri().toString();
+        Media media = new Media(mediaUrl);
+        mediaPlayer = new MediaPlayer(media);
+        currentFilePath = filePath;
+        
+        // Set up listeners
+        setupMediaPlayerListeners();
+        
+        setState(PlaybackState.STOPPED);
     }
     
     /**
-     * Plays an audio file on a new track with specified volume.
-     * 
-     * @param filePath Path to the audio file
-     * @param volume Volume level (0.0 to 1.0)
-     * @return Track ID for the new playback
-     * @throws Exception if audio loading fails
+     * Sets up event listeners for the media player.
      */
-    public String playTrack(String filePath, double volume) throws Exception {
-        AudioTrack track = playerPool.acquireTrack(filePath);
-        track.setVolume(volume);
-        track.play();
-        return track.getTrackId();
+    private void setupMediaPlayerListeners() {
+        // Update progress during playback
+        mediaPlayer.currentTimeProperty().addListener((observable, oldValue, newValue) -> {
+            if (progressListener != null) {
+                progressListener.accept(newValue);
+            }
+        });
+        
+        // Handle end of media
+        mediaPlayer.setOnEndOfMedia(() -> {
+            setState(PlaybackState.STOPPED);
+            mediaPlayer.seek(Duration.ZERO);
+        });
+        
+        // Handle errors
+        mediaPlayer.setOnError(() -> {
+            System.err.println("Media error: " + mediaPlayer.getError().getMessage());
+            setState(PlaybackState.STOPPED);
+        });
     }
     
     /**
-     * Gets a specific track by ID.
-     * 
-     * @param trackId The track ID
-     * @return The AudioTrack, or null if not found
+     * Starts or resumes audio playback.
      */
-    public AudioTrack getTrack(String trackId) {
-        return playerPool.getTrack(trackId);
+    public void play() {
+        if (mediaPlayer == null) {
+            throw new IllegalStateException("No audio loaded");
+        }
+        
+        mediaPlayer.play();
+        setState(PlaybackState.PLAYING);
     }
     
     /**
-     * Gets all currently active tracks.
-     * 
-     * @return List of active tracks
+     * Pauses audio playback.
      */
-    public List<AudioTrack> getActiveTracks() {
-        return playerPool.getActiveTracks();
+    public void pause() {
+        if (mediaPlayer == null) {
+            return;
+        }
+        
+        mediaPlayer.pause();
+        setState(PlaybackState.PAUSED);
     }
     
     /**
-     * Gets the count of active tracks.
+     * Stops audio playback and returns to the beginning.
      */
-    public int getActiveTrackCount() {
-        return playerPool.getActiveTrackCount();
+    public void stop() {
+        if (mediaPlayer == null) {
+            return;
+        }
+        
+        mediaPlayer.stop();
+        mediaPlayer.seek(Duration.ZERO);
+        setState(PlaybackState.STOPPED);
     }
     
     /**
-     * Stops a specific track by ID.
-     * 
-     * @param trackId The track ID to stop
+     * Sets the playback volume (0.0 to 1.0).
      */
-    public void stopTrack(String trackId) {
-        playerPool.forceReleaseTrack(trackId);
+    public void setVolume(double volume) {
+        if (mediaPlayer != null) {
+            mediaPlayer.setVolume(Math.max(0.0, Math.min(1.0, volume)));
+        }
     }
     
     /**
-     * Stops all active tracks.
+     * Gets the current playback volume (0.0 to 1.0).
      */
-    public void stopAllTracks() {
-        playerPool.stopAll();
+    public double getVolume() {
+        return mediaPlayer != null ? mediaPlayer.getVolume() : 0.5;
     }
     
     /**
-     * Pauses all active tracks.
+     * Seeks to a specific time in the audio.
      */
-    public void pauseAllTracks() {
-        playerPool.pauseAll();
+    public void seek(double seconds) {
+        if (mediaPlayer != null) {
+            mediaPlayer.seek(Duration.seconds(seconds));
+        }
     }
     
     /**
-     * Resumes all paused tracks.
+     * Gets the current playback time in seconds.
      */
-    public void resumeAllTracks() {
-        playerPool.resumeAll();
+    public double getCurrentTime() {
+        if (mediaPlayer != null) {
+            return mediaPlayer.getCurrentTime().toSeconds();
+        }
+        return 0.0;
     }
     
     /**
-     * Sets the volume for all tracks.
-     * Also stores the current volume for future tracks.
-     * 
-     * @param volume Volume level (0.0 to 1.0)
+     * Gets the total duration of the current audio in seconds.
      */
-    public void setVolumeAllTracks(double volume) {
-        currentVolume = Math.max(0.0, Math.min(1.0, volume));
-        playerPool.setVolumeAll(currentVolume);
+    public double getDuration() {
+        if (mediaPlayer != null && mediaPlayer.getTotalDuration() != null) {
+            return mediaPlayer.getTotalDuration().toSeconds();
+        }
+        return 0.0;
     }
     
     /**
-     * Culls unused tracks from the pool.
+     * Gets the current playback state.
+     */
+    public PlaybackState getState() {
+        return state;
+    }
+    
+    /**
+     * Gets the current file path.
+     */
+    public String getCurrentFilePath() {
+        return currentFilePath;
+    }
+    
+    /**
+     * Checks if audio is currently loaded.
+     */
+    public boolean isAudioLoaded() {
+        return mediaPlayer != null;
+    }
+    
+    /**
+     * Checks if audio is currently playing.
+     */
+    public boolean isPlaying() {
+        return state == PlaybackState.PLAYING;
+    }
+    
+    /**
+     * Sets a listener for state changes.
+     */
+    public void setStateChangeListener(Consumer<PlaybackState> listener) {
+        this.stateChangeListener = listener;
+    }
+    
+    /**
+     * Sets a listener for progress updates.
+     */
+    public void setProgressListener(Consumer<Duration> listener) {
+        this.progressListener = listener;
+    }
+    
+    /**
+     * Updates the state and notifies listeners.
+     */
+    private void setState(PlaybackState newState) {
+        this.state = newState;
+        if (stateChangeListener != null) {
+            stateChangeListener.accept(newState);
+        }
+    }
+    
+    /**
+     * Disposes of the media player and releases resources.
+     */
+    public void dispose() {
+        if (multiTrackMode && playerPool != null) {
+            playerPool.dispose();
+        }
+        
+        if (mediaPlayer != null) {
+            mediaPlayer.dispose();
+            mediaPlayer = null;
+        }
+        currentFilePath = null;
+        setState(PlaybackState.STOPPED);
+    }
+    
+    // ========== Multi-track Mode Methods ==========
+    
+    /**
+     * Checks if multi-track mode is enabled.
+     */
+    public boolean isMultiTrackMode() {
+        return multiTrackMode;
+    }
+    
+    /**
+     * Culls unused tracks from the pool (multi-track mode only).
      * This helps manage memory by disposing of tracks that haven't been used recently.
      * Note: Automatic culling is enabled by default when the pool is prewarmed.
      * 
-     * @return Number of tracks culled
+     * @return Number of tracks culled, or 0 if not in multi-track mode
      */
     public int cullUnusedTracks() {
-        return playerPool.cullUnusedTracks();
+        return (multiTrackMode && playerPool != null) ? playerPool.cullUnusedTracks() : 0;
     }
     
     /**
-     * Enables automatic periodic culling of unused tracks.
+     * Enables automatic periodic culling of unused tracks (multi-track mode only).
      * When enabled, the pool automatically removes tracks that haven't been used recently.
      */
     public void enableAutoCulling() {
-        playerPool.enableAutoCulling();
+        if (multiTrackMode && playerPool != null) {
+            playerPool.enableAutoCulling();
+        }
     }
     
     /**
-     * Disables automatic periodic culling of unused tracks.
+     * Disables automatic periodic culling of unused tracks (multi-track mode only).
      */
     public void disableAutoCulling() {
-        playerPool.disableAutoCulling();
+        if (multiTrackMode && playerPool != null) {
+            playerPool.disableAutoCulling();
+        }
     }
     
     /**
-     * Checks if automatic culling is currently enabled.
+     * Checks if automatic culling is currently enabled (multi-track mode only).
+     * 
+     * @return true if auto-culling is enabled, false otherwise
      */
     public boolean isAutoCullEnabled() {
-        return playerPool.isAutoCullEnabled();
+        return (multiTrackMode && playerPool != null) && playerPool.isAutoCullEnabled();
     }
     
     /**
-     * Gets the audio player pool.
-     * Use with caution - direct pool manipulation can affect service state.
+     * Gets the audio player pool for direct access to multi-track operations.
+     * Use this to perform track-level operations like acquiring, pausing, stopping, etc.
      * 
-     * @return The AudioPlayerPool
+     * @return The AudioPlayerPool, or null if not in multi-track mode
      */
     public AudioPlayerPool getPlayerPool() {
         return playerPool;

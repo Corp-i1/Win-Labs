@@ -24,7 +24,7 @@ class AudioServiceMultiTrackTest {
     
     @BeforeEach
     void setUp() throws IOException {
-        audioService = new AudioService();
+        audioService = new AudioService(true); // Enable multi-track mode
         
         // Create a temporary test audio file
         testAudioFile = Files.createTempFile("test-audio", ".mp3");
@@ -77,7 +77,8 @@ class AudioServiceMultiTrackTest {
         // Note: Will throw MediaException because test file isn't valid media,
         // but we can verify it attempts playback
         assertThrows(Exception.class, () -> {
-            audioService.playTrack(testAudioFile.toString());
+            AudioTrack track = audioService.getPlayerPool().acquireTrack(testAudioFile.toString());
+            track.play();
         });
     }
     
@@ -85,50 +86,52 @@ class AudioServiceMultiTrackTest {
     void testPlayTrackWithVolume() {
         // Note: Will throw MediaException because test file isn't valid media
         assertThrows(Exception.class, () -> {
-            audioService.playTrack(testAudioFile.toString(), 0.5);
+            AudioTrack track = audioService.getPlayerPool().acquireTrack(testAudioFile.toString());
+            track.setVolume(0.5);
+            track.play();
         });
     }
     
     @Test
     void testGetActiveTracks() {
-        List<AudioTrack> tracks = audioService.getActiveTracks();
+        List<AudioTrack> tracks = audioService.getPlayerPool().getActiveTracks();
         assertNotNull(tracks);
         assertEquals(0, tracks.size());
     }
     
     @Test
     void testGetActiveTrackCount() {
-        assertEquals(0, audioService.getActiveTrackCount());
+        assertEquals(0, audioService.getPlayerPool().getActiveTrackCount());
     }
     
     @Test
     void testStopTrack() {
         // Should not throw even with non-existent track
-        assertDoesNotThrow(() -> audioService.stopTrack("non-existent-id"));
+        assertDoesNotThrow(() -> audioService.getPlayerPool().forceReleaseTrack("non-existent-id"));
     }
     
     @Test
     void testStopAllTracks() {
-        assertDoesNotThrow(() -> audioService.stopAllTracks());
+        assertDoesNotThrow(() -> audioService.getPlayerPool().stopAll());
     }
     
     @Test
     void testPauseAllTracks() {
-        assertDoesNotThrow(() -> audioService.pauseAllTracks());
+        assertDoesNotThrow(() -> audioService.getPlayerPool().pauseAll());
     }
     
     @Test
     void testResumeAllTracks() {
-        assertDoesNotThrow(() -> audioService.resumeAllTracks());
+        assertDoesNotThrow(() -> audioService.getPlayerPool().resumeAll());
     }
     
     @Test
     void testSetVolumeAllTracks() {
-        assertDoesNotThrow(() -> audioService.setVolumeAllTracks(0.5));
+        assertDoesNotThrow(() -> audioService.getPlayerPool().setVolumeAll(0.5));
         
         // Test boundary values
-        assertDoesNotThrow(() -> audioService.setVolumeAllTracks(0.0));
-        assertDoesNotThrow(() -> audioService.setVolumeAllTracks(1.0));
+        assertDoesNotThrow(() -> audioService.getPlayerPool().setVolumeAll(0.0));
+        assertDoesNotThrow(() -> audioService.getPlayerPool().setVolumeAll(1.0));
     }
     
     @Test

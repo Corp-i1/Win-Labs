@@ -22,22 +22,12 @@ public class AudioController {
     private Consumer<String> statusUpdateListener;
     private Consumer<PlaybackState> stateChangeListener;
     private Runnable onCueCompleteListener;
-    private double currentVolume = 1.0; // Current volume level
     
     private PauseTransition preWaitTimer;
     private PauseTransition postWaitTimer;
     
     public AudioController() {
-        this.audioService = new AudioService();
-        setupAudioServiceListeners();
-    }
-    
-    /**
-     * Sets up listeners for the audio service.
-     * In multi-track mode, listeners are set per-track in startPlayback.
-     */
-    private void setupAudioServiceListeners() {
-        // Multi-track mode uses per-track listeners instead of service-level listeners
+        this.audioService = new AudioService(true); // Enable multi-track mode
     }
     
     /**
@@ -62,7 +52,7 @@ public class AudioController {
             double preWait = cue.getPreWait();
             if (preWait > 0) {
                 updateStatus(String.format("Pre-wait: %.1fs for %s", preWait, cue.getName()));
-                startPreWait(preWait, () -> startPlayback(cue, filePath));
+                startWaitTimer(true, preWait, () -> startPlayback(cue, filePath));
             } else {
                 startPlayback(cue, filePath);
             }
@@ -80,9 +70,6 @@ public class AudioController {
             // This avoids a race condition with very short audio files
             var track = audioService.getPlayerPool().acquireTrack(filePath);
             currentTrackId = track.getTrackId();
-            
-            // Apply current volume to this track
-            track.setVolume(currentVolume);
             
             // Set up completion listener for this track
             // Store the pool's original listener to chain them
@@ -114,16 +101,28 @@ public class AudioController {
     }
     
     /**
-     * Starts the pre-wait timer.
+     * Starts a wait timer (pre-wait or post-wait).
+     * 
+     * @param isPreWait Whether this is a pre-wait timer (vs post-wait)
+     * @param seconds Duration in seconds
+     * @param onComplete Callback when timer finishes
      */
-    private void startPreWait(double seconds, Runnable onComplete) {
-        if (preWaitTimer != null) {
-            preWaitTimer.stop();
+    private void startWaitTimer(boolean isPreWait, double seconds, Runnable onComplete) {
+        PauseTransition timer = isPreWait ? preWaitTimer : postWaitTimer;
+        
+        if (timer != null) {
+            timer.stop();
         }
         
-        preWaitTimer = new PauseTransition(Duration.seconds(seconds));
-        preWaitTimer.setOnFinished(e -> onComplete.run());
-        preWaitTimer.play();
+        timer = new PauseTransition(Duration.seconds(seconds));
+        timer.setOnFinished(e -> onComplete.run());
+        timer.play();
+        
+        if (isPreWait) {
+            preWaitTimer = timer;
+        } else {
+            postWaitTimer = timer;
+        }
     }
     
     /**
@@ -142,7 +141,7 @@ public class AudioController {
         if (postWait > 0 && autoFollow) {
             // Wait, then trigger next cue
             updateStatus(String.format("Post-wait: %.1fs", postWait));
-            startPostWait(postWait, () -> {
+            startWaitTimer(false, postWait, () -> {
                 if (onCueCompleteListener != null) {
                     onCueCompleteListener.run();
                 }
@@ -158,23 +157,12 @@ public class AudioController {
     }
     
     /**
-     * Starts the post-wait timer.
-     */
-    private void startPostWait(double seconds, Runnable onComplete) {
-        if (postWaitTimer != null) {
-            postWaitTimer.stop();
-        }
-        
-        postWaitTimer = new PauseTransition(Duration.seconds(seconds));
-        postWaitTimer.setOnFinished(e -> onComplete.run());
-        postWaitTimer.play();
-    }
-    
-    /**
      * Pauses the current playback.
      */
     public void pause() {
-        audioService.pauseAllTracks();
+        if (audioService.getPlayerPool() != null) {
+            audioService.getPlayerPool().pauseAll();
+        }
         
         // Pause any active timers
         if (preWaitTimer != null) {
@@ -195,7 +183,9 @@ public class AudioController {
      * Resumes playback.
      */
     public void resume() {
-        audioService.resumeAllTracks();
+        if (audioService.getPlayerPool() != null) {
+            audioService.getPlayerPool().resumeAll();
+        }
         
         // Resume any paused timers
         if (preWaitTimer != null && preWaitTimer.getStatus() == javafx.animation.Animation.Status.PAUSED) {
@@ -216,7 +206,9 @@ public class AudioController {
      * Stops the current playback.
      */
     public void stop() {
-        audioService.stopAllTracks();
+        if (audioService.getPlayerPool() != null) {
+            audioService.getPlayerPool().stopAll();
+        }
         
         // Stop and clear timers
         if (preWaitTimer != null) {
@@ -244,7 +236,9 @@ public class AudioController {
      */
     public PlaybackState getState() {
         // Get active tracks and their states
-        List<AudioTrack> activeTracks = audioService.getActiveTracks();
+        List<AudioTrack> activeTracks = audioService.getPlayerPool() != null 
+            ? audioService.getPlayerPool().getActiveTracks() 
+            : List.of();
         
         // If we have active tracks, determine state based on them
         if (!activeTracks.isEmpty()) {
@@ -299,19 +293,17 @@ public class AudioController {
     }
     
     /**
-     * Sets the volume (0.0 to 1.0).
-     * Applies to all active tracks in multi-track mode.
+     * Gets the current track ID for the active cue playback.
      */
-    public void setVolume(double volume) {
-        currentVolume = Math.max(0.0, Math.min(1.0, volume));
-        audioService.setVolumeAllTracks(currentVolume);
+    public String getCurrentTrackId() {
+        return currentTrackId;
     }
     
     /**
-     * Gets the current volume.
+     * Gets the audio service (for direct access to pool and other operations).
      */
-    public double getVolume() {
-        return currentVolume;
+    public AudioService getAudioService() {
+        return audioService;
     }
     
     /**

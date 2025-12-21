@@ -90,7 +90,11 @@ public class MainWindow extends Stage {
         setupAudioControllerListeners();
         
         // Apply settings to audio controller
-        audioController.setVolume(settings.getMasterVolume());
+        if (audioController.getAudioService() != null && 
+            audioController.getAudioService().getPlayerPool() != null) {
+            audioController.getAudioService().getPlayerPool()
+                .setVolumeAll(settings.getMasterVolume());
+        }
         
         initializeUI();
     }
@@ -196,12 +200,16 @@ public class MainWindow extends Stage {
         MenuItem saveAsItem = new MenuItem("Save Playlist As...");
         saveAsItem.setOnAction(e -> savePlaylistAs());
         
+        MenuItem backToWelcomeItem = new MenuItem("Back to Welcome Screen");
+        backToWelcomeItem.setOnAction(e -> showWelcomeScreen());
+        
         MenuItem exitItem = new MenuItem("Exit");
         exitItem.setOnAction(e -> close());
         
         fileMenu.getItems().addAll(
             newItem, new SeparatorMenuItem(),
             openItem, saveItem, saveAsItem, new SeparatorMenuItem(),
+            backToWelcomeItem, new SeparatorMenuItem(),
             exitItem
         );
         
@@ -373,11 +381,7 @@ public class MainWindow extends Stage {
         stopButton.setDisable(true);
         stopButton.setOnAction(e -> onStopClicked());
         
-        Button skipButton = new Button("Skip");
-        skipButton.setPrefWidth(100);
-        //TODO: Implement skip functionality
-        
-        controls.getChildren().addAll(goButton, pauseButton, stopButton, skipButton);
+        controls.getChildren().addAll(goButton, pauseButton, stopButton);
         return controls;
     }
     
@@ -715,6 +719,71 @@ public class MainWindow extends Stage {
     
     
     /**
+     * Shows the welcome screen and hides this main window.
+     */
+    public void showWelcomeScreen() {
+        final WelcomeScreen[] welcomeScreenRef = new WelcomeScreen[1];
+        
+        welcomeScreenRef[0] = new WelcomeScreen(
+            () -> {
+                // On new playlist
+                if (welcomeScreenRef[0] != null) {
+                    welcomeScreenRef[0].closeWelcomeScreen();
+                }
+                this.show();
+                this.newPlaylist(true);
+            },
+            () -> {
+                // On open playlist
+                if (welcomeScreenRef[0] != null) {
+                    welcomeScreenRef[0].closeWelcomeScreen();
+                }
+                this.show();
+                this.openPlaylist();
+            },
+            () -> {
+                // On settings
+                this.openSettings(settings, settingsService);
+            },
+            () -> {
+                // On documentation
+                showDocumentation();
+            },
+            () -> {
+                // On exit
+                if (welcomeScreenRef[0] != null) {
+                    welcomeScreenRef[0].closeWelcomeScreen();
+                }
+                System.exit(0);
+            }
+        );
+        
+        welcomeScreenRef[0].applyTheme(settings.getTheme());
+        welcomeScreenRef[0].updateRecentPlaylists(new ArrayList<>());
+        this.hide();
+        welcomeScreenRef[0].show();
+    }
+    
+    /**
+     * Shows documentation dialog.
+     */
+    private void showDocumentation() {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Win-Labs Documentation");
+        alert.setHeaderText("Help & Documentation");
+        alert.setContentText("Documentation is available at:\n" +
+            "https://github.com/Corp-i1/Win-Labs\n\n" +
+            "Features:\n" +
+            "• Create and manage audio cue lists\n" +
+            "• Set pre-wait and post-wait timers\n" +
+            "• Auto-follow functionality\n" +
+            "• Multi-track playback\n" +
+            "• Theme customization\n\n" +
+            "For more information, visit the repository.");
+        alert.showAndWait();
+    }
+    
+    /**
      * Opens the settings dialog (public version for external callers).
      * Can be called from WelcomeScreen or other windows.
      */
@@ -741,7 +810,11 @@ public class MainWindow extends Stage {
             // Also update the settings window's theme
             applyThemeToWindow(settingsWindow);
             // Apply audio settings
-            audioController.setVolume(settings.getMasterVolume());
+            if (audioController.getAudioService() != null && 
+                audioController.getAudioService().getPlayerPool() != null) {
+                audioController.getAudioService().getPlayerPool()
+                    .setVolumeAll(settings.getMasterVolume());
+            }
             updateStatus("Settings applied");
         });
         settingsWindow.showAndWait();
