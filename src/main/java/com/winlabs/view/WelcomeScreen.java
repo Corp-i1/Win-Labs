@@ -153,18 +153,44 @@ public class WelcomeScreen extends Stage {
         });
         
         // Open Playlist button
+        logger.trace("Creating Open Playlist button");
         Button openPlaylistBtn = createLargeActionButton("📂 Open Playlist");
+        logger.trace("Open Playlist button created: {}", openPlaylistBtn);
+        logger.debug("Setting action handler for Open Playlist button");
         openPlaylistBtn.setOnAction(e -> {
+            logger.trace("Open Playlist button clicked - event handler entry");
+            logger.info("Open Playlist button clicked by user");
+            logger.debug("Action event: {}", e);
+            
             try {
+                logger.debug("Starting playlist open operation");
                 // Mark that we're attempting to open
+                logger.trace("Current playlistSelected value: {}", playlistSelected);
+                logger.debug("Setting playlistSelected to false before open attempt");
                 playlistSelected = false;
+                logger.trace("playlistSelected set to: {}", playlistSelected);
+                
+                logger.debug("Calling onOpenPlaylist callback");
+                logger.trace("onOpenPlaylist callback: {}", onOpenPlaylist);
                 onOpenPlaylist.run();
+                logger.info("onOpenPlaylist callback executed successfully");
                 // Don't close here - callback will close if successful
+                logger.trace("Waiting for callback to handle window closure");
             } catch (Exception ex) {
+                logger.error("Failed to open playlist: {}", ex.getMessage(), ex);
+                logger.debug("Exception type: {}", ex.getClass().getName());
+                logger.trace("Exception stack trace:", ex);
+                logger.warn("Displaying error dialog to user");
                 showError("Failed to open playlist", ex.getMessage());
+                logger.debug("Error dialog shown");
+                logger.debug("Resetting playlistSelected to false after error");
                 playlistSelected = false;
+                logger.trace("playlistSelected reset to: {}", playlistSelected);
             }
+            
+            logger.trace("Open Playlist button event handler exit");
         });
+        logger.debug("Action handler set for Open Playlist button");
         
         column.getChildren().addAll(
             actionsLabel,

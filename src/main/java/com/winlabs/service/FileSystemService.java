@@ -60,15 +60,42 @@ public class FileSystemService {
      * Lists all subdirectories in a directory.
      */
     public List<Path> listSubdirectories(Path directory) throws IOException {
-        if (!Files.exists(directory) || !Files.isDirectory(directory)) {
+        logger.trace("listSubdirectories() method entry");
+        logger.debug("Listing subdirectories in: {}", directory);
+        logger.trace("Input parameter 'directory' value: {}", directory);
+        
+        logger.trace("Checking if directory exists");
+        boolean exists = Files.exists(directory);
+        logger.trace("Directory exists: {}", exists);
+        
+        logger.trace("Checking if path is directory");
+        boolean isDir = Files.isDirectory(directory);
+        logger.trace("Path is directory: {}", isDir);
+        
+        if (!exists || !isDir) {
+            logger.warn("Directory does not exist or is not a directory: {}", directory);
+            logger.debug("Exists: {}, IsDirectory: {}", exists, isDir);
+            logger.trace("Returning empty list");
+            logger.trace("listSubdirectories() method exit (invalid directory)");
             return new ArrayList<>();
         }
+        logger.debug("Directory is valid, proceeding to list");
         
+        logger.trace("Opening stream with Files.list()");
         try (Stream<Path> paths = Files.list(directory)) {
-            return paths
+            logger.trace("Stream opened successfully");
+            logger.debug("Filtering for directories only");
+            logger.trace("Applying filter: Files::isDirectory");
+            logger.trace("Applying sort");
+            logger.trace("Collecting to list");
+            List<Path> subdirs = paths
                 .filter(Files::isDirectory)
                 .sorted()
                 .collect(Collectors.toList());
+            logger.info("Found {} subdirectories in {}", subdirs.size(), directory);
+            logger.debug("Subdirectories: {}", subdirs);
+            logger.trace("listSubdirectories() method exit");
+            return subdirs;
         }
     }
     
