@@ -4,7 +4,9 @@ import com.winlabs.controller.AudioController;
 import com.winlabs.model.Cue;
 import com.winlabs.model.PlaybackState;
 import com.winlabs.model.Playlist;
+import com.winlabs.model.Settings;
 import com.winlabs.service.PlaylistService;
+import com.winlabs.service.SettingsService;
 import com.winlabs.util.PathUtil;
 import com.winlabs.util.TimeUtil;
 import com.winlabs.view.components.FileView;
@@ -25,9 +27,16 @@ import java.util.List;
 //TODO: Add context menu for file operations (open, delete, properties, etc.)
 //TODO: Add drag-and-drop support for adding files to cue list
 //TODO: Add keyboard shortcuts for common actions (go, pause, stop, next cue, etc.) These should be configurable in settings.
-//TODO: Make Settings Functional
 //TODO: Add search/filter functionality to file browser
 //TODO: Add context menu for opening files/folders
+//TODO: Add an inspector panel for editing cue properties
+//TODO: make the cue table columns reorderable and resizable, and save/load their state with the playlist
+//TODO: Add multi-select support for cue table (for batch operations like delete, move, etc.) - make it so that Ctrl+Click and Shift+Click work as expected
+//TODO: Add drag-and-drop reordering of cues in the cue table
+//TODO: Add Settings window for configuring application preferences (themes, audio settings, etc.)
+//TODO: Make sure all specific key presses and actions can be remapped in settings
+//TODO: Make Debug Mode that enables extra logging and features for testing
+//TODO: Add Basic Logging functionality to log important events and errors to a file for troubleshooting - Diffrentiate between info, warning, and error logs - adjust what gets reported in the application in settings + log level + log file location + log rotation + log format + log viewer + export logs + toggle logging on/off
 /**
  * Main application window for Win-Labs.
  * Contains the cue list, controls, and file browser.
@@ -44,6 +53,8 @@ public class MainWindow extends Stage {
     
     private AudioController audioController;
     private PlaylistService playlistService;
+    private SettingsService settingsService;
+    private Settings settings;
     private FileView fileView;
     private VBox fileViewContainer;
     private SplitPane splitPane;
@@ -53,6 +64,15 @@ public class MainWindow extends Stage {
         this.playlist = new Playlist();
         this.audioController = new AudioController();
         this.playlistService = new PlaylistService();
+        this.settingsService = new SettingsService();
+        
+        // Load settings
+        try {
+            this.settings = settingsService.load();
+        } catch (Exception e) {
+            System.err.println("Failed to load settings, using defaults: " + e.getMessage());
+            this.settings = new Settings();
+        }
         
         setupAudioControllerListeners();
         initializeUI();
@@ -130,8 +150,8 @@ public class MainWindow extends Stage {
         // Create scene
         Scene scene = new Scene(root);
         
-        // Apply default dark theme
-        scene.getStylesheets().add(getClass().getResource("/css/dark-theme.css").toExternalForm());
+        // Apply saved theme or default to dark
+        applyThemeFromSettings();
         
         setScene(scene);
         
@@ -175,6 +195,7 @@ public class MainWindow extends Stage {
         MenuItem addCueItem = new MenuItem("Add Cue");
         MenuItem deleteCueItem = new MenuItem("Delete Cue");
         MenuItem settingsItem = new MenuItem("Settings");
+        settingsItem.setOnAction(e -> openSettings());
         
         editMenu.getItems().addAll(addCueItem, deleteCueItem, new SeparatorMenuItem(), settingsItem);
         
@@ -635,13 +656,33 @@ public class MainWindow extends Stage {
     }
     
     /**
+     * Opens the settings window.
+     */
+    private void openSettings() {
+        SettingsWindow settingsWindow = new SettingsWindow(settings, settingsService);
+        settingsWindow.setOnApply(updatedSettings -> {
+            // Apply theme change
+            applyThemeFromSettings();
+            updateStatus("Settings applied");
+        });
+        settingsWindow.showAndWait();
+    }
+    
+    /**
+     * Applies the theme from current settings.
+     */
+    private void applyThemeFromSettings() {
+        String themePath = "/css/" + settings.getTheme() + "-theme.css";
+        applyTheme(themePath);
+    }
+    
+    /**
      * Applies a theme to the window.
      */
     private void applyTheme(String themePath) {
         Scene scene = getScene();
         scene.getStylesheets().clear();
         scene.getStylesheets().add(getClass().getResource(themePath).toExternalForm());
-        updateStatus("Theme changed");
     }
     
     /**
