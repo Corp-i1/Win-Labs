@@ -1,6 +1,10 @@
 package com.winlabs;
 
+import com.winlabs.service.FileAssociationService;
+import com.winlabs.service.SettingsService;
+import com.winlabs.model.Settings;
 import com.winlabs.view.MainWindow;
+import com.winlabs.view.WelcomeScreen;
 import javafx.application.Application;
 import javafx.stage.Stage;
 
@@ -10,14 +14,92 @@ import javafx.stage.Stage;
  */
 public class Main extends Application {
     
+    private static String playlistFileToOpen;
+    
     @Override
     public void start(Stage primaryStage) {
-        // Create and show the main window
+        // Load settings to check startup mode
+        SettingsService settingsService = new SettingsService();
+        Settings settings;
+        try {
+            settings = settingsService.load();
+        } catch (Exception e) {
+            System.err.println("Failed to load settings, using defaults: " + e.getMessage());
+            settings = new Settings();
+        }
+        
+        // If a playlist file was passed as argument, open it directly
+        if (playlistFileToOpen != null) {
+            MainWindow mainWindow = new MainWindow();
+            mainWindow.openPlaylistFile(playlistFileToOpen);
+            mainWindow.show();
+        } else {
+            // Show welcome screen at startup (with theme applied)
+            WelcomeScreen welcomeScreen = new WelcomeScreen(
+                this::showNewPlaylistWindow,
+                this::showOpenPlaylistWindow,
+                this::showSettings,
+                this::showDocumentation,
+                this::closeApplication
+            );
+            welcomeScreen.applyTheme(settings.getTheme());
+            welcomeScreen.show();
+        }
+    }
+    
+    /**
+     * Opens a new playlist window.
+     */
+    private void showNewPlaylistWindow() {
         MainWindow mainWindow = new MainWindow();
+        mainWindow.newPlaylist();
         mainWindow.show();
     }
     
+    /**
+     * Opens a playlist from the file browser.
+     */
+    private void showOpenPlaylistWindow() {
+        MainWindow mainWindow = new MainWindow();
+        mainWindow.openPlaylist();
+        if (!mainWindow.hasPlaylistLoaded()) {
+            mainWindow.close();
+        } else {
+            mainWindow.show();
+        }
+    }
+    
+    /**
+     * Shows the settings window.
+     */
+    private void showSettings() {
+        // Settings dialog will be shown from WelcomeScreen
+        // This is a placeholder for future expansion
+    }
+    
+    /**
+     * Shows documentation.
+     */
+    private void showDocumentation() {
+        // Documentation will be shown from WelcomeScreen
+        // This is a placeholder for future expansion
+    }
+    
+    /**
+     * Closes the application.
+     */
+    private void closeApplication() {
+        System.exit(0);
+    }
+    
     public static void main(String[] args) {
+        // Check if a .wlp file was passed as argument
+        if (args.length > 0) {
+            playlistFileToOpen = FileAssociationService.extractPlaylistFileFromArgs(args);
+        }
+        
         launch(args);
     }
 }
+
+

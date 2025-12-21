@@ -21,7 +21,6 @@ class SettingsTest {
     void testDefaultValues() {
         assertEquals("dark", settings.getTheme());
         assertEquals(1.0, settings.getMasterVolume(), 0.001);
-        assertTrue(settings.isEnableMultiTrackPlayback());
         assertFalse(settings.isAutoSaveEnabled());
         assertEquals(300, settings.getAutoSaveInterval());
     }
@@ -49,15 +48,6 @@ class SettingsTest {
     }
     
     @Test
-    void testMultiTrackPlaybackProperty() {
-        settings.setEnableMultiTrackPlayback(false);
-        assertFalse(settings.isEnableMultiTrackPlayback());
-        
-        settings.setEnableMultiTrackPlayback(true);
-        assertTrue(settings.isEnableMultiTrackPlayback());
-    }
-    
-    @Test
     void testAutoSaveEnabledProperty() {
         settings.setAutoSaveEnabled(true);
         assertTrue(settings.isAutoSaveEnabled());
@@ -81,7 +71,6 @@ class SettingsTest {
         // Change all settings
         settings.setTheme("light");
         settings.setMasterVolume(0.5);
-        settings.setEnableMultiTrackPlayback(false);
         settings.setAutoSaveEnabled(true);
         settings.setAutoSaveInterval(600);
         
@@ -91,18 +80,27 @@ class SettingsTest {
         // Verify all settings are back to defaults
         assertEquals("dark", settings.getTheme());
         assertEquals(1.0, settings.getMasterVolume(), 0.001);
-        assertTrue(settings.isEnableMultiTrackPlayback());
         assertFalse(settings.isAutoSaveEnabled());
         assertEquals(300, settings.getAutoSaveInterval());
     }
     
     @Test
     void testPropertyBindings() {
-        // Test that property objects are not null
-        assertNotNull(settings.themeProperty());
-        assertNotNull(settings.masterVolumeProperty());
-        assertNotNull(settings.enableMultiTrackPlaybackProperty());
-        assertNotNull(settings.autoSaveEnabledProperty());
-        assertNotNull(settings.autoSaveIntervalProperty());
+        // Test that settings delegates work correctly
+        ApplicationSettings appSettings = settings.getApplicationSettings();
+        WorkspaceSettings workspaceSettings = settings.getWorkspaceSettings();
+        
+        assertNotNull(appSettings);
+        assertNotNull(workspaceSettings);
+        
+        // Verify property objects exist
+        assertNotNull(appSettings.themeProperty());
+        assertNotNull(appSettings.autoSaveEnabledProperty());
+        assertNotNull(appSettings.autoSaveIntervalProperty());
+        assertNotNull(workspaceSettings.masterVolumeProperty());
+        assertNotNull(workspaceSettings.lastPlaylistPathProperty());
+        assertNotNull(workspaceSettings.audioFileDirectoryProperty());
+        assertNotNull(workspaceSettings.lastPlaylistPathProperty());
+        assertNotNull(workspaceSettings.audioFileDirectoryProperty());
     }
 }

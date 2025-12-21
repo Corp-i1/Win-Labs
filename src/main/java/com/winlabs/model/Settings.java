@@ -1,108 +1,117 @@
 package com.winlabs.model;
 
-import javafx.beans.property.*;
-
 /**
- * Model class for application settings.
- * Uses JavaFX properties for reactive UI binding.
+ * Container for both application and workspace settings.
+ * Provides backward compatibility with legacy Settings API.
+ * 
+ * For new code, use ApplicationSettings and WorkspaceSettings directly.
  */
 public class Settings {
     
-    // Appearance settings
-    private final StringProperty theme;
-    
-    // Audio settings
-    private final DoubleProperty masterVolume;
-    private final BooleanProperty enableMultiTrackPlayback;
-    
-    // General settings
-    private final BooleanProperty autoSaveEnabled;
-    private final IntegerProperty autoSaveInterval; // in seconds
+    private final ApplicationSettings applicationSettings;
+    private final WorkspaceSettings workspaceSettings;
     
     /**
      * Creates default settings.
      */
     public Settings() {
-        this.theme = new SimpleStringProperty("dark");
-        this.masterVolume = new SimpleDoubleProperty(1.0); // 0.0 to 1.0
-        this.enableMultiTrackPlayback = new SimpleBooleanProperty(true);
-        this.autoSaveEnabled = new SimpleBooleanProperty(false);
-        this.autoSaveInterval = new SimpleIntegerProperty(300); // 5 minutes
+        this.applicationSettings = new ApplicationSettings();
+        this.workspaceSettings = new WorkspaceSettings();
     }
     
-    // Theme property
-    public StringProperty themeProperty() {
-        return theme;
+    /**
+     * Gets the application settings.
+     */
+    public ApplicationSettings getApplicationSettings() {
+        return applicationSettings;
     }
+    
+    /**
+     * Gets the workspace settings.
+     */
+    public WorkspaceSettings getWorkspaceSettings() {
+        return workspaceSettings;
+    }
+    
+    // ===== Delegating methods for backward compatibility =====
     
     public String getTheme() {
-        return theme.get();
+        return applicationSettings.getTheme();
     }
     
     public void setTheme(String theme) {
-        this.theme.set(theme);
-    }
-    
-    // Master volume property
-    public DoubleProperty masterVolumeProperty() {
-        return masterVolume;
+        applicationSettings.setTheme(theme);
     }
     
     public double getMasterVolume() {
-        return masterVolume.get();
+        return workspaceSettings.getMasterVolume();
     }
     
     public void setMasterVolume(double volume) {
-        this.masterVolume.set(Math.max(0.0, Math.min(1.0, volume)));
-    }
-    
-    // Multi-track playback property
-    public BooleanProperty enableMultiTrackPlaybackProperty() {
-        return enableMultiTrackPlayback;
-    }
-    
-    public boolean isEnableMultiTrackPlayback() {
-        return enableMultiTrackPlayback.get();
-    }
-    
-    public void setEnableMultiTrackPlayback(boolean enable) {
-        this.enableMultiTrackPlayback.set(enable);
-    }
-    
-    // Auto-save enabled property
-    public BooleanProperty autoSaveEnabledProperty() {
-        return autoSaveEnabled;
+        workspaceSettings.setMasterVolume(volume);
     }
     
     public boolean isAutoSaveEnabled() {
-        return autoSaveEnabled.get();
+        return applicationSettings.isAutoSaveEnabled();
     }
     
     public void setAutoSaveEnabled(boolean enabled) {
-        this.autoSaveEnabled.set(enabled);
-    }
-    
-    // Auto-save interval property
-    public IntegerProperty autoSaveIntervalProperty() {
-        return autoSaveInterval;
+        applicationSettings.setAutoSaveEnabled(enabled);
     }
     
     public int getAutoSaveInterval() {
-        return autoSaveInterval.get();
+        return applicationSettings.getAutoSaveInterval();
     }
     
     public void setAutoSaveInterval(int interval) {
-        this.autoSaveInterval.set(Math.max(60, interval)); // Minimum 1 minute
+        applicationSettings.setAutoSaveInterval(interval);
+    }
+    
+    public String getLastPlaylistPath() {
+        return workspaceSettings.getLastPlaylistPath();
+    }
+    
+    public void setLastPlaylistPath(String path) {
+        workspaceSettings.setLastPlaylistPath(path);
+    }
+    
+    public String getAudioFileDirectory() {
+        return workspaceSettings.getAudioFileDirectory();
+    }
+    
+    public void setAudioFileDirectory(String directory) {
+        workspaceSettings.setAudioFileDirectory(directory);
+    }
+    
+    public double getPreWaitDefault() {
+        return applicationSettings.getPreWaitDefault();
+    }
+    
+    public void setPreWaitDefault(double value) {
+        applicationSettings.setPreWaitDefault(value);
+    }
+    
+    public double getPostWaitDefault() {
+        return applicationSettings.getPostWaitDefault();
+    }
+    
+    public void setPostWaitDefault(double value) {
+        applicationSettings.setPostWaitDefault(value);
+    }
+    
+    public boolean isAutoFollowDefault() {
+        return applicationSettings.isAutoFollowDefault();
+    }
+    
+    public void setAutoFollowDefault(boolean value) {
+        applicationSettings.setAutoFollowDefault(value);
     }
     
     /**
      * Resets all settings to default values.
      */
     public void resetToDefaults() {
-        setTheme("dark");
-        setMasterVolume(1.0);
-        setEnableMultiTrackPlayback(true);
-        setAutoSaveEnabled(false);
-        setAutoSaveInterval(300);
+        applicationSettings.resetToDefaults();
+        workspaceSettings.resetToDefaults();
     }
 }

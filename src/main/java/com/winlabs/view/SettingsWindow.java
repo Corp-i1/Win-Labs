@@ -13,8 +13,8 @@ import javafx.stage.Stage;
 import java.util.function.Consumer;
 
 /**
- * Settings window for configuring application preferences.
- * Provides tabs for appearance, audio, and general settings.
+ * Settings window for configuring application and workspace preferences.
+ * Provides two main tabs: Application Settings and Workspace Settings.
  */
 public class SettingsWindow extends Stage {
     
@@ -22,17 +22,18 @@ public class SettingsWindow extends Stage {
     private final SettingsService settingsService;
     private Consumer<Settings> onApply;
     
-    // Appearance controls
+    // Application settings controls
     private ComboBox<String> themeComboBox;
-    
-    // Audio controls
-    private Slider masterVolumeSlider;
-    private Label volumeLabel;
-    private CheckBox multiTrackCheckBox;
-    
-    // General controls
     private CheckBox autoSaveCheckBox;
     private Spinner<Integer> autoSaveIntervalSpinner;
+    
+    // Playlist defaults controls
+    private Slider masterVolumeSlider;
+    private Label volumeLabel;
+    private TextField audioFileDirectoryField;
+    private Spinner<Double> preWaitDefaultSpinner;
+    private Spinner<Double> postWaitDefaultSpinner;
+    private CheckBox autoFollowDefaultCheckBox;
     
     /**
      * Creates a new settings window.
@@ -69,12 +70,11 @@ public class SettingsWindow extends Stage {
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(10));
         
-        // Create tab pane
+        // Create tab pane with two main sections
         TabPane tabPane = new TabPane();
         tabPane.getTabs().addAll(
-            createAppearanceTab(),
-            createAudioTab(),
-            createGeneralTab()
+            createApplicationSettingsTab(),
+            createWorkspaceSettingsTab()
         );
         
         root.setCenter(tabPane);
@@ -88,49 +88,100 @@ public class SettingsWindow extends Stage {
     }
     
     /**
-     * Creates the appearance settings tab.
+     * Creates the application settings tab.
+     * Contains theme, auto-save, and other global settings.
      */
-    private Tab createAppearanceTab() {
-        Tab tab = new Tab("Appearance");
+    private Tab createApplicationSettingsTab() {
+        Tab tab = new Tab("Application Settings");
         tab.setClosable(false);
         
         VBox content = new VBox(15);
         content.setPadding(new Insets(20));
         
-        // Theme selection
-        Label themeLabel = new Label("Theme:");
-        themeLabel.setStyle("-fx-font-weight: bold;");
+        // Appearance section
+        Label appearanceLabel = new Label("Appearance:");
+        appearanceLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
         
+        Label themeLabel = new Label("Theme:");
         themeComboBox = new ComboBox<>();
         themeComboBox.getItems().addAll("dark", "light", "rainbow");
         themeComboBox.setPrefWidth(200);
         
-        HBox themeBox = new HBox(10, new Label("Select theme:"), themeComboBox);
+        HBox themeBox = new HBox(10, themeLabel, themeComboBox);
         themeBox.setAlignment(Pos.CENTER_LEFT);
         
-        Label themeNote = new Label("Changes will be applied when you click OK or Apply.");
-        themeNote.setStyle("-fx-font-size: 10px; -fx-text-fill: gray;");
+        // Auto-save section
+        Label autoSaveLabel = new Label("Auto-Save:");
+        autoSaveLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
+        autoSaveLabel.setPadding(new Insets(10, 0, 0, 0));
         
-        content.getChildren().addAll(themeLabel, themeBox, themeNote);
+        autoSaveCheckBox = new CheckBox("Enable auto-save");
+        Label autoSaveNote = new Label("Automatically saves the playlist at regular intervals.");
+        autoSaveNote.setStyle("-fx-font-size: 10px; -fx-text-fill: gray;");
         
-        tab.setContent(content);
+        Label intervalLabel = new Label("Interval (seconds):");
+        autoSaveIntervalSpinner = new Spinner<>(60, 3600, 300, 60);
+        autoSaveIntervalSpinner.setPrefWidth(150);
+        
+        HBox intervalBox = new HBox(10, intervalLabel, autoSaveIntervalSpinner);
+        intervalBox.setAlignment(Pos.CENTER_LEFT);
+        
+        content.getChildren().addAll(
+            appearanceLabel, themeBox, new Separator(),
+            autoSaveLabel, autoSaveCheckBox, autoSaveNote, intervalBox
+        );
+        
+        ScrollPane scrollPane = new ScrollPane(content);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setPadding(new Insets(0));
+        
+        tab.setContent(scrollPane);
         return tab;
     }
     
     /**
-     * Creates the audio settings tab.
+     * Creates the playlist defaults tab.
+     * Contains default values for pre-wait, post-wait, audio, volume, and workspace-specific settings.
      */
-    private Tab createAudioTab() {
-        Tab tab = new Tab("Audio");
+    private Tab createWorkspaceSettingsTab() {
+        Tab tab = new Tab("Playlist Defaults");
         tab.setClosable(false);
         
         VBox content = new VBox(15);
         content.setPadding(new Insets(20));
         
+        // Cue defaults section
+        Label cueDefaultsLabel = new Label("Cue Defaults:");
+        cueDefaultsLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
+        
+        // Pre-wait default
+        Label preWaitLabel = new Label("Pre-wait (seconds):");
+        preWaitDefaultSpinner = new Spinner<>(0.0, 300.0, settings.getPreWaitDefault(), 0.5);
+        preWaitDefaultSpinner.setPrefWidth(100);
+        HBox preWaitBox = new HBox(10, preWaitLabel, preWaitDefaultSpinner);
+        preWaitBox.setAlignment(Pos.CENTER_LEFT);
+        
+        // Post-wait default
+        Label postWaitLabel = new Label("Post-wait (seconds):");
+        postWaitDefaultSpinner = new Spinner<>(0.0, 300.0, settings.getPostWaitDefault(), 0.5);
+        postWaitDefaultSpinner.setPrefWidth(100);
+        HBox postWaitBox = new HBox(10, postWaitLabel, postWaitDefaultSpinner);
+        postWaitBox.setAlignment(Pos.CENTER_LEFT);
+        
+        // Auto-follow default
+        Label autoFollowLabel = new Label("Auto-follow default:");
+        autoFollowDefaultCheckBox = new CheckBox();
+        autoFollowDefaultCheckBox.setSelected(settings.isAutoFollowDefault());
+        HBox autoFollowBox = new HBox(10, autoFollowLabel, autoFollowDefaultCheckBox);
+        autoFollowBox.setAlignment(Pos.CENTER_LEFT);
+        
+        // Audio section
+        Label audioLabel = new Label("Audio:");
+        audioLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
+        audioLabel.setPadding(new Insets(10, 0, 0, 0));
+        
         // Master volume
         Label volumeHeading = new Label("Master Volume:");
-        volumeHeading.setStyle("-fx-font-weight: bold;");
-        
         masterVolumeSlider = new Slider(0, 1, 1);
         masterVolumeSlider.setShowTickLabels(true);
         masterVolumeSlider.setShowTickMarks(true);
@@ -147,61 +198,35 @@ public class SettingsWindow extends Stage {
         HBox volumeBox = new HBox(10, masterVolumeSlider, volumeLabel);
         volumeBox.setAlignment(Pos.CENTER_LEFT);
         
-        // Multi-track playback
-        Label multiTrackHeading = new Label("Playback Options:");
-        multiTrackHeading.setStyle("-fx-font-weight: bold;");
+        // File handling section
+        Label fileLabel = new Label("File Handling:");
+        fileLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
+        fileLabel.setPadding(new Insets(10, 0, 0, 0));
         
-        multiTrackCheckBox = new CheckBox("Enable multi-track playback");
-        Label multiTrackNote = new Label("When enabled, allows playing multiple cues simultaneously (up to 20 tracks).");
-        multiTrackNote.setStyle("-fx-font-size: 10px; -fx-text-fill: gray;");
-        multiTrackNote.setWrapText(true);
+        Label dirLabel = new Label("Audio file directory:");
+        audioFileDirectoryField = new TextField();
+        audioFileDirectoryField.setPrefWidth(400);
+        audioFileDirectoryField.setEditable(true);
+        
+        HBox dirBox = new HBox(10, dirLabel, audioFileDirectoryField);
+        dirBox.setAlignment(Pos.CENTER_LEFT);
+        
+        Label dirNote = new Label("Default directory for browsing audio files.");
+        dirNote.setStyle("-fx-font-size: 10px; -fx-text-fill: gray;");
         
         content.getChildren().addAll(
-            volumeHeading, volumeBox,
+            cueDefaultsLabel, preWaitBox, postWaitBox, autoFollowBox,
             new Separator(),
-            multiTrackHeading, multiTrackCheckBox, multiTrackNote
+            audioLabel, volumeHeading, volumeBox,
+            new Separator(),
+            fileLabel, dirBox, dirNote
         );
         
-        tab.setContent(content);
-        return tab;
-    }
-    
-    /**
-     * Creates the general settings tab.
-     */
-    private Tab createGeneralTab() {
-        Tab tab = new Tab("General");
-        tab.setClosable(false);
+        ScrollPane scrollPane = new ScrollPane(content);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setPadding(new Insets(0));
         
-        VBox content = new VBox(15);
-        content.setPadding(new Insets(20));
-        
-        // Auto-save
-        Label autoSaveHeading = new Label("Auto-Save:");
-        autoSaveHeading.setStyle("-fx-font-weight: bold;");
-        
-        autoSaveCheckBox = new CheckBox("Enable automatic playlist saving");
-        
-        HBox intervalBox = new HBox(10);
-        intervalBox.setAlignment(Pos.CENTER_LEFT);
-        Label intervalLabel = new Label("Save interval (seconds):");
-        
-        autoSaveIntervalSpinner = new Spinner<>(60, 3600, 300, 30);
-        autoSaveIntervalSpinner.setPrefWidth(100);
-        autoSaveIntervalSpinner.setEditable(true);
-        autoSaveIntervalSpinner.disableProperty().bind(autoSaveCheckBox.selectedProperty().not());
-        
-        intervalBox.getChildren().addAll(intervalLabel, autoSaveIntervalSpinner);
-        
-        Label autoSaveNote = new Label("Automatically saves the current playlist at regular intervals.");
-        autoSaveNote.setStyle("-fx-font-size: 10px; -fx-text-fill: gray;");
-        autoSaveNote.setWrapText(true);
-        
-        content.getChildren().addAll(
-            autoSaveHeading, autoSaveCheckBox, intervalBox, autoSaveNote
-        );
-        
-        tab.setContent(content);
+        tab.setContent(scrollPane);
         return tab;
     }
     
@@ -242,17 +267,18 @@ public class SettingsWindow extends Stage {
      * Loads current settings into the UI controls.
      */
     private void loadSettingsIntoControls() {
-        // Appearance
+        // Application settings
         themeComboBox.setValue(settings.getTheme());
-        
-        // Audio
-        masterVolumeSlider.setValue(settings.getMasterVolume());
-        volumeLabel.setText(String.format("%d%%", (int)(settings.getMasterVolume() * 100)));
-        multiTrackCheckBox.setSelected(settings.isEnableMultiTrackPlayback());
-        
-        // General
         autoSaveCheckBox.setSelected(settings.isAutoSaveEnabled());
         autoSaveIntervalSpinner.getValueFactory().setValue(settings.getAutoSaveInterval());
+        
+        // Playlist defaults
+        preWaitDefaultSpinner.getValueFactory().setValue(settings.getPreWaitDefault());
+        postWaitDefaultSpinner.getValueFactory().setValue(settings.getPostWaitDefault());
+        autoFollowDefaultCheckBox.setSelected(settings.isAutoFollowDefault());
+        masterVolumeSlider.setValue(settings.getMasterVolume());
+        volumeLabel.setText(String.format("%d%%", (int)(settings.getMasterVolume() * 100)));
+        audioFileDirectoryField.setText(settings.getAudioFileDirectory());
     }
     
     /**
@@ -262,9 +288,12 @@ public class SettingsWindow extends Stage {
         // Update settings model
         settings.setTheme(themeComboBox.getValue());
         settings.setMasterVolume(masterVolumeSlider.getValue());
-        settings.setEnableMultiTrackPlayback(multiTrackCheckBox.isSelected());
         settings.setAutoSaveEnabled(autoSaveCheckBox.isSelected());
         settings.setAutoSaveInterval(autoSaveIntervalSpinner.getValue());
+        settings.setAudioFileDirectory(audioFileDirectoryField.getText());
+        settings.setPreWaitDefault(preWaitDefaultSpinner.getValue());
+        settings.setPostWaitDefault(postWaitDefaultSpinner.getValue());
+        settings.setAutoFollowDefault(autoFollowDefaultCheckBox.isSelected());
         
         // Save to file
         try {

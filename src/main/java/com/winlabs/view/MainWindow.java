@@ -4,8 +4,11 @@ import com.winlabs.controller.AudioController;
 import com.winlabs.model.Cue;
 import com.winlabs.model.PlaybackState;
 import com.winlabs.model.Playlist;
+import com.winlabs.model.PlaylistSettings;
+import com.winlabs.model.RecentPlaylist;
 import com.winlabs.model.Settings;
 import com.winlabs.service.PlaylistService;
+import com.winlabs.service.PlaylistSettingsService;
 import com.winlabs.service.SettingsService;
 import com.winlabs.util.PathUtil;
 import com.winlabs.util.TimeUtil;
@@ -22,6 +25,8 @@ import javafx.stage.Stage;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 
 //TODO: Add context menu for file operations (open, delete, properties, etc.)
@@ -44,6 +49,9 @@ import java.util.List;
 public class MainWindow extends Stage {
     
     private Playlist playlist;
+    private PlaylistSettings playlistSettings;
+    private Path currentPlaylistPath;
+    
     private TableView<Cue> cueTable;
     private Button goButton;
     private Button pauseButton;
@@ -53,6 +61,7 @@ public class MainWindow extends Stage {
     
     private AudioController audioController;
     private PlaylistService playlistService;
+    private PlaylistSettingsService playlistSettingsService;
     private SettingsService settingsService;
     private Settings settings;
     private FileView fileView;
@@ -62,8 +71,11 @@ public class MainWindow extends Stage {
     
     public MainWindow() {
         this.playlist = new Playlist();
+        this.playlistSettings = new PlaylistSettings();
+        this.currentPlaylistPath = null;
         this.audioController = new AudioController();
         this.playlistService = new PlaylistService();
+        this.playlistSettingsService = new PlaylistSettingsService();
         this.settingsService = new SettingsService();
         
         // Load settings
@@ -75,6 +87,10 @@ public class MainWindow extends Stage {
         }
         
         setupAudioControllerListeners();
+        
+        // Apply settings to audio controller
+        audioController.setVolume(settings.getMasterVolume());
+        
         initializeUI();
     }
     
@@ -198,19 +214,6 @@ public class MainWindow extends Stage {
         
         editMenu.getItems().addAll(addCueItem, deleteCueItem, new SeparatorMenuItem(), settingsItem);
         
-        // View menu
-        Menu viewMenu = new Menu("View");
-        MenuItem darkThemeItem = new MenuItem("Dark Theme");
-        darkThemeItem.setOnAction(e -> applyTheme("/css/dark-theme.css"));
-        
-        MenuItem lightThemeItem = new MenuItem("Light Theme");
-        lightThemeItem.setOnAction(e -> applyTheme("/css/light-theme.css"));
-        //TODO: Fix Rainbow theme CSS
-        MenuItem rainbowThemeItem = new MenuItem("Rainbow Theme");
-        rainbowThemeItem.setOnAction(e -> applyTheme("/css/rainbow-theme.css"));
-        
-        viewMenu.getItems().addAll(darkThemeItem, lightThemeItem, rainbowThemeItem);
-        
         // Help menu
         //TODO: Make functional
         Menu helpMenu = new Menu("Help");
@@ -219,7 +222,7 @@ public class MainWindow extends Stage {
         
         helpMenu.getItems().addAll(documentationItem, new SeparatorMenuItem(), aboutItem);
         
-        menuBar.getMenus().addAll(fileMenu, editMenu, viewMenu, helpMenu);
+        menuBar.getMenus().addAll(fileMenu, editMenu, helpMenu);
         return menuBar;
     }
     
@@ -236,12 +239,16 @@ public class MainWindow extends Stage {
         Button deleteCueButton = new Button("Delete");
         deleteCueButton.setOnAction(e -> deleteSelectedCue());
         
+        Button playlistSettingsBtn = new Button("Playlist Settings");
+        playlistSettingsBtn.setOnAction(e -> openPlaylistSettings());
+        
         Button refreshButton = new Button("Refresh");
         
         toolbar.getItems().addAll(
             newCueButton,
             deleteCueButton,
             new Separator(),
+            playlistSettingsBtn,
             refreshButton
         );
         
@@ -565,7 +572,7 @@ public class MainWindow extends Stage {
     /**
      * Creates a new empty playlist.
      */
-    private void newPlaylist() {
+    public void newPlaylist() {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("New Playlist");
         alert.setHeaderText("Create new playlist?");
@@ -575,7 +582,8 @@ public class MainWindow extends Stage {
         if (alert.showAndWait().get() == ButtonType.OK) {
             playlist.clear();
             playlist.setName("Untitled Playlist");
-            playlist.setFilePath(null);
+            currentPlaylistPath = null;
+            playlistSettings.resetToDefaults();
             updateCueCount();
             updateStatus("New playlist created");
         }
@@ -584,23 +592,38 @@ public class MainWindow extends Stage {
     /**
      * Opens a playlist from a file.
      */
-    private void openPlaylist() {
+    public void openPlaylist() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Open Playlist");
-        fileChooser.getExtensionFilters().add(
-            new FileChooser.ExtensionFilter("JSON Playlist", "*.json")
+        fileChooser.getExtensionFilters().addAll(
+            new FileChooser.ExtensionFilter("Win-Labs Playlist", "*.wlp"),
+            new FileChooser.ExtensionFilter("JSON Playlist", "*.json"),
+            new FileChooser.ExtensionFilter("All Files", "*.*")
         );
         
         File file = fileChooser.showOpenDialog(this);
         if (file != null) {
             try {
-                Playlist loadedPlaylist = playlistService.load(file.getAbsolutePath());
+                Path filePath = file.toPath();
+                
+                // Handle .wlp files by loading the corresponding .json
+                if (file.getName().endsWith(".wlp")) {
+                    String jsonPath = file.getAbsolutePath().replaceAll("\\.wlp$", ".json");
+                    filePath = new File(jsonPath).toPath();
+                }
+                
+                Playlist loadedPlaylist = playlistService.load(filePath.toString());
                 playlist.clear();
                 playlist.setName(loadedPlaylist.getName());
-                playlist.setFilePath(loadedPlaylist.getFilePath());
+                playlist.setFilePath(filePath.toString());
                 for (Cue cue : loadedPlaylist.getCues()) {
                     playlist.addCue(cue);
                 }
+                
+                // Load playlist settings
+                currentPlaylistPath = filePath;
+                playlistSettings = playlistSettingsService.load(filePath);
+                
                 updateCueCount();
                 updateStatus("Loaded playlist: " + loadedPlaylist.getName());
             } catch (Exception e) {
@@ -610,14 +633,15 @@ public class MainWindow extends Stage {
     }
     
     /**
-     * Saves the current playlist.
+     * Saves the current playlist and its settings.
      */
     private void savePlaylist() {
-        if (playlist.getFilePath() == null) {
+        if (playlist.getFilePath() == null || currentPlaylistPath == null) {
             savePlaylistAs();
         } else {
             try {
                 playlistService.save(playlist, playlist.getFilePath());
+                playlistSettingsService.save(currentPlaylistPath, playlistSettings);
                 updateStatus("Playlist saved");
             } catch (Exception e) {
                 showError("Failed to save playlist", e.getMessage());
@@ -639,7 +663,12 @@ public class MainWindow extends Stage {
         File file = fileChooser.showSaveDialog(this);
         if (file != null) {
             try {
-                playlistService.save(playlist, file.getAbsolutePath());
+                Path filePath = file.toPath();
+                playlistService.save(playlist, filePath.toString());
+                playlistSettings.setPlaylistName(playlist.getName());
+                playlistSettingsService.save(filePath, playlistSettings);
+                currentPlaylistPath = filePath;
+                playlist.setFilePath(filePath.toString());
                 updateStatus("Playlist saved as: " + file.getName());
             } catch (Exception e) {
                 showError("Failed to save playlist", e.getMessage());
@@ -678,9 +707,61 @@ public class MainWindow extends Stage {
             applyThemeFromSettings();
             // Also update the settings window's theme
             applyThemeToWindow(settingsWindow);
+            // Apply audio settings
+            audioController.setVolume(settings.getMasterVolume());
             updateStatus("Settings applied");
         });
         settingsWindow.showAndWait();
+    }
+    
+    /**
+     * Opens the playlist settings dialog.
+     */
+    private void openPlaylistSettings() {
+        if (currentPlaylistPath != null) {
+            PlaylistSettingsWindow playlistSettingsWindow = new PlaylistSettingsWindow(
+                this,
+                playlistSettings,
+                playlistSettingsService,
+                currentPlaylistPath
+            );
+            // Apply theme before showing
+            if (playlistSettingsWindow.getDialogPane() != null) {
+                String themePath = "/css/" + settings.getTheme() + "-theme.css";
+                playlistSettingsWindow.getDialogPane().getStylesheets().clear();
+                playlistSettingsWindow.getDialogPane().getStylesheets().add(getClass().getResource(themePath).toExternalForm());
+            }
+            playlistSettingsWindow.showAndWait();
+            updateStatus("Playlist settings updated");
+        } else {
+            showError("No Playlist Open", "Please open or create a playlist first.");
+        }
+    }
+    
+    /**
+     * Opens the documentation (placeholder).
+     */
+    private void openDocumentation() {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Documentation");
+        alert.setHeaderText("Win-Labs Documentation");
+        alert.setContentText("Documentation will be available soon.\n\nVisit https://github.com/Corp-i1/Win-Labs for more information.");
+        applyThemeToDialog(alert);
+        alert.showAndWait();
+    }
+    
+    /**
+     * Changes the theme and saves the setting.
+     */
+    private void changeTheme(String themeName) {
+        settings.setTheme(themeName);
+        try {
+            settingsService.save(settings);
+        } catch (Exception e) {
+            System.err.println("Failed to save theme setting: " + e.getMessage());
+        }
+        applyThemeFromSettings();
+        updateStatus("Theme changed to " + themeName);
     }
     
     /**
@@ -750,5 +831,35 @@ public class MainWindow extends Stage {
         playlist.addCue(cue1);
         playlist.addCue(cue2);
         playlist.addCue(cue3);
+    }
+    
+    /**
+     * Opens a playlist file by path (for .wlp file argument handling).
+     * 
+     * @param filePath The path to the playlist file
+     */
+    public void openPlaylistFile(String filePath) {
+        try {
+            currentPlaylistPath = Paths.get(filePath);
+            PlaylistService playlistService = new PlaylistService();
+            playlist.clear();
+            Playlist loadedPlaylist = playlistService.load(filePath);
+            for (Cue cue : loadedPlaylist.getCues()) {
+                playlist.addCue(cue);
+            }
+            updateStatus("Opened playlist: " + filePath);
+        } catch (Exception e) {
+            showError("Failed to open playlist", e.getMessage());
+            currentPlaylistPath = null;
+        }
+    }
+    
+    /**
+     * Checks if a playlist has been loaded.
+     * 
+     * @return true if a playlist is loaded, false otherwise
+     */
+    public boolean hasPlaylistLoaded() {
+        return currentPlaylistPath != null && !playlist.getCues().isEmpty();
     }
 }

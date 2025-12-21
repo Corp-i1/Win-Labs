@@ -17,19 +17,24 @@ import static org.junit.jupiter.api.Assertions.*;
 class SettingsServiceTest {
     
     private SettingsService settingsService;
-    private Path settingsPath;
+    private Path appSettingsPath;
+    private Path workspaceSettingsPath;
     
     @BeforeEach
     void setUp() {
         settingsService = new SettingsService();
-        settingsPath = settingsService.getSettingsPath();
+        appSettingsPath = settingsService.getAppSettingsPath();
+        workspaceSettingsPath = settingsService.getWorkspaceSettingsPath();
     }
     
     @AfterEach
     void tearDown() throws IOException {
-        // Clean up test settings file
-        if (Files.exists(settingsPath)) {
-            settingsService.deleteSettings();
+        // Clean up test settings files
+        if (Files.exists(appSettingsPath)) {
+            Files.delete(appSettingsPath);
+        }
+        if (Files.exists(workspaceSettingsPath)) {
+            Files.delete(workspaceSettingsPath);
         }
     }
     
@@ -39,15 +44,15 @@ class SettingsServiceTest {
         Settings settings = new Settings();
         settings.setTheme("light");
         settings.setMasterVolume(0.75);
-        settings.setEnableMultiTrackPlayback(false);
         settings.setAutoSaveEnabled(true);
         settings.setAutoSaveInterval(600);
         
         // Save settings
         settingsService.save(settings);
         
-        // Verify file was created
-        assertTrue(Files.exists(settingsPath));
+        // Verify files were created
+        assertTrue(Files.exists(appSettingsPath));
+        assertTrue(Files.exists(workspaceSettingsPath));
         
         // Load settings
         Settings loadedSettings = settingsService.load();
@@ -55,16 +60,18 @@ class SettingsServiceTest {
         // Verify loaded settings match saved settings
         assertEquals("light", loadedSettings.getTheme());
         assertEquals(0.75, loadedSettings.getMasterVolume(), 0.001);
-        assertFalse(loadedSettings.isEnableMultiTrackPlayback());
         assertTrue(loadedSettings.isAutoSaveEnabled());
         assertEquals(600, loadedSettings.getAutoSaveInterval());
     }
     
     @Test
     void testLoadDefaultsWhenFileDoesNotExist() throws IOException {
-        // Ensure settings file doesn't exist
-        if (Files.exists(settingsPath)) {
-            settingsService.deleteSettings();
+        // Ensure settings files don't exist
+        if (Files.exists(appSettingsPath)) {
+            Files.delete(appSettingsPath);
+        }
+        if (Files.exists(workspaceSettingsPath)) {
+            Files.delete(workspaceSettingsPath);
         }
         
         // Load settings (should return defaults)
@@ -73,40 +80,46 @@ class SettingsServiceTest {
         // Verify default values
         assertEquals("dark", settings.getTheme());
         assertEquals(1.0, settings.getMasterVolume(), 0.001);
-        assertTrue(settings.isEnableMultiTrackPlayback());
         assertFalse(settings.isAutoSaveEnabled());
         assertEquals(300, settings.getAutoSaveInterval());
     }
     
     @Test
     void testSaveCreatesFile() throws IOException {
-        // Ensure settings file doesn't exist
-        if (Files.exists(settingsPath)) {
-            settingsService.deleteSettings();
+        // Ensure settings files don't exist
+        if (Files.exists(appSettingsPath)) {
+            Files.delete(appSettingsPath);
+        }
+        if (Files.exists(workspaceSettingsPath)) {
+            Files.delete(workspaceSettingsPath);
         }
         
-        assertFalse(Files.exists(settingsPath));
+        assertFalse(Files.exists(appSettingsPath));
+        assertFalse(Files.exists(workspaceSettingsPath));
         
         // Save settings
         Settings settings = new Settings();
         settingsService.save(settings);
         
-        // Verify file was created
-        assertTrue(Files.exists(settingsPath));
+        // Verify both files were created
+        assertTrue(Files.exists(appSettingsPath));
+        assertTrue(Files.exists(workspaceSettingsPath));
     }
     
     @Test
     void testDeleteSettings() throws IOException {
-        // Create settings file
+        // Create settings files
         Settings settings = new Settings();
         settingsService.save(settings);
-        assertTrue(Files.exists(settingsPath));
+        assertTrue(Files.exists(appSettingsPath));
+        assertTrue(Files.exists(workspaceSettingsPath));
         
         // Delete settings
         settingsService.deleteSettings();
         
-        // Verify file was deleted
-        assertFalse(Files.exists(settingsPath));
+        // Verify both files were deleted
+        assertFalse(Files.exists(appSettingsPath));
+        assertFalse(Files.exists(workspaceSettingsPath));
     }
     
     @Test
@@ -117,10 +130,17 @@ class SettingsServiceTest {
     
     @Test
     void testGetSettingsPath() {
-        Path path = settingsService.getSettingsPath();
-        assertNotNull(path);
-        assertTrue(path.toString().contains(".winlabs"));
-        assertTrue(path.toString().endsWith("settings.json"));
+        Path appPath = settingsService.getAppSettingsPath();
+        Path workspacePath = settingsService.getWorkspaceSettingsPath();
+        
+        assertNotNull(appPath);
+        assertNotNull(workspacePath);
+        
+        assertTrue(appPath.toString().contains(".winlabs"));
+        assertTrue(appPath.toString().endsWith("app-settings.json"));
+        
+        assertTrue(workspacePath.toString().contains(".winlabs"));
+        assertTrue(workspacePath.toString().endsWith("workspace-settings.json"));
     }
     
     @Test

@@ -22,12 +22,13 @@ public class AudioController {
     private Consumer<String> statusUpdateListener;
     private Consumer<PlaybackState> stateChangeListener;
     private Runnable onCueCompleteListener;
+    private double currentVolume = 1.0; // Current volume level
     
     private PauseTransition preWaitTimer;
     private PauseTransition postWaitTimer;
     
     public AudioController() {
-        this.audioService = new AudioService(true); // Enable multi-track mode
+        this.audioService = new AudioService();
         setupAudioServiceListeners();
     }
     
@@ -79,6 +80,9 @@ public class AudioController {
             // This avoids a race condition with very short audio files
             var track = audioService.getPlayerPool().acquireTrack(filePath);
             currentTrackId = track.getTrackId();
+            
+            // Apply current volume to this track
+            track.setVolume(currentVolume);
             
             // Set up completion listener for this track
             // Store the pool's original listener to chain them
@@ -296,30 +300,18 @@ public class AudioController {
     
     /**
      * Sets the volume (0.0 to 1.0).
+     * Applies to all active tracks in multi-track mode.
      */
     public void setVolume(double volume) {
-        audioService.setVolume(volume);
+        currentVolume = Math.max(0.0, Math.min(1.0, volume));
+        audioService.setVolumeAllTracks(currentVolume);
     }
     
     /**
      * Gets the current volume.
      */
     public double getVolume() {
-        return audioService.getVolume();
-    }
-    
-    /**
-     * Gets the current playback time in seconds.
-     */
-    public double getCurrentTime() {
-        return audioService.getCurrentTime();
-    }
-    
-    /**
-     * Gets the total duration in seconds.
-     */
-    public double getDuration() {
-        return audioService.getDuration();
+        return currentVolume;
     }
     
     /**
