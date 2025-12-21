@@ -22,6 +22,8 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -41,12 +43,13 @@ import java.util.List;
 //TODO: Make sure all specific key presses and actions can be remapped in settings
 //TDOO: Add Recent Files menu to quickly access recently opened playlists
 //TODO: Make Debug Mode that enables extra logging and features for testing
-//TODO: Add Basic Logging functionality to log important events and errors to a file for troubleshooting - Diffrentiate between info, warning, and error logs - adjust what gets reported in the application in settings + log level + log file location + log rotation + log format + log viewer + export logs + toggle logging on/off
 /**
  * Main application window for Win-Labs.
  * Contains the cue list, controls, and file browser.
  */
 public class MainWindow extends Stage {
+    
+    private static final Logger logger = LoggerFactory.getLogger(MainWindow.class);
     
     private Playlist playlist;
     private PlaylistSettings playlistSettings;
@@ -71,6 +74,7 @@ public class MainWindow extends Stage {
     private boolean isFileViewVisible = false;
     
     public MainWindow() {
+        logger.info("Initializing MainWindow");
         this.playlist = new Playlist();
         this.playlistSettings = new PlaylistSettings();
         this.currentPlaylistPath = null;
@@ -82,7 +86,9 @@ public class MainWindow extends Stage {
         // Load settings
         try {
             this.settings = settingsService.load();
+            logger.debug("Settings loaded successfully");
         } catch (Exception e) {
+            logger.error("Failed to load settings, using defaults", e);
             System.err.println("Failed to load settings, using defaults: " + e.getMessage());
             this.settings = new Settings();
         }
@@ -94,9 +100,11 @@ public class MainWindow extends Stage {
             audioController.getAudioService().getPlayerPool() != null) {
             audioController.getAudioService().getPlayerPool()
                 .setVolumeAll(settings.getMasterVolume());
+            logger.debug("Applied master volume: {}", settings.getMasterVolume());
         }
         
         initializeUI();
+        logger.info("MainWindow initialized successfully");
     }
     
     /**
@@ -226,10 +234,18 @@ public class MainWindow extends Stage {
         // Help menu
         //TODO: Make functional
         Menu helpMenu = new Menu("Help");
-        MenuItem aboutItem = new MenuItem("About");
         MenuItem documentationItem = new MenuItem("Documentation");
+        MenuItem viewLogsItem = new MenuItem("View Logs...");
+        viewLogsItem.setOnAction(e -> openLogViewer());
+        MenuItem aboutItem = new MenuItem("About");
         
-        helpMenu.getItems().addAll(documentationItem, new SeparatorMenuItem(), aboutItem);
+        helpMenu.getItems().addAll(
+            documentationItem, 
+            new SeparatorMenuItem(), 
+            viewLogsItem,
+            new SeparatorMenuItem(),
+            aboutItem
+        );
         
         menuBar.getMenus().addAll(fileMenu, editMenu, helpMenu);
         return menuBar;
@@ -440,6 +456,7 @@ public class MainWindow extends Stage {
         playlist.addCue(newCue);
         updateCueCount();
         updateStatus("Added new cue");
+        logger.debug("Added new cue with number {}", nextNumber);
     }
     
     /**
@@ -582,6 +599,7 @@ public class MainWindow extends Stage {
      * Shows confirmation dialog if skipConfirmation is false.
      */
     public void newPlaylist(boolean skipConfirmation) {
+        logger.info("Creating new playlist (skipConfirmation={})", skipConfirmation);
         if (!skipConfirmation) {
             Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
             alert.setTitle("New Playlist");
@@ -590,6 +608,7 @@ public class MainWindow extends Stage {
             applyThemeToDialog(alert);
             
             if (alert.showAndWait().get() != ButtonType.OK) {
+                logger.debug("New playlist creation cancelled by user");
                 return; // User cancelled
             }
         }
@@ -601,6 +620,7 @@ public class MainWindow extends Stage {
         playlistInitialized = true;
         updateCueCount();
         updateStatus("New playlist created");
+        logger.info("New playlist created successfully");
     }
     
     /**
@@ -709,12 +729,27 @@ public class MainWindow extends Stage {
      * Shows an error dialog.
      */
     private void showError(String title, String message) {
+        logger.error("Error dialog shown: {} - {}", title, message);
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
         applyThemeToDialog(alert);
         alert.showAndWait();
+    }
+    
+    /**
+     * Opens the log viewer window.
+     */
+    private void openLogViewer() {
+        try {
+            logger.info("Opening log viewer");
+            LogViewer logViewer = new LogViewer(settings);
+            logViewer.show();
+        } catch (Exception e) {
+            logger.error("Failed to open log viewer", e);
+            showError("Error", "Failed to open log viewer: " + e.getMessage());
+        }
     }
     
     
