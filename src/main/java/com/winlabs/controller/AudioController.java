@@ -6,6 +6,8 @@ import com.winlabs.model.PlaybackState;
 import com.winlabs.service.AudioService;
 import javafx.animation.PauseTransition;
 import javafx.util.Duration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -15,6 +17,8 @@ import java.util.function.Consumer;
  * Handles play, pause, stop, and auto-follow functionality.
  */
 public class AudioController {
+    
+    private static final Logger logger = LoggerFactory.getLogger(AudioController.class);
     
     private final AudioService audioService;
     private Cue currentCue;
@@ -28,6 +32,7 @@ public class AudioController {
     
     public AudioController() {
         this.audioService = new AudioService(true); // Enable multi-track mode
+        logger.info("AudioController initialized with multi-track mode enabled");
     }
     
     /**
@@ -35,14 +40,17 @@ public class AudioController {
      */
     public void playCue(Cue cue) {
         if (cue == null) {
+            logger.warn("Attempted to play null cue");
             updateStatus("No cue to play");
             return;
         }
         
+        logger.info("Playing cue: {} ({})", cue.getNumber(), cue.getName());
         currentCue = cue;
         String filePath = cue.getFilePath();
         
         if (filePath == null || filePath.isEmpty()) {
+            logger.warn("Cue {} has no audio file path", cue.getNumber());
             updateStatus("Cue has no audio file");
             return;
         }
@@ -96,6 +104,7 @@ public class AudioController {
             
             updateStatus("Playing: " + cue.getName());
         } catch (Exception e) {
+            logger.error("Error playing cue {}: {}", cue.getNumber(), e.getMessage(), e);
             updateStatus("Error loading audio: " + e.getMessage());
         }
     }
@@ -133,6 +142,7 @@ public class AudioController {
             return;
         }
         
+        logger.info("Cue completed: {} ({})", currentCue.getNumber(), currentCue.getName());
         updateStatus("Cue complete: " + currentCue.getName());
         
         double postWait = currentCue.getPostWait();
@@ -160,74 +170,181 @@ public class AudioController {
      * Pauses the current playback.
      */
     public void pause() {
+        logger.trace("pause() method entry");
+        logger.debug("Attempting to pause playback");
+        logger.info("Pause requested by user");
+        
         if (audioService.getPlayerPool() != null) {
+            logger.debug("AudioPlayerPool is not null, proceeding to pause all tracks");
+            logger.trace("Calling pauseAll() on player pool");
             audioService.getPlayerPool().pauseAll();
+            logger.debug("All tracks paused successfully");
+        } else {
+            logger.warn("AudioPlayerPool is null, cannot pause tracks");
         }
         
         // Pause any active timers
+        logger.trace("Checking pre-wait timer for pause");
         if (preWaitTimer != null) {
+            logger.debug("Pre-wait timer exists, pausing it. Current status: {}", preWaitTimer.getStatus());
             preWaitTimer.pause();
+            logger.trace("Pre-wait timer paused. New status: {}", preWaitTimer.getStatus());
+        } else {
+            logger.trace("No pre-wait timer to pause");
         }
+        
+        logger.trace("Checking post-wait timer for pause");
         if (postWaitTimer != null) {
+            logger.debug("Post-wait timer exists, pausing it. Current status: {}", postWaitTimer.getStatus());
             postWaitTimer.pause();
+            logger.trace("Post-wait timer paused. New status: {}", postWaitTimer.getStatus());
+        } else {
+            logger.trace("No post-wait timer to pause");
         }
         
+        logger.trace("Checking for state change listener");
         if (stateChangeListener != null) {
-            stateChangeListener.accept(getState());
+            logger.debug("State change listener exists, notifying with new state");
+            PlaybackState currentState = getState();
+            logger.trace("Current playback state: {}", currentState);
+            stateChangeListener.accept(currentState);
+            logger.debug("State change listener notified successfully");
+        } else {
+            logger.warn("No state change listener registered");
         }
         
+        logger.debug("Updating status to 'Paused'");
         updateStatus("Paused");
+        logger.info("Playback paused successfully");
+        logger.trace("pause() method exit");
     }
     
     /**
      * Resumes playback.
      */
     public void resume() {
+        logger.trace("resume() method entry");
+        logger.debug("Attempting to resume playback");
+        logger.info("Resume requested by user");
+        
         if (audioService.getPlayerPool() != null) {
+            logger.debug("AudioPlayerPool is not null, proceeding to resume all tracks");
+            logger.trace("Calling resumeAll() on player pool");
             audioService.getPlayerPool().resumeAll();
+            logger.debug("All tracks resumed successfully");
+        } else {
+            logger.warn("AudioPlayerPool is null, cannot resume tracks");
         }
         
         // Resume any paused timers
+        logger.trace("Checking pre-wait timer for resume");
         if (preWaitTimer != null && preWaitTimer.getStatus() == javafx.animation.Animation.Status.PAUSED) {
+            logger.debug("Pre-wait timer is paused, resuming it");
+            logger.trace("Pre-wait timer status before resume: {}", preWaitTimer.getStatus());
             preWaitTimer.play();
+            logger.trace("Pre-wait timer status after resume: {}", preWaitTimer.getStatus());
+            logger.debug("Pre-wait timer resumed successfully");
+        } else if (preWaitTimer != null) {
+            logger.trace("Pre-wait timer exists but not paused. Current status: {}", preWaitTimer.getStatus());
+        } else {
+            logger.trace("No pre-wait timer to resume");
         }
+        
+        logger.trace("Checking post-wait timer for resume");
         if (postWaitTimer != null && postWaitTimer.getStatus() == javafx.animation.Animation.Status.PAUSED) {
+            logger.debug("Post-wait timer is paused, resuming it");
+            logger.trace("Post-wait timer status before resume: {}", postWaitTimer.getStatus());
             postWaitTimer.play();
+            logger.trace("Post-wait timer status after resume: {}", postWaitTimer.getStatus());
+            logger.debug("Post-wait timer resumed successfully");
+        } else if (postWaitTimer != null) {
+            logger.trace("Post-wait timer exists but not paused. Current status: {}", postWaitTimer.getStatus());
+        } else {
+            logger.trace("No post-wait timer to resume");
         }
         
+        logger.trace("Checking for state change listener");
         if (stateChangeListener != null) {
-            stateChangeListener.accept(getState());
+            logger.debug("State change listener exists, notifying with new state");
+            PlaybackState currentState = getState();
+            logger.trace("Current playback state: {}", currentState);
+            stateChangeListener.accept(currentState);
+            logger.debug("State change listener notified successfully");
+        } else {
+            logger.warn("No state change listener registered");
         }
         
+        logger.debug("Updating status to 'Resumed'");
         updateStatus("Resumed");
+        logger.info("Playback resumed successfully");
+        logger.trace("resume() method exit");
     }
     
     /**
      * Stops the current playback.
      */
     public void stop() {
+        logger.trace("stop() method entry");
+        logger.debug("Attempting to stop playback");
+        logger.info("Stop requested by user");
+        logger.trace("Current cue before stop: {}", currentCue != null ? currentCue.getName() : "null");
+        logger.trace("Current track ID before stop: {}", currentTrackId);
+        
         if (audioService.getPlayerPool() != null) {
+            logger.debug("AudioPlayerPool is not null, proceeding to stop all tracks");
+            logger.trace("Calling stopAll() on player pool");
             audioService.getPlayerPool().stopAll();
+            logger.debug("All tracks stopped successfully");
+        } else {
+            logger.warn("AudioPlayerPool is null, cannot stop tracks");
         }
         
         // Stop and clear timers
+        logger.trace("Checking pre-wait timer for cleanup");
         if (preWaitTimer != null) {
+            logger.debug("Pre-wait timer exists, stopping and clearing it. Current status: {}", preWaitTimer.getStatus());
             preWaitTimer.stop();
+            logger.trace("Pre-wait timer stopped");
             preWaitTimer = null;
+            logger.trace("Pre-wait timer reference cleared");
+        } else {
+            logger.trace("No pre-wait timer to cleanup");
         }
+        
+        logger.trace("Checking post-wait timer for cleanup");
         if (postWaitTimer != null) {
+            logger.debug("Post-wait timer exists, stopping and clearing it. Current status: {}", postWaitTimer.getStatus());
             postWaitTimer.stop();
+            logger.trace("Post-wait timer stopped");
             postWaitTimer = null;
+            logger.trace("Post-wait timer reference cleared");
+        } else {
+            logger.trace("No post-wait timer to cleanup");
         }
         
+        logger.debug("Clearing current cue reference");
         currentCue = null;
-        currentTrackId = null;
+        logger.trace("Current cue set to null");
         
+        logger.debug("Clearing current track ID");
+        currentTrackId = null;
+        logger.trace("Current track ID set to null");
+        
+        logger.trace("Checking for state change listener");
         if (stateChangeListener != null) {
-            stateChangeListener.accept(getState());
+            logger.debug("State change listener exists, notifying with new state");
+            PlaybackState currentState = getState();
+            logger.trace("Current playback state: {}", currentState);
+            stateChangeListener.accept(currentState);
+            logger.debug("State change listener notified successfully");
+        } else {
+            logger.warn("No state change listener registered");
         }
         
+        logger.debug("Updating status to 'Stopped'");
         updateStatus("Stopped");
+        logger.info("Playback stopped successfully");
+        logger.trace("stop() method exit");
     }
     
     /**

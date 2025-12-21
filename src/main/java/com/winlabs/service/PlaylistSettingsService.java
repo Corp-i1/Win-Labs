@@ -2,6 +2,9 @@ package com.winlabs.service;
 
 import com.google.gson.*;
 import com.winlabs.model.PlaylistSettings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,6 +20,8 @@ import java.nio.file.Paths;
  */
 public class PlaylistSettingsService {
     
+    private static final Logger logger = LoggerFactory.getLogger(PlaylistSettingsService.class);
+    
     private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
     private static final String WLP_EXTENSION = ".wlp";
     
@@ -30,6 +35,7 @@ public class PlaylistSettingsService {
      */
     public void save(Path playlistPath, PlaylistSettings settings) throws IOException {
         Path wlpPath = getWlpPath(playlistPath);
+        logger.debug("Saving playlist settings to {}", wlpPath);
         
         // Create the JSON representation
         JsonObject json = new JsonObject();
@@ -45,6 +51,7 @@ public class PlaylistSettingsService {
         // Write to file
         String jsonString = gson.toJson(json);
         Files.writeString(wlpPath, jsonString);
+        logger.info("Playlist settings saved to {}", wlpPath.getFileName());
     }
     
     /**
@@ -60,9 +67,11 @@ public class PlaylistSettingsService {
         PlaylistSettings settings = new PlaylistSettings();
         
         if (!Files.exists(wlpPath)) {
+            logger.debug("No settings file found for {}, using defaults", playlistPath.getFileName());
             return settings;
         }
         
+        logger.debug("Loading playlist settings from {}", wlpPath);
         try {
             String content = Files.readString(wlpPath);
             JsonObject json = JsonParser.parseString(content).getAsJsonObject();

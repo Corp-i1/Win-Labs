@@ -16,6 +16,13 @@ public class ApplicationSettings {
     private final BooleanProperty autoSaveEnabled;
     private final IntegerProperty autoSaveInterval; // in seconds
     
+    // Logging settings
+    private final BooleanProperty loggingEnabled;
+    private final ObjectProperty<LogLevel> logLevel;
+    private final StringProperty logDirectory;
+    private final IntegerProperty logRotationSizeMB;
+    private final IntegerProperty logRetentionDays;
+    
     // Default cue properties
     private final DoubleProperty preWaitDefault;
     private final DoubleProperty postWaitDefault;
@@ -28,6 +35,15 @@ public class ApplicationSettings {
         this.theme = new SimpleStringProperty("dark");
         this.autoSaveEnabled = new SimpleBooleanProperty(false);
         this.autoSaveInterval = new SimpleIntegerProperty(300); // 5 minutes
+        
+        // Initialize logging settings with defaults
+        this.loggingEnabled = new SimpleBooleanProperty(true);
+        this.logLevel = new SimpleObjectProperty<>(LogLevel.INFO);
+        String userHome = System.getProperty("user.home");
+        this.logDirectory = new SimpleStringProperty(userHome + "/.winlabs/logs");
+        this.logRotationSizeMB = new SimpleIntegerProperty(10);
+        this.logRetentionDays = new SimpleIntegerProperty(5);
+        
         this.preWaitDefault = new SimpleDoubleProperty(0.0);
         this.postWaitDefault = new SimpleDoubleProperty(0.0);
         this.autoFollowDefault = new SimpleBooleanProperty(false);
@@ -111,6 +127,71 @@ public class ApplicationSettings {
         this.autoFollowDefault.set(value);
     }
     
+    // Logging enabled property
+    public BooleanProperty loggingEnabledProperty() {
+        return loggingEnabled;
+    }
+    
+    public boolean isLoggingEnabled() {
+        return loggingEnabled.get();
+    }
+    
+    public void setLoggingEnabled(boolean enabled) {
+        this.loggingEnabled.set(enabled);
+    }
+    
+    // Log level property
+    public ObjectProperty<LogLevel> logLevelProperty() {
+        return logLevel;
+    }
+    
+    public LogLevel getLogLevel() {
+        return logLevel.get();
+    }
+    
+    public void setLogLevel(LogLevel level) {
+        this.logLevel.set(level != null ? level : LogLevel.INFO);
+    }
+    
+    // Log directory property
+    public StringProperty logDirectoryProperty() {
+        return logDirectory;
+    }
+    
+    public String getLogDirectory() {
+        return logDirectory.get();
+    }
+    
+    public void setLogDirectory(String directory) {
+        this.logDirectory.set(directory != null ? directory : System.getProperty("user.home") + "/.winlabs/logs");
+    }
+    
+    // Log rotation size property
+    public IntegerProperty logRotationSizeMBProperty() {
+        return logRotationSizeMB;
+    }
+    
+    public int getLogRotationSizeMB() {
+        return logRotationSizeMB.get();
+    }
+    
+    public void setLogRotationSizeMB(int sizeMB) {
+        this.logRotationSizeMB.set(Math.max(1, sizeMB)); // Minimum 1 MB
+    }
+    
+    // Log retention days property
+    public IntegerProperty logRetentionDaysProperty() {
+        return logRetentionDays;
+    }
+    
+    public int getLogRetentionDays() {
+        return logRetentionDays.get();
+    }
+    
+    public void setLogRetentionDays(int days) {
+        this.logRetentionDays.set(Math.max(1, days)); // Minimum 1 day
+    }
+    
     /**
      * Resets all settings to default values.
      */
@@ -121,5 +202,10 @@ public class ApplicationSettings {
         setPreWaitDefault(0.0);
         setPostWaitDefault(0.0);
         setAutoFollowDefault(false);
+        setLoggingEnabled(true);
+        setLogLevel(LogLevel.INFO);
+        setLogDirectory(System.getProperty("user.home") + "/.winlabs/logs");
+        setLogRotationSizeMB(10);
+        setLogRetentionDays(5);
     }
 }

@@ -5,6 +5,8 @@ import com.winlabs.model.PlaybackState;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.util.Duration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,6 +28,8 @@ import java.util.function.Consumer;
  * Multi-track mode: Uses AudioPlayerPool for simultaneous overlapping audio.
  */
 public class AudioService {
+    
+    private static final Logger logger = LoggerFactory.getLogger(AudioService.class);
     
     // Single-track mode fields (legacy support)
     private MediaPlayer mediaPlayer;
@@ -111,6 +115,7 @@ public class AudioService {
         
         // Handle errors
         mediaPlayer.setOnError(() -> {
+            logger.error("Media playback error: {}", mediaPlayer.getError().getMessage());
             System.err.println("Media error: " + mediaPlayer.getError().getMessage());
             setState(PlaybackState.STOPPED);
         });
@@ -121,9 +126,11 @@ public class AudioService {
      */
     public void play() {
         if (mediaPlayer == null) {
+            logger.error("Attempted to play with no audio loaded");
             throw new IllegalStateException("No audio loaded");
         }
         
+        logger.debug("Starting playback");
         mediaPlayer.play();
         setState(PlaybackState.PLAYING);
     }
@@ -157,8 +164,22 @@ public class AudioService {
      * Sets the playback volume (0.0 to 1.0).
      */
     public void setVolume(double volume) {
+        if (volume < 0.0) {
+            logger.warn("Volume value {} is below minimum (0.0), will be clamped", volume);
+        } else if (volume > 1.0) {
+            logger.warn("Volume value {} is above maximum (1.0), will be clamped", volume);
+        }
+
+        double clampedVolume = Math.max(0.0, Math.min(1.0, volume));
+
         if (mediaPlayer != null) {
-            mediaPlayer.setVolume(Math.max(0.0, Math.min(1.0, volume)));
+            double oldVolume = mediaPlayer.getVolume();
+            if (Double.compare(oldVolume, clampedVolume) != 0) {
+                mediaPlayer.setVolume(clampedVolume);
+                logger.debug("Volume changed from {} to {}", oldVolume, clampedVolume);
+            }
+        } else {
+            logger.warn("MediaPlayer is null, cannot set volume to {}", clampedVolume);
         }
     }
     
@@ -173,9 +194,48 @@ public class AudioService {
      * Seeks to a specific time in the audio.
      */
     public void seek(double seconds) {
-        if (mediaPlayer != null) {
-            mediaPlayer.seek(Duration.seconds(seconds));
+        logger.trace("seek() method entry");
+        logger.debug("Attempting to seek to {} seconds", seconds);
+        logger.trace("Seek parameter value: {}", seconds);
+        
+        if (seconds < 0.0) {
+            logger.warn("Seek value {} is negative, this may cause issues", seconds);
         }
+        
+        logger.trace("Checking if mediaPlayer exists");
+        if (mediaPlayer != null) {
+            logger.debug("MediaPlayer exists, proceeding with seek");
+            double currentTime = mediaPlayer.getCurrentTime().toSeconds();
+            logger.trace("Current playback time before seek: {} seconds", currentTime);
+            
+            Duration totalDuration = mediaPlayer.getTotalDuration();
+            if (totalDuration != null) {
+                double totalSeconds = totalDuration.toSeconds();
+                logger.trace("Total duration: {} seconds", totalSeconds);
+                if (seconds > totalSeconds) {
+                    logger.warn("Seek position {} exceeds total duration {}", seconds, totalSeconds);
+                }
+            } else {
+                logger.trace("Total duration is null, cannot validate seek position");
+            }
+            
+            logger.debug("Creating Duration object for {} seconds", seconds);
+            Duration seekDuration = Duration.seconds(seconds);
+            logger.trace("Duration object created: {}", seekDuration);
+            
+            logger.debug("Calling seek on MediaPlayer with duration: {}", seekDuration);
+            mediaPlayer.seek(seekDuration);
+            
+            double newTime = mediaPlayer.getCurrentTime().toSeconds();
+            logger.trace("Current playback time after seek: {} seconds", newTime);
+            logger.info("Seeked from {} to {} seconds", currentTime, newTime);
+            logger.debug("Seek operation completed successfully");
+        } else {
+            logger.warn("MediaPlayer is null, cannot seek");
+            logger.debug("Attempted seek position: {} seconds, but no media player available", seconds);
+        }
+        
+        logger.trace("seek() method exit");
     }
     
     /**

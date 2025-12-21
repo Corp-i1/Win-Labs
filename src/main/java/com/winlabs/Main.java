@@ -1,6 +1,7 @@
 package com.winlabs;
 
 import com.winlabs.service.FileAssociationService;
+import com.winlabs.service.LoggerService;
 import com.winlabs.service.SettingsService;
 import com.winlabs.model.Settings;
 import com.winlabs.view.MainWindow;
@@ -8,6 +9,9 @@ import com.winlabs.view.WelcomeScreen;
 import javafx.application.Application;
 import javafx.scene.control.Alert;
 import javafx.stage.Stage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 
 /**
@@ -16,6 +20,7 @@ import java.util.ArrayList;
  */
 public class Main extends Application {
     
+    private static final Logger logger = LoggerFactory.getLogger(Main.class);
     private static String playlistFileToOpen;
     private WelcomeScreen welcomeScreen;
     
@@ -31,12 +36,20 @@ public class Main extends Application {
             settings = new Settings();
         }
         
+        // Configure logging based on settings
+        LoggerService.configureLogging(settings);
+        logger.info("Win-Labs application starting (v1.0.0)");
+        logger.debug("Settings loaded: theme={}, loggingEnabled={}, logLevel={}", 
+            settings.getTheme(), settings.isLoggingEnabled(), settings.getLogLevel());
+        
         // If a playlist file was passed as argument, open it directly
         if (playlistFileToOpen != null) {
+            logger.info("Opening playlist file from command line: {}", playlistFileToOpen);
             MainWindow mainWindow = new MainWindow();
             mainWindow.openPlaylistFile(playlistFileToOpen);
             mainWindow.show();
         } else {
+            logger.debug("Showing welcome screen");
             // Show welcome screen at startup (with theme applied)
             welcomeScreen = new WelcomeScreen(
                 this::showNewPlaylistWindow,

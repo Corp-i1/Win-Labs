@@ -107,6 +107,46 @@ public class Settings {
         applicationSettings.setAutoFollowDefault(value);
     }
     
+    public boolean isLoggingEnabled() {
+        return applicationSettings.isLoggingEnabled();
+    }
+    
+    public void setLoggingEnabled(boolean enabled) {
+        applicationSettings.setLoggingEnabled(enabled);
+    }
+    
+    public LogLevel getLogLevel() {
+        return applicationSettings.getLogLevel();
+    }
+    
+    public void setLogLevel(LogLevel level) {
+        applicationSettings.setLogLevel(level);
+    }
+    
+    public String getLogDirectory() {
+        return applicationSettings.getLogDirectory();
+    }
+    
+    public void setLogDirectory(String directory) {
+        applicationSettings.setLogDirectory(directory);
+    }
+    
+    public int getLogRotationSizeMB() {
+        return applicationSettings.getLogRotationSizeMB();
+    }
+    
+    public void setLogRotationSizeMB(int sizeMB) {
+        applicationSettings.setLogRotationSizeMB(sizeMB);
+    }
+    
+    public int getLogRetentionDays() {
+        return applicationSettings.getLogRetentionDays();
+    }
+    
+    public void setLogRetentionDays(int days) {
+        applicationSettings.setLogRetentionDays(days);
+    }
+    
     /**
      * Resets all settings to default values.
      */

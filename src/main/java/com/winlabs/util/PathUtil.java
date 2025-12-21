@@ -1,11 +1,16 @@
 package com.winlabs.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.nio.file.Path;
 
 /**
  * Utility class for path manipulation and file type detection.
  */
 public class PathUtil {
+    
+    private static final Logger logger = LoggerFactory.getLogger(PathUtil.class);
     
     // Supported audio file extensions
     private static final String[] AUDIO_EXTENSIONS = {
@@ -17,12 +22,14 @@ public class PathUtil {
      */
     public static boolean isAudioFile(Path path) {
         if (path == null) {
+            logger.warn("Path parameter is null in isAudioFile(Path)");
             return false;
         }
-        
+
         String fileName = path.getFileName().toString().toLowerCase();
         for (String ext : AUDIO_EXTENSIONS) {
             if (fileName.endsWith(ext)) {
+                logger.debug("Audio file detected: {} (extension: {})", path, ext);
                 return true;
             }
         }

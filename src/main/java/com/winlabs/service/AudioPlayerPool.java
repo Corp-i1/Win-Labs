@@ -4,6 +4,8 @@ import com.winlabs.model.AudioTrack;
 import com.winlabs.model.PlaybackState;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,6 +26,8 @@ import java.util.stream.Collectors;
  * to minimize latency and resource usage.
  */
 public class AudioPlayerPool {
+    
+    private static final Logger logger = LoggerFactory.getLogger(AudioPlayerPool.class);
     
     private static final int DEFAULT_POOL_SIZE = 5;
     private static final int MAX_POOL_SIZE = 20;
@@ -47,6 +51,7 @@ public class AudioPlayerPool {
         this.maxPoolSize = Math.max(this.initialPoolSize, maxPoolSize);
         this.availableTracks = new CopyOnWriteArrayList<>();
         this.activeTracks = new ConcurrentHashMap<>();
+        logger.info("AudioPlayerPool created: initialSize={}, maxSize={}", this.initialPoolSize, this.maxPoolSize);
         this.cullScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread thread = new Thread(r, "AudioPlayerPool-Culler");
             thread.setDaemon(true);
@@ -62,14 +67,29 @@ public class AudioPlayerPool {
      * Also starts automatic culling of unused tracks.
      */
     public void prewarm() {
+        logger.info("Pre-warming audio player pool with {} initial tracks", initialPoolSize);
+
         for (int i = 0; i < initialPoolSize; i++) {
             AudioTrack track = new AudioTrack();
             track.setPooled(true);
             availableTracks.add(track);
+
+            if (logger.isDebugEnabled()) {
+                logger.debug("Prewarmed track {} of {} (id={}), availableTracks={}",
+                        i + 1,
+                        initialPoolSize,
+                        track.getTrackId(),
+                        availableTracks.size());
+            }
         }
-        
+
+        logger.info("Successfully created {} tracks for pool; final available tracks count: {}",
+                initialPoolSize,
+                availableTracks.size());
+
         // Enable automatic culling
         enableAutoCulling();
+        logger.info("Automatic culling enabled for pool");
     }
     
     /**
@@ -78,28 +98,70 @@ public class AudioPlayerPool {
      * used for longer than CULL_TIMEOUT_MS.
      */
     public synchronized void enableAutoCulling() {
+        logger.trace("enableAutoCulling() method entry (synchronized)");
+        logger.debug("Attempting to enable automatic culling");
+        logger.trace("Current autoCullEnabled status: {}", autoCullEnabled);
+        
         if (!autoCullEnabled) {
+            logger.info("Auto-culling is disabled, enabling it now");
+            logger.debug("Setting autoCullEnabled flag to true");
             autoCullEnabled = true;
+            logger.trace("autoCullEnabled flag set to: {}", autoCullEnabled);
+            
+            logger.debug("Scheduling periodic cull task with interval: {}ms", CULL_INTERVAL_MS);
+            logger.trace("Timeout threshold: {}ms", CULL_TIMEOUT_MS);
+            logger.trace("Calling scheduleWithFixedDelay on cullScheduler");
             cullTask = cullScheduler.scheduleWithFixedDelay(
                 this::cullUnusedTracksInternal,
                 CULL_INTERVAL_MS,
                 CULL_INTERVAL_MS,
                 TimeUnit.MILLISECONDS
             );
+            logger.trace("Scheduled cull task: {}", cullTask);
+            logger.info("Automatic culling enabled successfully");
+            logger.debug("Cull task will run every {}ms with timeout {}ms", CULL_INTERVAL_MS, CULL_TIMEOUT_MS);
+        } else {
+            logger.debug("Auto-culling is already enabled, skipping");
+            logger.trace("Current cull task: {}", cullTask);
         }
+        
+        logger.trace("enableAutoCulling() method exit");
     }
     
     /**
      * Disables automatic periodic culling of unused tracks.
      */
     public synchronized void disableAutoCulling() {
+        logger.trace("disableAutoCulling() method entry (synchronized)");
+        logger.debug("Attempting to disable automatic culling");
+        logger.trace("Current autoCullEnabled status: {}", autoCullEnabled);
+        
         if (autoCullEnabled) {
+            logger.info("Auto-culling is enabled, disabling it now");
+            logger.debug("Setting autoCullEnabled flag to false");
             autoCullEnabled = false;
+            logger.trace("autoCullEnabled flag set to: {}", autoCullEnabled);
+            
+            logger.trace("Checking if cull task exists");
             if (cullTask != null) {
-                cullTask.cancel(false);
+                logger.debug("Cull task exists, cancelling it. Task: {}", cullTask);
+                logger.trace("Calling cancel(false) on cull task");
+                boolean cancelled = cullTask.cancel(false);
+                logger.trace("Cull task cancellation result: {}", cancelled);
+                logger.debug("Clearing cull task reference");
                 cullTask = null;
+                logger.trace("Cull task set to null");
+                logger.info("Cull task cancelled and cleared successfully");
+            } else {
+                logger.warn("Cull task was null despite auto-culling being enabled");
             }
+            
+            logger.info("Automatic culling disabled successfully");
+        } else {
+            logger.debug("Auto-culling is already disabled, skipping");
         }
+        
+        logger.trace("disableAutoCulling() method exit");
     }
     
     /**
@@ -168,6 +230,7 @@ public class AudioPlayerPool {
             return;
         }
         
+        logger.debug("Releasing track: {}", track.getTrackId());
         // Remove from active tracks
         activeTracks.remove(track.getTrackId());
         
@@ -191,6 +254,7 @@ public class AudioPlayerPool {
      * @param trackId The ID of the track to release
      */
     public void forceReleaseTrack(String trackId) {
+        logger.debug("Force releasing track: {}", trackId);
         AudioTrack track = activeTracks.get(trackId);
         if (track != null) {
             track.stop();

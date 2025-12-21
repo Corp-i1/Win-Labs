@@ -1,24 +1,32 @@
 package com.winlabs.util;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Utility class for time and duration formatting.
  */
 public class TimeUtil {
+    
+    private static final Logger logger = LoggerFactory.getLogger(TimeUtil.class);
     
     /**
      * Formats seconds into MM:SS format.
      * Example: 125.5 seconds -> "02:05"
      */
     public static String formatTime(double seconds) {
+        // Keep logging extremely lightweight in this hot utility method
         if (seconds < 0) {
+            logger.warn("Negative seconds value received: {}", seconds);
             return "00:00";
         }
-        
+
         int totalSeconds = (int) Math.floor(seconds);
         int minutes = totalSeconds / 60;
         int secs = totalSeconds % 60;
-        
-        return String.format("%02d:%02d", minutes, secs);
+
+        String result = String.format("%02d:%02d", minutes, secs);
+        return result;
     }
     
     /**
