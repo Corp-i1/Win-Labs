@@ -51,21 +51,33 @@ public class Main extends Application {
      * Opens a new playlist window.
      */
     private void showNewPlaylistWindow() {
-        MainWindow mainWindow = new MainWindow();
-        mainWindow.newPlaylist();
-        mainWindow.show();
+        try {
+            MainWindow mainWindow = new MainWindow();
+            mainWindow.newPlaylist();
+            mainWindow.show();
+        } catch (Exception e) {
+            System.err.println("Error creating new playlist: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
     
     /**
      * Opens a playlist from the file browser.
      */
     private void showOpenPlaylistWindow() {
-        MainWindow mainWindow = new MainWindow();
-        mainWindow.openPlaylist();
-        if (!mainWindow.hasPlaylistLoaded()) {
-            mainWindow.close();
-        } else {
-            mainWindow.show();
+        try {
+            MainWindow mainWindow = new MainWindow();
+            mainWindow.openPlaylist();
+            // Only show the window if a playlist was successfully loaded
+            if (mainWindow.hasPlaylistLoaded()) {
+                mainWindow.show();
+            } else {
+                // User cancelled the file dialog, close the window
+                mainWindow.close();
+            }
+        } catch (Exception e) {
+            System.err.println("Error opening playlist: " + e.getMessage());
+            e.printStackTrace();
         }
     }
     
