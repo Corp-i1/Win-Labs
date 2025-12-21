@@ -304,8 +304,8 @@ class AudioPlayerPoolTest {
         smallPool.prewarm();
         
         try {
-            AudioTrack track1 = smallPool.acquireTrack(testAudioFile.toString());
-            AudioTrack track2 = smallPool.acquireTrack(testAudioFile.toString());
+            smallPool.acquireTrack(testAudioFile.toString());
+            smallPool.acquireTrack(testAudioFile.toString());
             
             // Pool should be exhausted
             Exception exception = assertThrows(IllegalStateException.class, () -> {

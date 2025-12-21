@@ -1,6 +1,5 @@
 package com.winlabs.view;
 
-import com.winlabs.model.LogLevel;
 import com.winlabs.model.Settings;
 import com.winlabs.service.LoggerService;
 import javafx.geometry.Insets;

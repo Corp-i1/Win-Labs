@@ -1,6 +1,5 @@
 package com.winlabs.service;
 
-import com.winlabs.model.AudioTrack;
 import com.winlabs.model.PlaybackState;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
@@ -11,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.function.Consumer;
 
 //TODO: Add support for playlists, 

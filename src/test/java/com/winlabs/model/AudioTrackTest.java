@@ -1,6 +1,5 @@
 package com.winlabs.model;
 
-import javafx.util.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

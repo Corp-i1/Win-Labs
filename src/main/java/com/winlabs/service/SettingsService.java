@@ -4,11 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.winlabs.model.ApplicationSettings;
-import com.winlabs.model.LogLevel;
 import com.winlabs.model.Settings;
 import com.winlabs.model.WorkspaceSettings;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -21,7 +18,6 @@ import java.nio.file.Paths;
  */
 public class SettingsService {
     
-    private static final Logger logger = LoggerFactory.getLogger(SettingsService.class);
     private static final String SETTINGS_DIR = ".winlabs";
     private static final String APP_SETTINGS_FILE = "app-settings.json";
     private static final String WORKSPACE_SETTINGS_FILE = "workspace-settings.json";

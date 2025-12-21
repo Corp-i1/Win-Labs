@@ -5,7 +5,6 @@ import com.winlabs.model.Cue;
 import com.winlabs.model.PlaybackState;
 import com.winlabs.model.Playlist;
 import com.winlabs.model.PlaylistSettings;
-import com.winlabs.model.RecentPlaylist;
 import com.winlabs.model.Settings;
 import com.winlabs.service.PlaylistService;
 import com.winlabs.service.PlaylistSettingsService;
@@ -880,32 +879,6 @@ public class MainWindow extends Stage {
     }
     
     /**
-     * Opens the documentation (placeholder).
-     */
-    private void openDocumentation() {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Documentation");
-        alert.setHeaderText("Win-Labs Documentation");
-        alert.setContentText("Documentation will be available soon.\n\nVisit https://github.com/Corp-i1/Win-Labs for more information.");
-        applyThemeToDialog(alert);
-        alert.showAndWait();
-    }
-    
-    /**
-     * Changes the theme and saves the setting.
-     */
-    private void changeTheme(String themeName) {
-        settings.setTheme(themeName);
-        try {
-            settingsService.save(settings);
-        } catch (Exception e) {
-            System.err.println("Failed to save theme setting: " + e.getMessage());
-        }
-        applyThemeFromSettings();
-        updateStatus("Theme changed to " + themeName);
-    }
-    
-    /**
      * Applies the theme from current settings.
      */
     private void applyThemeFromSettings() {
@@ -949,29 +922,6 @@ public class MainWindow extends Stage {
      */
     private void updateStatus(String message) {
         statusLabel.setText(message);
-    }
-    
-    /**
-     * Adds sample cues for testing.
-     */
-    private void addSampleCues() {
-        Cue cue1 = new Cue(1, "Opening Music", "C:/Music/opening.mp3");
-        cue1.setDuration(180.0);
-        cue1.setPreWait(5.0);
-        cue1.setPostWait(3.0);
-        cue1.setAutoFollow(true);
-        
-        Cue cue2 = new Cue(2, "Intermission", "C:/Music/intermission.wav");
-        cue2.setDuration(300.0);
-        cue2.setAutoFollow(false);
-        
-        Cue cue3 = new Cue(3, "Closing Music", "C:/Music/closing.mp3");
-        cue3.setDuration(240.0);
-        cue3.setPreWait(2.0);
-        
-        playlist.addCue(cue1);
-        playlist.addCue(cue2);
-        playlist.addCue(cue3);
     }
     
     /**
