@@ -1,11 +1,13 @@
 package com.winlabs.controller;
 
+import com.winlabs.model.AudioTrack;
 import com.winlabs.model.Cue;
 import com.winlabs.model.PlaybackState;
 import com.winlabs.service.AudioService;
 import javafx.animation.PauseTransition;
 import javafx.util.Duration;
 
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -16,6 +18,7 @@ public class AudioController {
     
     private final AudioService audioService;
     private Cue currentCue;
+    private String currentTrackId; // Track ID for current cue playback
     private Consumer<String> statusUpdateListener;
     private Consumer<PlaybackState> stateChangeListener;
     private Runnable onCueCompleteListener;
@@ -24,24 +27,16 @@ public class AudioController {
     private PauseTransition postWaitTimer;
     
     public AudioController() {
-        this.audioService = new AudioService();
+        this.audioService = new AudioService(true); // Enable multi-track mode
         setupAudioServiceListeners();
     }
     
     /**
      * Sets up listeners for the audio service.
+     * In multi-track mode, listeners are set per-track in startPlayback.
      */
     private void setupAudioServiceListeners() {
-        audioService.setStateChangeListener(state -> {
-            if (stateChangeListener != null) {
-                stateChangeListener.accept(state);
-            }
-            
-            // Handle end of playback
-            if (state == PlaybackState.STOPPED && currentCue != null) {
-                handleCueComplete();
-            }
-        });
+        // Multi-track mode uses per-track listeners instead of service-level listeners
     }
     
     /**
@@ -80,8 +75,34 @@ public class AudioController {
      */
     private void startPlayback(Cue cue, String filePath) {
         try {
-            audioService.loadAudio(filePath);
-            audioService.play();
+            // Get the track before playing to set up listeners
+            // This avoids a race condition with very short audio files
+            var track = audioService.getPlayerPool().acquireTrack(filePath);
+            currentTrackId = track.getTrackId();
+            
+            // Set up completion listener for this track
+            // Store the pool's original listener to chain them
+            var poolListener = track.getOnEndListener();
+            track.setOnEndListener(audioTrack -> {
+                // Track has finished playing
+                if (stateChangeListener != null) {
+                    stateChangeListener.accept(getState());
+                }
+                handleCueComplete();
+                
+                // Call the pool's listener to properly release the track
+                if (poolListener != null) {
+                    poolListener.accept(audioTrack);
+                }
+            });
+            
+            // Now start playback
+            track.play();
+            
+            if (stateChangeListener != null) {
+                stateChangeListener.accept(getState());
+            }
+            
             updateStatus("Playing: " + cue.getName());
         } catch (Exception e) {
             updateStatus("Error loading audio: " + e.getMessage());
@@ -149,7 +170,7 @@ public class AudioController {
      * Pauses the current playback.
      */
     public void pause() {
-        audioService.pause();
+        audioService.pauseAllTracks();
         
         // Pause any active timers
         if (preWaitTimer != null) {
@@ -159,6 +180,10 @@ public class AudioController {
             postWaitTimer.pause();
         }
         
+        if (stateChangeListener != null) {
+            stateChangeListener.accept(getState());
+        }
+        
         updateStatus("Paused");
     }
     
@@ -166,10 +191,7 @@ public class AudioController {
      * Resumes playback.
      */
     public void resume() {
-        if (audioService.getState() == PlaybackState.PAUSED) {
-            audioService.play();
-            updateStatus("Resumed");
-        }
+        audioService.resumeAllTracks();
         
         // Resume any paused timers
         if (preWaitTimer != null && preWaitTimer.getStatus() == javafx.animation.Animation.Status.PAUSED) {
@@ -178,13 +200,19 @@ public class AudioController {
         if (postWaitTimer != null && postWaitTimer.getStatus() == javafx.animation.Animation.Status.PAUSED) {
             postWaitTimer.play();
         }
+        
+        if (stateChangeListener != null) {
+            stateChangeListener.accept(getState());
+        }
+        
+        updateStatus("Resumed");
     }
     
     /**
      * Stops the current playback.
      */
     public void stop() {
-        audioService.stop();
+        audioService.stopAllTracks();
         
         // Stop and clear timers
         if (preWaitTimer != null) {
@@ -197,14 +225,66 @@ public class AudioController {
         }
         
         currentCue = null;
+        currentTrackId = null;
+        
+        if (stateChangeListener != null) {
+            stateChangeListener.accept(getState());
+        }
+        
         updateStatus("Stopped");
     }
     
     /**
      * Gets the current playback state.
+     * In multi-track mode, this reflects the actual state of active tracks and running timers.
      */
     public PlaybackState getState() {
-        return audioService.getState();
+        // Get active tracks and their states
+        List<AudioTrack> activeTracks = audioService.getActiveTracks();
+        
+        // If we have active tracks, determine state based on them
+        if (!activeTracks.isEmpty()) {
+            // If any track is playing, overall state is PLAYING
+            boolean hasPlaying = activeTracks.stream()
+                .anyMatch(track -> track.getState() == PlaybackState.PLAYING);
+            if (hasPlaying) {
+                return PlaybackState.PLAYING;
+            }
+            
+            // If all tracks are paused (and at least one exists), state is PAUSED
+            boolean allPaused = activeTracks.stream()
+                .allMatch(track -> track.getState() == PlaybackState.PAUSED);
+            if (allPaused) {
+                return PlaybackState.PAUSED;
+            }
+            
+            // Otherwise, tracks exist but are in other states (e.g., STOPPED)
+            // Fall through to check timer states
+        }
+        
+        // No active tracks or tracks are stopped - check timer states
+        // Store timer statuses to avoid repeated method calls
+        javafx.animation.Animation.Status preWaitStatus = 
+            (preWaitTimer != null) ? preWaitTimer.getStatus() : null;
+        javafx.animation.Animation.Status postWaitStatus = 
+            (postWaitTimer != null) ? postWaitTimer.getStatus() : null;
+        
+        // Check if we're in a wait state (pre-wait or post-wait)
+        if (preWaitStatus == javafx.animation.Animation.Status.RUNNING) {
+            return PlaybackState.PRE_WAIT;
+        }
+        if (postWaitStatus == javafx.animation.Animation.Status.RUNNING) {
+            return PlaybackState.POST_WAIT;
+        }
+        
+        // If timers are paused, we're in a paused state
+        if (preWaitStatus == javafx.animation.Animation.Status.PAUSED ||
+            postWaitStatus == javafx.animation.Animation.Status.PAUSED) {
+            return PlaybackState.PAUSED;
+        }
+        
+        // No active tracks and no timers running - state is STOPPED
+        return PlaybackState.STOPPED;
     }
     
     /**
