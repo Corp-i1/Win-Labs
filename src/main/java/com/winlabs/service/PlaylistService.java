@@ -32,27 +32,18 @@ public class PlaylistService {
      * Saves a playlist to a JSON file.
      */
     public void save(Playlist playlist, String filePath) throws IOException {
-        logger.trace("save() method entry");
-        logger.info("Saving playlist to: {}", filePath);
-        logger.debug("Playlist: {}", playlist);
-        logger.trace("Method parameters - playlist: {}, filePath: {}", playlist, filePath);
-        
-        logger.trace("Validating playlist parameter");
         if (playlist == null) {
             logger.error("Playlist parameter is null");
-            logger.trace("Throwing IllegalArgumentException for null playlist");
             throw new IllegalArgumentException("Playlist cannot be null");
         }
-        logger.trace("Playlist is not null");
-        logger.debug("Playlist name: {}", playlist.getName());
-        logger.debug("Playlist cue count: {}", playlist.getCues().size());
-        
-        logger.trace("Validating filePath parameter");
+
         if (filePath == null || filePath.isEmpty()) {
             logger.error("File path is null or empty: {}", filePath);
-            logger.trace("Throwing IllegalArgumentException for invalid file path");
             throw new IllegalArgumentException("File path cannot be null or empty");
         }
+
+        int cueCount = playlist.getCues() != null ? playlist.getCues().size() : 0;
+        logger.info("Saving playlist '{}' with {} cues to: {}", playlist.getName(), cueCount, filePath);
         logger.trace("File path is valid: {}", filePath);
         logger.debug("File path length: {}", filePath.length());
         

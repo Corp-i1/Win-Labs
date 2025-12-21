@@ -67,36 +67,29 @@ public class AudioPlayerPool {
      * Also starts automatic culling of unused tracks.
      */
     public void prewarm() {
-        logger.trace("prewarm() method entry");
         logger.info("Pre-warming audio player pool with {} initial tracks", initialPoolSize);
-        logger.debug("Starting track creation loop");
-        
+
         for (int i = 0; i < initialPoolSize; i++) {
-            logger.trace("Creating track {} of {}", i + 1, initialPoolSize);
-            logger.debug("Instantiating new AudioTrack object (iteration {})", i);
             AudioTrack track = new AudioTrack();
-            logger.trace("AudioTrack created with ID: {}", track.getTrackId());
-            
-            logger.debug("Setting track {} as pooled", track.getTrackId());
             track.setPooled(true);
-            logger.trace("Track {} pooled status: {}", track.getTrackId(), track.isPooled());
-            
-            logger.debug("Adding track {} to available tracks list", track.getTrackId());
             availableTracks.add(track);
-            logger.trace("Available tracks count after adding: {}", availableTracks.size());
-            logger.debug("Track {} added successfully (iteration {} complete)", track.getTrackId(), i);
+
+            if (logger.isDebugEnabled()) {
+                logger.debug("Prewarmed track {} of {} (id={}), availableTracks={}",
+                        i + 1,
+                        initialPoolSize,
+                        track.getTrackId(),
+                        availableTracks.size());
+            }
         }
-        
-        logger.info("Successfully created {} tracks for pool", initialPoolSize);
-        logger.debug("Final available tracks count: {}", availableTracks.size());
-        logger.trace("Track creation loop completed");
-        
+
+        logger.info("Successfully created {} tracks for pool; final available tracks count: {}",
+                initialPoolSize,
+                availableTracks.size());
+
         // Enable automatic culling
-        logger.debug("Enabling automatic track culling");
-        logger.trace("Calling enableAutoCulling()");
         enableAutoCulling();
         logger.info("Automatic culling enabled for pool");
-        logger.trace("prewarm() method exit");
     }
     
     /**

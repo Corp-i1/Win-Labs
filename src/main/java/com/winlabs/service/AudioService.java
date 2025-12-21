@@ -164,40 +164,23 @@ public class AudioService {
      * Sets the playback volume (0.0 to 1.0).
      */
     public void setVolume(double volume) {
-        logger.trace("setVolume() method entry");
-        logger.debug("Attempting to set volume to: {}", volume);
-        logger.trace("Raw volume parameter value: {}", volume);
-        
         if (volume < 0.0) {
             logger.warn("Volume value {} is below minimum (0.0), will be clamped", volume);
-        }
-        if (volume > 1.0) {
+        } else if (volume > 1.0) {
             logger.warn("Volume value {} is above maximum (1.0), will be clamped", volume);
         }
-        
+
         double clampedVolume = Math.max(0.0, Math.min(1.0, volume));
-        logger.debug("Volume after clamping: {}", clampedVolume);
-        logger.trace("Min operation result: {}", Math.min(1.0, volume));
-        logger.trace("Max operation result: {}", clampedVolume);
-        
-        logger.trace("Checking if mediaPlayer exists");
+
         if (mediaPlayer != null) {
-            logger.debug("MediaPlayer exists, setting volume to: {}", clampedVolume);
             double oldVolume = mediaPlayer.getVolume();
-            logger.trace("Current volume before change: {}", oldVolume);
-            
-            mediaPlayer.setVolume(clampedVolume);
-            
-            double newVolume = mediaPlayer.getVolume();
-            logger.trace("Current volume after change: {}", newVolume);
-            logger.debug("Volume changed from {} to {}", oldVolume, newVolume);
-            logger.info("Volume set successfully to: {}", newVolume);
+            if (Double.compare(oldVolume, clampedVolume) != 0) {
+                mediaPlayer.setVolume(clampedVolume);
+                logger.debug("Volume changed from {} to {}", oldVolume, clampedVolume);
+            }
         } else {
-            logger.warn("MediaPlayer is null, cannot set volume");
-            logger.debug("Attempted volume: {}, but no media player available", clampedVolume);
+            logger.warn("MediaPlayer is null, cannot set volume to {}", clampedVolume);
         }
-        
-        logger.trace("setVolume() method exit");
     }
     
     /**

@@ -15,39 +15,17 @@ public class TimeUtil {
      * Example: 125.5 seconds -> "02:05"
      */
     public static String formatTime(double seconds) {
-        logger.trace("formatTime() method entry");
-        logger.debug("Formatting time from {} seconds", seconds);
-        logger.trace("Input parameter 'seconds' value: {}", seconds);
-        logger.trace("Input parameter type: double");
-        
+        // Keep logging extremely lightweight in this hot utility method
         if (seconds < 0) {
             logger.warn("Negative seconds value received: {}", seconds);
-            logger.debug("Returning default '00:00' for negative input");
-            logger.trace("formatTime() method exit (negative case)");
             return "00:00";
         }
-        logger.trace("Seconds value is non-negative, proceeding with formatting");
-        
-        logger.trace("Applying Math.floor to seconds: {}", seconds);
+
         int totalSeconds = (int) Math.floor(seconds);
-        logger.debug("Total seconds after floor: {}", totalSeconds);
-        logger.trace("Cast to int complete");
-        
-        logger.trace("Calculating minutes: {} / 60", totalSeconds);
         int minutes = totalSeconds / 60;
-        logger.debug("Minutes calculated: {}", minutes);
-        logger.trace("Division operation complete");
-        
-        logger.trace("Calculating remaining seconds: {} % 60", totalSeconds);
         int secs = totalSeconds % 60;
-        logger.debug("Remaining seconds: {}", secs);
-        logger.trace("Modulo operation complete");
-        
-        logger.trace("Formatting string with minutes={}, seconds={}", minutes, secs);
+
         String result = String.format("%02d:%02d", minutes, secs);
-        logger.debug("Formatted time string: {}", result);
-        logger.info("Time {} seconds formatted as {}", seconds, result);
-        logger.trace("formatTime() method exit");
         return result;
     }
     
