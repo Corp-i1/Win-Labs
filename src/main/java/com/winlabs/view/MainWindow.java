@@ -34,6 +34,7 @@ import java.util.List;
 //TODO: Add multi-select support for cue table (for batch operations like delete, move, etc.) - make it so that Ctrl+Click and Shift+Click work as expected
 //TODO: Add drag-and-drop reordering of cues in the cue table
 //TODO: Make sure all specific key presses and actions can be remapped in settings
+//TDOO: Add Recent Files menu to quickly access recently opened playlists
 //TODO: Make Debug Mode that enables extra logging and features for testing
 //TODO: Add Basic Logging functionality to log important events and errors to a file for troubleshooting - Diffrentiate between info, warning, and error logs - adjust what gets reported in the application in settings + log level + log file location + log rotation + log format + log viewer + export logs + toggle logging on/off
 /**
@@ -559,6 +560,7 @@ public class MainWindow extends Stage {
         alert.setTitle("New Playlist");
         alert.setHeaderText("Create new playlist?");
         alert.setContentText("Any unsaved changes will be lost.");
+        applyThemeToDialog(alert);
         
         if (alert.showAndWait().get() == ButtonType.OK) {
             playlist.clear();
@@ -650,6 +652,7 @@ public class MainWindow extends Stage {
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
+        applyThemeToDialog(alert);
         alert.showAndWait();
     }
     
@@ -658,9 +661,13 @@ public class MainWindow extends Stage {
      */
     private void openSettings() {
         SettingsWindow settingsWindow = new SettingsWindow(settings, settingsService);
+        // Apply current theme to settings window
+        applyThemeToWindow(settingsWindow);
         settingsWindow.setOnApply(updatedSettings -> {
-            // Apply theme change
+            // Apply theme change to main window
             applyThemeFromSettings();
+            // Also update the settings window's theme
+            applyThemeToWindow(settingsWindow);
             updateStatus("Settings applied");
         });
         settingsWindow.showAndWait();
@@ -681,6 +688,28 @@ public class MainWindow extends Stage {
         Scene scene = getScene();
         scene.getStylesheets().clear();
         scene.getStylesheets().add(getClass().getResource(themePath).toExternalForm());
+    }
+    
+    /**
+     * Applies the current theme to another window.
+     */
+    private void applyThemeToWindow(Stage window) {
+        if (window.getScene() != null) {
+            String themePath = "/css/" + settings.getTheme() + "-theme.css";
+            window.getScene().getStylesheets().clear();
+            window.getScene().getStylesheets().add(getClass().getResource(themePath).toExternalForm());
+        }
+    }
+    
+    /**
+     * Applies the current theme to a dialog.
+     */
+    private void applyThemeToDialog(Dialog<?> dialog) {
+        if (dialog.getDialogPane() != null) {
+            String themePath = "/css/" + settings.getTheme() + "-theme.css";
+            dialog.getDialogPane().getStylesheets().clear();
+            dialog.getDialogPane().getStylesheets().add(getClass().getResource(themePath).toExternalForm());
+        }
     }
     
     /**

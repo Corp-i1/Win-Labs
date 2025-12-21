@@ -287,6 +287,7 @@ public class SettingsWindow extends Stage {
         alert.setTitle("Reset Settings");
         alert.setHeaderText("Reset all settings to defaults?");
         alert.setContentText("This will discard all current settings.");
+        applyThemeToDialog(alert);
         
         if (alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
             settings.resetToDefaults();
@@ -302,6 +303,18 @@ public class SettingsWindow extends Stage {
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
+        applyThemeToDialog(alert);
         alert.showAndWait();
+    }
+    
+    /**
+     * Applies the current theme to a dialog.
+     */
+    private void applyThemeToDialog(Dialog<?> dialog) {
+        if (dialog.getDialogPane() != null && getScene() != null) {
+            // Copy stylesheets from the settings window to the dialog
+            dialog.getDialogPane().getStylesheets().clear();
+            dialog.getDialogPane().getStylesheets().addAll(getScene().getStylesheets());
+        }
     }
 }
