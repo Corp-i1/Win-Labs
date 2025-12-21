@@ -148,11 +148,10 @@ public class MainWindow extends Stage {
         
         // Create scene
         Scene scene = new Scene(root);
+        setScene(scene);
         
         // Apply saved theme or default to dark
         applyThemeFromSettings();
-        
-        setScene(scene);
         
         // Add sample data for testing
         // TODO: Make so that this is only in debug mode
