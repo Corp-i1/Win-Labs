@@ -165,3 +165,31 @@
     -fx-text-fill: #ffffff;
     -fx-font-weight: bold;
 }
+
+/* Recent playlist cards */
+.recent-playlist-card {
+    -fx-background-color: #2d2d30;
+    -fx-border-color: #ff0080;
+    -fx-border-width: 1;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-cursor: hand;
+}
+
+.recent-playlist-card-hover {
+    -fx-background-color: #3e3e42;
+    -fx-border-color: #40e0d0;
+    -fx-border-width: 2;
+}
+
+.recent-playlist-title {
+    -fx-text-fill: #ff8c00;
+}
+
+.recent-playlist-path {
+    -fx-text-fill: #40e0d0;
+}
+
+.recent-playlist-date {
+    -fx-text-fill: #ff0080;
+}

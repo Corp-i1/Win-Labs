@@ -1,5 +1,6 @@
 package com.winlabs;
 
+import com.winlabs.model.RecentPlaylist;
 import com.winlabs.service.FileAssociationService;
 import com.winlabs.service.LoggerService;
 import com.winlabs.service.SettingsService;
@@ -12,7 +13,11 @@ import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Main entry point for Win-Labs application.
@@ -60,9 +65,127 @@ public class Main extends Application {
             );
             // Apply theme AFTER the stage is created but before showing
             welcomeScreen.applyTheme(settings.getTheme());
-            // Load and display recent playlists
-            // TODO: Implement recent playlists storage in ApplicationSettings
-            welcomeScreen.updateRecentPlaylists(new ArrayList<>());
+            
+            // Set callbacks for opening recent playlists and toggling pins
+            welcomeScreen.setOnOpenRecentPlaylist((filePath) -> {
+                try {
+                    MainWindow mainWindow = new MainWindow();
+                    mainWindow.openPlaylistFile(filePath);
+                    mainWindow.show();
+                    if (welcomeScreen != null) {
+                        welcomeScreen.closeWelcomeScreen();
+                    }
+                } catch (Exception e) {
+                    logger.error("Failed to open recent playlist: {}", filePath, e);
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setTitle("Error");
+                    alert.setHeaderText("Failed to Open Playlist");
+                    alert.setContentText("Could not open playlist: " + e.getMessage());
+                    alert.showAndWait();
+                }
+            });
+            
+            welcomeScreen.setOnTogglePin((filePath) -> {
+                try {
+                    Settings updatedSettings = settingsService.load();
+                    updatedSettings.togglePinned(filePath);
+                    settingsService.save(updatedSettings);
+                    logger.info("Toggled pin status for: {}", filePath);
+                    
+                    // Refresh the welcome screen with updated pinned/recent lists
+                    List<RecentPlaylist> refreshedPlaylists = new ArrayList<>();
+                    
+                    // Load pinned playlists
+                    Set<String> pinnedFiles = updatedSettings.getPinnedPlaylists();
+                    if (pinnedFiles != null) {
+                        for (String path : pinnedFiles) {
+                            try {
+                                Path p = Paths.get(path);
+                                String fileName = p.getFileName().toString();
+                                String playlistName = fileName.replaceFirst("[.][^.]+$", "");
+                                RecentPlaylist playlist = new RecentPlaylist(playlistName, path);
+                                playlist.setIsPinned(true);
+                                refreshedPlaylists.add(playlist);
+                            } catch (Exception e) {
+                                logger.warn("Failed to add pinned playlist: {}", path, e);
+                            }
+                        }
+                    }
+                    
+                    // Load recent playlists
+                    List<String> recentFiles = updatedSettings.getRecentFiles();
+                    if (recentFiles != null) {
+                        for (String path : recentFiles) {
+                            if (pinnedFiles != null && pinnedFiles.contains(path)) {
+                                continue;
+                            }
+                            try {
+                                Path p = Paths.get(path);
+                                String fileName = p.getFileName().toString();
+                                String playlistName = fileName.replaceFirst("[.][^.]+$", "");
+                                RecentPlaylist playlist = new RecentPlaylist(playlistName, path);
+                                playlist.setIsPinned(false);
+                                refreshedPlaylists.add(playlist);
+                            } catch (Exception e) {
+                                logger.warn("Failed to add recent playlist: {}", path, e);
+                            }
+                        }
+                    }
+                    
+                    welcomeScreen.updateRecentPlaylists(refreshedPlaylists);
+                } catch (Exception e) {
+                    logger.error("Failed to toggle pin status: {}", filePath, e);
+                }
+            });
+            
+            // Load and display recent playlists and pinned playlists
+            List<RecentPlaylist> allPlaylists = new ArrayList<>();
+            
+            // First, add all pinned playlists
+            Set<String> pinnedFiles = settings.getPinnedPlaylists();
+            logger.info("Loading pinned playlists at startup: {}", pinnedFiles != null ? pinnedFiles.size() : 0);
+            if (pinnedFiles != null) {
+                for (String filePath : pinnedFiles) {
+                    try {
+                        Path path = Paths.get(filePath);
+                        String fileName = path.getFileName().toString();
+                        String playlistName = fileName.replaceFirst("[.][^.]+$", "");
+                        
+                        RecentPlaylist playlist = new RecentPlaylist(playlistName, filePath);
+                        playlist.setIsPinned(true);
+                        allPlaylists.add(playlist);
+                        logger.debug("Added pinned playlist at startup: {}", filePath);
+                    } catch (Exception e) {
+                        logger.warn("Failed to add pinned playlist at startup: {}", filePath, e);
+                    }
+                }
+            }
+            
+            // Then, add recent (non-pinned) playlists
+            List<String> recentFiles = settings.getRecentFiles();
+            logger.info("Loading recent files at startup: {}", recentFiles != null ? recentFiles.size() : 0);
+            if (recentFiles != null) {
+                for (String filePath : recentFiles) {
+                    // Skip if already added as pinned
+                    if (pinnedFiles != null && pinnedFiles.contains(filePath)) {
+                        continue;
+                    }
+                    
+                    try {
+                        Path path = Paths.get(filePath);
+                        String fileName = path.getFileName().toString();
+                        String playlistName = fileName.replaceFirst("[.][^.]+$", "");
+                        
+                        RecentPlaylist playlist = new RecentPlaylist(playlistName, filePath);
+                        playlist.setIsPinned(false);
+                        allPlaylists.add(playlist);
+                    } catch (Exception e) {
+                        logger.warn("Failed to add recent playlist at startup: {}", filePath, e);
+                    }
+                }
+            }
+            
+            welcomeScreen.updateRecentPlaylists(allPlaylists);
             welcomeScreen.show();
         }
     }

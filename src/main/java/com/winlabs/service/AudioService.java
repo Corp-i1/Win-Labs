@@ -12,7 +12,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.function.Consumer;
 
-//TODO: Add support for playlists, 
 // TODO: gapless playback,
 // TODO: equalizer settings, 
 //TODO: Crossfade between tracks
