@@ -25,6 +25,9 @@ public class FileSystemService {
     /** Detect macOS platform (cached for performance) */
     private static final boolean IS_MAC = System.getProperty("os.name").toLowerCase().contains("mac");
     
+    /** Detect Linux platform (cached for performance) */
+    private static final boolean IS_LINUX = System.getProperty("os.name").toLowerCase().contains("nux");
+    
     /**
      * Lists all audio files in a directory (non-recursive).
      */
