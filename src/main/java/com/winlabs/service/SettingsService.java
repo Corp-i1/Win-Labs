@@ -6,6 +6,8 @@ import com.google.gson.JsonObject;
 import com.winlabs.model.ApplicationSettings;
 import com.winlabs.model.Settings;
 import com.winlabs.model.WorkspaceSettings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -19,6 +21,7 @@ import java.util.List;
  */
 public class SettingsService {
     
+    private static final Logger logger = LoggerFactory.getLogger(SettingsService.class);
     private static final String SETTINGS_DIR = ".winlabs";
     private static final String APP_SETTINGS_FILE = "app-settings.json";
     private static final String WORKSPACE_SETTINGS_FILE = "workspace-settings.json";
@@ -42,7 +45,7 @@ public class SettingsService {
         try {
             Files.createDirectories(settingsDir);
         } catch (IOException e) {
-            System.err.println("Failed to create settings directory: " + e.getMessage());
+            logger.error("Failed to create settings directory: {}", e.getMessage(), e);
         }
     }
     
@@ -119,7 +122,7 @@ public class SettingsService {
                 JsonObject json = gson.fromJson(jsonString, JsonObject.class);
                 loadApplicationSettings(settings.getApplicationSettings(), json);
             } catch (Exception e) {
-                System.err.println("Failed to load application settings: " + e.getMessage());
+                logger.error("Failed to load application settings: {}", e.getMessage(), e);
             }
         }
         
@@ -130,7 +133,7 @@ public class SettingsService {
                 JsonObject json = gson.fromJson(jsonString, JsonObject.class);
                 loadWorkspaceSettings(settings.getWorkspaceSettings(), json);
             } catch (Exception e) {
-                System.err.println("Failed to load workspace settings: " + e.getMessage());
+                logger.error("Failed to load workspace settings: {}", e.getMessage(), e);
             }
         }
         
@@ -172,7 +175,7 @@ public class SettingsService {
                     new com.google.gson.reflect.TypeToken<List<String>>(){}.getType());
                 settings.setRecentFiles(recentFiles);
             } catch (Exception e) {
-                System.err.println("Failed to load recent files: " + e.getMessage());
+                logger.error("Failed to load recent files: {}", e.getMessage(), e);
             }
         }
         
@@ -183,7 +186,7 @@ public class SettingsService {
                     new com.google.gson.reflect.TypeToken<java.util.Set<String>>(){}.getType());
                 settings.setPinnedPlaylists(pinnedPlaylists);
             } catch (Exception e) {
-                System.err.println("Failed to load pinned playlists: " + e.getMessage());
+                logger.error("Failed to load pinned playlists: {}", e.getMessage(), e);
             }
         }
     }

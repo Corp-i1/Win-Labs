@@ -3,6 +3,8 @@ package com.winlabs.view.components;
 import com.winlabs.service.FileSystemService;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -15,6 +17,7 @@ import java.util.List;
  */
 public class BrowserFileView extends ListView<Path> {
     
+    private static final Logger logger = LoggerFactory.getLogger(BrowserFileView.class);
     private final FileSystemService fileSystemService;
     
     public BrowserFileView(FileSystemService fileSystemService) {
@@ -38,7 +41,7 @@ public class BrowserFileView extends ListView<Path> {
                 List<Path> files = fileSystemService.listAudioFilesRecursive(musicDir);
                 getItems().addAll(files);
             } catch (IOException e) {
-                System.err.println("Failed to load music directory: " + e.getMessage());
+                logger.error("Failed to load music directory: {}", e.getMessage(), e);
             }
         }
         
@@ -50,7 +53,7 @@ public class BrowserFileView extends ListView<Path> {
                     List<Path> files = fileSystemService.listAudioFilesRecursive(homeDir);
                     getItems().addAll(files);
                 } catch (IOException e) {
-                    System.err.println("Failed to load home directory: " + e.getMessage());
+                    logger.error("Failed to load home directory: {}", e.getMessage(), e);
                 }
             }
         }

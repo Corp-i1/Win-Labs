@@ -37,7 +37,7 @@ public class Main extends Application {
         try {
             settings = settingsService.load();
         } catch (Exception e) {
-            System.err.println("Failed to load settings, using defaults: " + e.getMessage());
+            logger.error("Failed to load settings, using defaults: {}", e.getMessage(), e);
             settings = new Settings();
         }
         
@@ -209,8 +209,7 @@ public class Main extends Application {
                 mainWindow.close();
             }
         } catch (Exception e) {
-            System.err.println("Error creating new playlist: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Error creating new playlist: {}", e.getMessage(), e);
         }
     }
     
@@ -233,8 +232,7 @@ public class Main extends Application {
                 mainWindow.close();
             }
         } catch (Exception e) {
-            System.err.println("Error opening playlist: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Error opening playlist: {}", e.getMessage(), e);
         }
     }
     
@@ -248,8 +246,7 @@ public class Main extends Application {
             MainWindow tempWindow = new MainWindow();
             tempWindow.openSettings(settings, settingsService);
         } catch (Exception e) {
-            System.err.println("Error opening settings: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Error opening settings: {}", e.getMessage(), e);
         }
     }
     
@@ -272,7 +269,7 @@ public class Main extends Application {
                 "For more information, visit the repository.");
             alert.showAndWait();
         } catch (Exception e) {
-            System.err.println("Error showing documentation: " + e.getMessage());
+            logger.error("Error showing documentation: {}", e.getMessage(), e);
         }
     }
     

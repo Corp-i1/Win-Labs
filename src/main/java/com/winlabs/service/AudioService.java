@@ -113,7 +113,6 @@ public class AudioService {
         // Handle errors
         mediaPlayer.setOnError(() -> {
             logger.error("Media playback error: {}", mediaPlayer.getError().getMessage());
-            System.err.println("Media error: " + mediaPlayer.getError().getMessage());
             setState(PlaybackState.STOPPED);
         });
     }

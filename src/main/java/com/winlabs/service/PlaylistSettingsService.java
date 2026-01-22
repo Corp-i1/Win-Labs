@@ -102,8 +102,7 @@ public class PlaylistSettingsService {
             }
         } catch (Exception e) {
             // If parsing fails, return defaults
-            System.err.println("Failed to parse .wlp file: " + wlpPath);
-            e.printStackTrace();
+            logger.error("Failed to parse .wlp file: {}", wlpPath, e);
         }
         
         return settings;

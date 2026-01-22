@@ -17,6 +17,9 @@ public class FileAssociationService {
     private static final String PROGRAM_ID = "WinLabs.PlaylistFile";
     private static final String PROGRAM_NAME = "Win-Labs Playlist";
     
+    /** Detect Windows platform (cached for performance) */
+    private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase().contains("win");
+    
     /**
      * Registers the .wlp file type with Windows registry.
      * This allows double-clicking .wlp files to open them in Win-Labs.
@@ -69,10 +72,8 @@ public class FileAssociationService {
             );
             
             logger.info(".wlp file type registration completed successfully");
-            System.out.println("File type association registered successfully.");
         } catch (Exception e) {
             logger.error("Failed to register file type association: {}", e.getMessage(), e);
-            System.err.println("Failed to register file type association: " + e.getMessage());
         }
     }
     
@@ -101,9 +102,9 @@ public class FileAssociationService {
                 "/f"
             );
             
-            System.out.println("File type association unregistered successfully.");
+            logger.info("File type association unregistered successfully");
         } catch (Exception e) {
-            System.err.println("Failed to unregister file type association: " + e.getMessage());
+            logger.error("Failed to unregister file type association: {}", e.getMessage(), e);
         }
     }
     
@@ -127,8 +128,8 @@ public class FileAssociationService {
             
             return classPath;
         } catch (Exception e) {
-            // Fallback: use system property
-            return System.getProperty("java.home") + "\\bin\\javaw.exe";
+            // Fallback: use system property with platform-agnostic path construction
+            return System.getProperty("java.home") + java.io.File.separator + "bin" + java.io.File.separator + "javaw.exe";
         }
     }
     
@@ -145,7 +146,7 @@ public class FileAssociationService {
      * Checks if the operating system is Windows.
      */
     private static boolean isWindows() {
-        return System.getProperty("os.name").toLowerCase().contains("win");
+        return IS_WINDOWS;
     }
     
     /**

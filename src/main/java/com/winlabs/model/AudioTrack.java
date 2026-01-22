@@ -2,6 +2,8 @@ package com.winlabs.model;
 
 import javafx.scene.media.MediaPlayer;
 import javafx.util.Duration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -12,6 +14,7 @@ import java.util.function.Consumer;
  */
 public class AudioTrack {
     
+    private static final Logger logger = LoggerFactory.getLogger(AudioTrack.class);
     private final String trackId;
     private MediaPlayer mediaPlayer;
     private PlaybackState state;
@@ -145,8 +148,8 @@ public class AudioTrack {
         
         // Handle errors
         mediaPlayer.setOnError(() -> {
-            System.err.println("Media error on track " + trackId + ": " + 
-                             mediaPlayer.getError().getMessage());
+            logger.error("Media error on track {}: {}", trackId, 
+                       mediaPlayer.getError().getMessage());
             setState(PlaybackState.STOPPED);
         });
     }

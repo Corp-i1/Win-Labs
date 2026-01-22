@@ -5,6 +5,8 @@ import com.winlabs.util.PathUtil;
 import javafx.scene.control.TreeCell;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -22,6 +24,7 @@ import java.util.List;
  */
 public class TreeFileView extends TreeView<Path> {
     
+    private static final Logger logger = LoggerFactory.getLogger(TreeFileView.class);
     private final FileSystemService fileSystemService;
     
     public TreeFileView(FileSystemService fileSystemService) {
@@ -107,7 +110,7 @@ public class TreeFileView extends TreeView<Path> {
             }
         } catch (IOException e) {
             // Failed to load children (permission issue, etc.)
-            System.err.println("Failed to load children for " + parentPath + ": " + e.getMessage());
+            logger.error("Failed to load children for {}: {}", parentPath, e.getMessage(), e);
         }
     }
     

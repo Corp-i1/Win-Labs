@@ -12,6 +12,9 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -23,6 +26,7 @@ import java.util.function.Consumer;
  */
 public class RecentPlaylistCard extends VBox {
     
+    private static final Logger logger = LoggerFactory.getLogger(RecentPlaylistCard.class);
     private final RecentPlaylist playlist;
     private final Runnable onOpenCallback;
     private final Consumer<String> onTogglePinCallback;
@@ -109,7 +113,7 @@ public class RecentPlaylistCard extends VBox {
                     pinIndicator.setVisible(newPinnedState);
                     pinMenuItem.setText(newPinnedState ? "Unpin" : "Pin");
                 } catch (Exception ex) {
-                    System.err.println("Failed to toggle pin: " + ex.getMessage());
+                    logger.error("Failed to toggle pin: {}", ex.getMessage(), ex);
                 }
             }
         });

@@ -89,7 +89,6 @@ public class MainWindow extends Stage {
             logger.debug("Settings loaded successfully");
         } catch (Exception e) {
             logger.error("Failed to load settings, using defaults", e);
-            System.err.println("Failed to load settings, using defaults: " + e.getMessage());
             this.settings = new Settings();
         }
         

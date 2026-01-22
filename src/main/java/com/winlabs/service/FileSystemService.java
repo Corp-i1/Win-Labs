@@ -19,6 +19,12 @@ public class FileSystemService {
     
     private static final Logger logger = LoggerFactory.getLogger(FileSystemService.class);
     
+    /** Detect Windows platform (cached for performance) */
+    private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase().contains("win");
+    
+    /** Detect macOS platform (cached for performance) */
+    private static final boolean IS_MAC = System.getProperty("os.name").toLowerCase().contains("mac");
+    
     /**
      * Lists all audio files in a directory (non-recursive).
      */
@@ -120,21 +126,13 @@ public class FileSystemService {
     
     /**
      * Gets the user's music directory (platform-specific).
+     * On all platforms, returns ~/Music using platform-agnostic path construction.
      */
     public Path getMusicDirectory() {
-        String os = System.getProperty("os.name").toLowerCase();
         Path home = getHomeDirectory();
         
-        if (os.contains("win")) {
-            // Windows: C:\Users\Username\Music
-            return home.resolve("Music");
-        } else if (os.contains("mac")) {
-            // macOS: /Users/Username/Music
-            return home.resolve("Music");
-        } else {
-            // Linux: /home/username/Music
-            return home.resolve("Music");
-        }
+        // All modern platforms (Windows, macOS, Linux) use ~/Music
+        return home.resolve("Music");
     }
     
     /**
