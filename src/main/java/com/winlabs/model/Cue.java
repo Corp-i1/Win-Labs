@@ -4,11 +4,9 @@ import javafx.beans.property.*;
 import java.util.Objects;
 
 /*
-     * TODO: Consider using a Builder pattern for more complex construction.
-     * TODO: Add Javadoc comments for parameters.
-     * TODO: Add unit tests for this constructor.
-*/
-
+     * TODO: Consider using a Builder pattern for more complex Cue initialization.
+     * TODO: Add unit tests covering all Cue constructors and initialization paths.
+ */
 /**
  * Represents a single cue in the playlist.
  * Uses JavaFX properties for automatic UI binding.
