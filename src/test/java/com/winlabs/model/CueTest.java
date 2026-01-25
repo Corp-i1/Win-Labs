@@ -146,4 +146,244 @@ class CueTest {
         assertEquals(10.0, cue2.getPostWait(), 0.001);
         assertTrue(cue2.isAutoFollow());
     }
+    
+    // Validation tests for negative values
+    
+    @Test
+    void testNegativeNumberThrowsException() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            cue.setNumber(-1);
+        });
+        assertTrue(exception.getMessage().contains("number must be non-negative"));
+    }
+    
+    @Test
+    void testNegativeDurationThrowsException() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            cue.setDuration(-1.0);
+        });
+        assertTrue(exception.getMessage().contains("duration must be non-negative"));
+    }
+    
+    @Test
+    void testNegativePreWaitThrowsException() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            cue.setPreWait(-1.0);
+        });
+        assertTrue(exception.getMessage().contains("preWait must be non-negative"));
+    }
+    
+    @Test
+    void testNegativePostWaitThrowsException() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            cue.setPostWait(-1.0);
+        });
+        assertTrue(exception.getMessage().contains("postWait must be non-negative"));
+    }
+    
+    @Test
+    void testNullNameThrowsException() {
+        NullPointerException exception = assertThrows(NullPointerException.class, () -> {
+            cue.setName(null);
+        });
+        assertTrue(exception.getMessage().contains("name cannot be null"));
+    }
+    
+    @Test
+    void testNullFilePathThrowsException() {
+        NullPointerException exception = assertThrows(NullPointerException.class, () -> {
+            cue.setFilePath(null);
+        });
+        assertTrue(exception.getMessage().contains("filePath cannot be null"));
+    }
+    
+    // Validation tests for 3-arg constructor
+    
+    @Test
+    void testThreeArgConstructorWithNegativeNumber() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            new Cue(-1, "Test", "C:/test.mp3");
+        });
+        assertTrue(exception.getMessage().contains("number must be non-negative"));
+    }
+    
+    @Test
+    void testThreeArgConstructorWithNullName() {
+        NullPointerException exception = assertThrows(NullPointerException.class, () -> {
+            new Cue(1, null, "C:/test.mp3");
+        });
+        assertTrue(exception.getMessage().contains("name cannot be null"));
+    }
+    
+    @Test
+    void testThreeArgConstructorWithNullFilePath() {
+        NullPointerException exception = assertThrows(NullPointerException.class, () -> {
+            new Cue(1, "Test", null);
+        });
+        assertTrue(exception.getMessage().contains("filePath cannot be null"));
+    }
+    
+    // Validation tests for full 7-arg constructor
+    
+    @Test
+    void testFullConstructorWithNegativeNumber() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            new Cue(-1, "Test", "C:/test.mp3", 100.0, 1.0, 1.0, false);
+        });
+        assertTrue(exception.getMessage().contains("number must be non-negative"));
+    }
+    
+    @Test
+    void testFullConstructorWithNullName() {
+        NullPointerException exception = assertThrows(NullPointerException.class, () -> {
+            new Cue(1, null, "C:/test.mp3", 100.0, 1.0, 1.0, false);
+        });
+        assertTrue(exception.getMessage().contains("name cannot be null"));
+    }
+    
+    @Test
+    void testFullConstructorWithNullFilePath() {
+        NullPointerException exception = assertThrows(NullPointerException.class, () -> {
+            new Cue(1, "Test", null, 100.0, 1.0, 1.0, false);
+        });
+        assertTrue(exception.getMessage().contains("filePath cannot be null"));
+    }
+    
+    @Test
+    void testFullConstructorWithNegativeDuration() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            new Cue(1, "Test", "C:/test.mp3", -100.0, 1.0, 1.0, false);
+        });
+        assertTrue(exception.getMessage().contains("duration must be non-negative"));
+    }
+    
+    @Test
+    void testFullConstructorWithNegativePreWait() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            new Cue(1, "Test", "C:/test.mp3", 100.0, -1.0, 1.0, false);
+        });
+        assertTrue(exception.getMessage().contains("preWait must be non-negative"));
+    }
+    
+    @Test
+    void testFullConstructorWithNegativePostWait() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            new Cue(1, "Test", "C:/test.mp3", 100.0, 1.0, -1.0, false);
+        });
+        assertTrue(exception.getMessage().contains("postWait must be non-negative"));
+    }
+    
+    // Validation tests for factory methods
+    
+    @Test
+    void testWithDurationFactoryMethodWithNegativeNumber() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            Cue.withDuration(-1, "Test", "C:/test.mp3", 100.0);
+        });
+        assertTrue(exception.getMessage().contains("number must be non-negative"));
+    }
+    
+    @Test
+    void testWithDurationFactoryMethodWithNegativeDuration() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            Cue.withDuration(1, "Test", "C:/test.mp3", -100.0);
+        });
+        assertTrue(exception.getMessage().contains("duration must be non-negative"));
+    }
+    
+    @Test
+    void testWithDurationFactoryMethodWithNullName() {
+        NullPointerException exception = assertThrows(NullPointerException.class, () -> {
+            Cue.withDuration(1, null, "C:/test.mp3", 100.0);
+        });
+        assertTrue(exception.getMessage().contains("name cannot be null"));
+    }
+    
+    @Test
+    void testWithDurationFactoryMethodWithNullFilePath() {
+        NullPointerException exception = assertThrows(NullPointerException.class, () -> {
+            Cue.withDuration(1, "Test", null, 100.0);
+        });
+        assertTrue(exception.getMessage().contains("filePath cannot be null"));
+    }
+    
+    @Test
+    void testWithTimingFactoryMethodWithNegativeNumber() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            Cue.withTiming(-1, "Test", "C:/test.mp3", 1.0, 2.0);
+        });
+        assertTrue(exception.getMessage().contains("number must be non-negative"));
+    }
+    
+    @Test
+    void testWithTimingFactoryMethodWithNegativePreWait() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            Cue.withTiming(1, "Test", "C:/test.mp3", -1.0, 2.0);
+        });
+        assertTrue(exception.getMessage().contains("preWait must be non-negative"));
+    }
+    
+    @Test
+    void testWithTimingFactoryMethodWithNegativePostWait() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            Cue.withTiming(1, "Test", "C:/test.mp3", 1.0, -2.0);
+        });
+        assertTrue(exception.getMessage().contains("postWait must be non-negative"));
+    }
+    
+    @Test
+    void testWithTimingFactoryMethodWithNullName() {
+        NullPointerException exception = assertThrows(NullPointerException.class, () -> {
+            Cue.withTiming(1, null, "C:/test.mp3", 1.0, 2.0);
+        });
+        assertTrue(exception.getMessage().contains("name cannot be null"));
+    }
+    
+    @Test
+    void testWithTimingFactoryMethodWithNullFilePath() {
+        NullPointerException exception = assertThrows(NullPointerException.class, () -> {
+            Cue.withTiming(1, "Test", null, 1.0, 2.0);
+        });
+        assertTrue(exception.getMessage().contains("filePath cannot be null"));
+    }
+    
+    @Test
+    void testWithTimingAndAutoFollowFactoryMethodWithNegativeNumber() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            Cue.withTimingAndAutoFollow(-1, "Test", "C:/test.mp3", 1.0, 2.0, true);
+        });
+        assertTrue(exception.getMessage().contains("number must be non-negative"));
+    }
+    
+    @Test
+    void testWithTimingAndAutoFollowFactoryMethodWithNegativePreWait() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            Cue.withTimingAndAutoFollow(1, "Test", "C:/test.mp3", -1.0, 2.0, true);
+        });
+        assertTrue(exception.getMessage().contains("preWait must be non-negative"));
+    }
+    
+    @Test
+    void testWithTimingAndAutoFollowFactoryMethodWithNegativePostWait() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            Cue.withTimingAndAutoFollow(1, "Test", "C:/test.mp3", 1.0, -2.0, true);
+        });
+        assertTrue(exception.getMessage().contains("postWait must be non-negative"));
+    }
+    
+    @Test
+    void testWithTimingAndAutoFollowFactoryMethodWithNullName() {
+        NullPointerException exception = assertThrows(NullPointerException.class, () -> {
+            Cue.withTimingAndAutoFollow(1, null, "C:/test.mp3", 1.0, 2.0, true);
+        });
+        assertTrue(exception.getMessage().contains("name cannot be null"));
+    }
+    
+    @Test
+    void testWithTimingAndAutoFollowFactoryMethodWithNullFilePath() {
+        NullPointerException exception = assertThrows(NullPointerException.class, () -> {
+            Cue.withTimingAndAutoFollow(1, "Test", null, 1.0, 2.0, true);
+        });
+        assertTrue(exception.getMessage().contains("filePath cannot be null"));
+    }
 }
