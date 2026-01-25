@@ -99,54 +99,54 @@ class CueTest {
         assertTrue(result.contains("test.mp3"));
     }
     
-    // Tests for new constructor overloads
+    // Tests for factory methods
     
     @Test
-    void testFourParameterConstructor() {
-        Cue cue4 = new Cue(2, "Cue with Duration", "C:/music.mp3", 120.5);
-        assertEquals(2, cue4.getNumber());
-        assertEquals("Cue with Duration", cue4.getName());
-        assertEquals("C:/music.mp3", cue4.getFilePath());
-        assertEquals(120.5, cue4.getDuration(), 0.001);
-        assertEquals(0.0, cue4.getPreWait(), 0.001);
-        assertEquals(0.0, cue4.getPostWait(), 0.001);
-        assertFalse(cue4.isAutoFollow());
+    void testWithDurationFactoryMethod() {
+        Cue cue2 = Cue.withDuration(5, "Audio Cue", "C:/audio.mp3", 120.5);
+        assertEquals(5, cue2.getNumber());
+        assertEquals("Audio Cue", cue2.getName());
+        assertEquals("C:/audio.mp3", cue2.getFilePath());
+        assertEquals(120.5, cue2.getDuration(), 0.001);
+        assertEquals(0.0, cue2.getPreWait(), 0.001);
+        assertEquals(0.0, cue2.getPostWait(), 0.001);
+        assertFalse(cue2.isAutoFollow());
     }
     
     @Test
-    void testFiveParameterConstructor() {
-        Cue cue5 = new Cue(3, "Cue with Timing", "C:/sound.mp3", 2.5, 3.0);
-        assertEquals(3, cue5.getNumber());
-        assertEquals("Cue with Timing", cue5.getName());
-        assertEquals("C:/sound.mp3", cue5.getFilePath());
-        assertEquals(0.0, cue5.getDuration(), 0.001);
-        assertEquals(2.5, cue5.getPreWait(), 0.001);
-        assertEquals(3.0, cue5.getPostWait(), 0.001);
-        assertFalse(cue5.isAutoFollow());
+    void testWithTimingFactoryMethod() {
+        Cue cue2 = Cue.withTiming(3, "Timed Cue", "C:/timed.mp3", 2.5, 3.0);
+        assertEquals(3, cue2.getNumber());
+        assertEquals("Timed Cue", cue2.getName());
+        assertEquals("C:/timed.mp3", cue2.getFilePath());
+        assertEquals(0.0, cue2.getDuration(), 0.001);
+        assertEquals(2.5, cue2.getPreWait(), 0.001);
+        assertEquals(3.0, cue2.getPostWait(), 0.001);
+        assertFalse(cue2.isAutoFollow());
     }
     
     @Test
-    void testSixParameterConstructor() {
-        Cue cue6 = new Cue(4, "Cue with AutoFollow", "C:/audio.mp3", 1.0, 2.0, true);
-        assertEquals(4, cue6.getNumber());
-        assertEquals("Cue with AutoFollow", cue6.getName());
-        assertEquals("C:/audio.mp3", cue6.getFilePath());
-        assertEquals(0.0, cue6.getDuration(), 0.001);
-        assertEquals(1.0, cue6.getPreWait(), 0.001);
-        assertEquals(2.0, cue6.getPostWait(), 0.001);
-        assertTrue(cue6.isAutoFollow());
+    void testWithTimingAndAutoFollowFactoryMethod() {
+        Cue cue2 = Cue.withTimingAndAutoFollow(7, "Auto Cue", "C:/auto.mp3", 1.0, 2.0, true);
+        assertEquals(7, cue2.getNumber());
+        assertEquals("Auto Cue", cue2.getName());
+        assertEquals("C:/auto.mp3", cue2.getFilePath());
+        assertEquals(0.0, cue2.getDuration(), 0.001);
+        assertEquals(1.0, cue2.getPreWait(), 0.001);
+        assertEquals(2.0, cue2.getPostWait(), 0.001);
+        assertTrue(cue2.isAutoFollow());
     }
     
     @Test
-    void testSevenParameterConstructor() {
-        Cue cue7 = new Cue(5, "Full Cue", "C:/full.mp3", 180.0, 5.0, 10.0, true);
-        assertEquals(5, cue7.getNumber());
-        assertEquals("Full Cue", cue7.getName());
-        assertEquals("C:/full.mp3", cue7.getFilePath());
-        assertEquals(180.0, cue7.getDuration(), 0.001);
-        assertEquals(5.0, cue7.getPreWait(), 0.001);
-        assertEquals(10.0, cue7.getPostWait(), 0.001);
-        assertTrue(cue7.isAutoFollow());
+    void testFullConstructor() {
+        Cue cue2 = new Cue(10, "Full Cue", "C:/full.mp3", 150.0, 5.0, 10.0, true);
+        assertEquals(10, cue2.getNumber());
+        assertEquals("Full Cue", cue2.getName());
+        assertEquals("C:/full.mp3", cue2.getFilePath());
+        assertEquals(150.0, cue2.getDuration(), 0.001);
+        assertEquals(5.0, cue2.getPreWait(), 0.001);
+        assertEquals(10.0, cue2.getPostWait(), 0.001);
+        assertTrue(cue2.isAutoFollow());
     }
     
     // Tests for validation and error cases
@@ -170,7 +170,7 @@ class CueTest {
     @Test
     void testNegativeDurationThrowsException() {
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            new Cue(1, "Test", "test.mp3", -10.0);
+            Cue.withDuration(1, "Test", "test.mp3", -10.0);
         });
         assertTrue(exception.getMessage().contains("duration must be non-negative"));
     }
@@ -186,7 +186,7 @@ class CueTest {
     @Test
     void testNegativePreWaitThrowsException() {
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            new Cue(1, "Test", "test.mp3", -2.0, 1.0);
+            Cue.withTiming(1, "Test", "test.mp3", -2.0, 1.0);
         });
         assertTrue(exception.getMessage().contains("preWait must be non-negative"));
     }
@@ -202,7 +202,7 @@ class CueTest {
     @Test
     void testNegativePostWaitThrowsException() {
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            new Cue(1, "Test", "test.mp3", 1.0, -3.0);
+            Cue.withTiming(1, "Test", "test.mp3", 1.0, -3.0);
         });
         assertTrue(exception.getMessage().contains("postWait must be non-negative"));
     }
