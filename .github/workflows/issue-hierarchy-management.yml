@@ -50,15 +50,27 @@ jobs:
               /Parent\s+issue:?\s*#(\d+)/i,
               /Depends\s+on:?\s*#(\d+)/i,
               /Child\s+of:?\s*#(\d+)/i,
-              /Sub-task\s+of:?\s*#(\d+)/i
+              /Sub-task\s+of:?\s*#(\d+)/i,
+              /Related\s+to:?\s*#(\d+)/i,
+              /Part\s+of:?\s*#(\d+)/i,
+              /Subtask\s+of:?\s*#(\d+)/i,
+              /Blocks:?\s*#(\d+)/i,
+              /Blocked\s+by:?\s*#(\d+)/i,
+              /#(\d+)\s*[-–]\s*(?:parent|main|root)/i,
+              /(?:parent|main|root)\s*[-–]\s*#(\d+)/i
             ];
+            
+            console.log(`Checking text for parent patterns: "${text}"`);
             
             for (const pattern of parentPatterns) {
               const match = text.match(pattern);
               if (match) {
+                console.log(`Found parent match with pattern ${pattern}: #${match[1]}`);
                 return parseInt(match[1]);
               }
             }
+            
+            console.log('No parent pattern matched');
             return null;
           }
           
@@ -477,9 +489,11 @@ jobs:
           // Main logic wrapped in try-catch
           try {
             console.log(`Processing issue #${issue.number}: ${issue.title}`);
+            console.log(`Issue body: ${issue.body || 'No body'}`);
             
             // Check if this issue has a parent
             const parentIssueNumber = extractParentIssue(`${issue.title} ${issue.body || ''}`);
+            console.log(`Extracted parent issue number: ${parentIssueNumber}`);
             
             // Check if this issue previously had no parent but now has one (reparenting scenario)
             const existingChildPR = await getPullRequestForIssue(issue.number);
