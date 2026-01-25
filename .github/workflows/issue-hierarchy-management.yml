@@ -366,17 +366,10 @@ jobs:
                 `\n\nThis branch was automatically created for issue #${issueNumber}.`;
               
               // Create a README file for this issue
-              const readmeContent = `# Issue #${issueNumber}: ${issueData.title}
-
-## Description
-${issueData.body || 'No description provided'}
-
-## Progress
-- [ ] Work in progress
-
----
-This branch was automatically created by the issue hierarchy management workflow.
-`;
+              const readmeContent = `# Issue #${issueNumber}: ${issueData.title}` +
+                `\n\n## Description\n${issueData.body || 'No description provided'}` +
+                `\n\n## Progress\n- [ ] Work in progress` +
+                `\n\n---\nThis branch was automatically created by the issue hierarchy management workflow.\n`;
               
               // Create blob for README
               const { data: blob } = await github.rest.git.createBlob({
