@@ -4,8 +4,7 @@ import javafx.beans.property.*;
 import java.util.Objects;
 
 /*
-     * TODO: Consider using a Builder pattern for more complex Cue initialization.
-     * TODO: Add unit tests covering all Cue constructors and initialization paths.
+     * TODO: Add unit tests covering all Cue factory methods and initialization paths.
  */
 /**
  * Represents a single cue in the playlist.
@@ -45,32 +44,34 @@ public class Cue {
     }
     
     /**
-     * Creates a new Cue with basic audio properties.
+     * Creates a new Cue with specified duration.
      * 
      * @param number the cue number
      * @param name the cue name
      * @param filePath the path to the audio file
      * @param duration the audio duration in seconds
+     * @return a new Cue with the specified duration
      */
-    public Cue(int number, String name, String filePath, double duration) {
-        this(number, name, filePath, duration, 0.0, 0.0, false);
+    public static Cue withDuration(int number, String name, String filePath, double duration) {
+        return new Cue(number, name, filePath, duration, 0.0, 0.0, false);
     }
     
     /**
-     * Creates a new Cue with timing properties.
+     * Creates a new Cue with specified timing properties.
      * 
      * @param number the cue number
      * @param name the cue name
      * @param filePath the path to the audio file
      * @param preWait the pre-wait time in seconds
      * @param postWait the post-wait time in seconds
+     * @return a new Cue with the specified timing properties
      */
-    public Cue(int number, String name, String filePath, double preWait, double postWait) {
-        this(number, name, filePath, 0.0, preWait, postWait, false);
+    public static Cue withTiming(int number, String name, String filePath, double preWait, double postWait) {
+        return new Cue(number, name, filePath, 0.0, preWait, postWait, false);
     }
     
     /**
-     * Creates a new Cue with timing and auto-follow properties.
+     * Creates a new Cue with specified timing and auto-follow properties.
      * 
      * @param number the cue number
      * @param name the cue name
@@ -78,9 +79,10 @@ public class Cue {
      * @param preWait the pre-wait time in seconds
      * @param postWait the post-wait time in seconds
      * @param autoFollow whether to automatically follow to the next cue
+     * @return a new Cue with the specified timing and auto-follow properties
      */
-    public Cue(int number, String name, String filePath, double preWait, double postWait, boolean autoFollow) {
-        this(number, name, filePath, 0.0, preWait, postWait, autoFollow);
+    public static Cue withTimingAndAutoFollow(int number, String name, String filePath, double preWait, double postWait, boolean autoFollow) {
+        return new Cue(number, name, filePath, 0.0, preWait, postWait, autoFollow);
     }
     
     /**
