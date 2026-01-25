@@ -425,56 +425,57 @@ jobs:
             
             // Check if this issue previously had no parent but now has one (reparenting scenario)
             const existingChildPR = await getPullRequestForIssue(issue.number);
-          
-          if (parentIssueNumber) {
-            console.log(`Issue #${issue.number} has parent: #${parentIssueNumber}`);
             
-            // If this issue has an existing PR and now has a parent, handle reparenting
-            if (existingChildPR) {
-              console.log(`Issue #${issue.number} has existing PR #${existingChildPR.number} and is being reparented`);
-              await handleReparentedIssue(issue.number, parentIssueNumber);
-            }
-            
-            // Get the full parent chain
-            const parentChain = await getParentChain(issue.number);
-            console.log(`Parent chain: ${parentChain.join(' -> ')}`);
-            
-            // Process each parent in the chain (from root to immediate parent)
-            const rootParent = parentChain[parentChain.length - 1];
-            if (rootParent) {
-              console.log(`Processing root parent: #${rootParent}`);
+            if (parentIssueNumber) {
+              console.log(`Issue #${issue.number} has parent: #${parentIssueNumber}`);
               
-              // Check if root parent has a PR
-              const existingPR = await getPullRequestForIssue(rootParent);
-              if (!existingPR) {
-                console.log(`Root parent #${rootParent} needs branch and PR`);
-                await createBranchAndPR(rootParent);
-              } else {
-                console.log(`Root parent #${rootParent} already has PR: ${existingPR.html_url}`);
+              // If this issue has an existing PR and now has a parent, handle reparenting
+              if (existingChildPR) {
+                console.log(`Issue #${issue.number} has existing PR #${existingChildPR.number} and is being reparented`);
+                await handleReparentedIssue(issue.number, parentIssueNumber);
               }
               
-              // Add comment to current issue linking to parent PR (only if not reparented)
-              if (!existingChildPR) {
-                const parentPR = await getPullRequestForIssue(rootParent);
-                if (parentPR) {
-                  await github.rest.issues.createComment({
-                    owner,
-                    repo,
-                    issue_number: issue.number,
-                    body: `🔗 This issue is part of the work tracked in PR #${parentPR.number} (for issue #${rootParent})`
-                  });
+              // Get the full parent chain
+              const parentChain = await getParentChain(issue.number);
+              console.log(`Parent chain: ${parentChain.join(' -> ')}`);
+              
+              // Process each parent in the chain (from root to immediate parent)
+              const rootParent = parentChain[parentChain.length - 1];
+              if (rootParent) {
+                console.log(`Processing root parent: #${rootParent}`);
+                
+                // Check if root parent has a PR
+                const existingPR = await getPullRequestForIssue(rootParent);
+                if (!existingPR) {
+                  console.log(`Root parent #${rootParent} needs branch and PR`);
+                  await createBranchAndPR(rootParent);
+                } else {
+                  console.log(`Root parent #${rootParent} already has PR: ${existingPR.html_url}`);
+                }
+                
+                // Add comment to current issue linking to parent PR (only if not reparented)
+                if (!existingChildPR) {
+                  const parentPR = await getPullRequestForIssue(rootParent);
+                  if (parentPR) {
+                    await github.rest.issues.createComment({
+                      owner,
+                      repo,
+                      issue_number: issue.number,
+                      body: `🔗 This issue is part of the work tracked in PR #${parentPR.number} (for issue #${rootParent})`
+                    });
+                  }
                 }
               }
-            }
-          } else {
-            console.log(`Issue #${issue.number} has no parent - this is a root issue`);
-            
-            // This is a root issue, create branch and PR for it if it doesn't exist
-            if (!existingChildPR) {
-              console.log(`Root issue #${issue.number} needs branch and PR`);
-              await createBranchAndPR(issue.number);
             } else {
-              console.log(`Root issue #${issue.number} already has PR: ${existingChildPR.html_url}`);
+              console.log(`Issue #${issue.number} has no parent - this is a root issue`);
+              
+              // This is a root issue, create branch and PR for it if it doesn't exist
+              if (!existingChildPR) {
+                console.log(`Root issue #${issue.number} needs branch and PR`);
+                await createBranchAndPR(issue.number);
+              } else {
+                console.log(`Root issue #${issue.number} already has PR: ${existingChildPR.html_url}`);
+              }
             }
             
             console.log(`Successfully completed processing for issue #${issue.number}`);
