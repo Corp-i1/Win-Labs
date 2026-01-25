@@ -11,7 +11,6 @@ import javafx.scene.control.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.*;
-import javafx.scene.layout.*;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -62,6 +61,7 @@ public class SettingsWindow extends Stage {
         this.settings = settings;
         this.settingsService = settingsService;
         
+        logger.debug("Initializing SettingsWindow for theme={} loggingEnabled={}", settings.getTheme(), settings.isLoggingEnabled());
         initializeUI();
         loadSettingsIntoControls();
     }
@@ -73,12 +73,14 @@ public class SettingsWindow extends Stage {
      */
     public void setOnApply(Consumer<Settings> onApply) {
         this.onApply = onApply;
+        logger.debug("onApply callback registered");
     }
     
     /**
      * Initializes the UI.
      */
     private void initializeUI() {
+        logger.debug("Building SettingsWindow UI");
         setTitle("Settings");
         setWidth(600);
         setHeight(500);
@@ -383,6 +385,7 @@ public class SettingsWindow extends Stage {
      * Loads current settings into the UI controls.
      */
     private void loadSettingsIntoControls() {
+        logger.debug("Loading settings into controls for theme={} logLevel={} loggingEnabled={}", settings.getTheme(), settings.getLogLevel(), settings.isLoggingEnabled());
         // Application settings
         themeComboBox.setValue(settings.getTheme());
         autoSaveCheckBox.setSelected(settings.isAutoSaveEnabled());
@@ -408,6 +411,9 @@ public class SettingsWindow extends Stage {
      * Applies the current settings from the UI controls.
      */
     private void applySettings() {
+        logger.info("Applying settings: theme={} loggingEnabled={} logLevel={} autoSave={} masterVolume={}",
+            themeComboBox.getValue(), loggingEnabledCheckBox.isSelected(), logLevelComboBox.getValue(),
+            autoSaveCheckBox.isSelected(), masterVolumeSlider.getValue());
         // Update settings model
         settings.setTheme(themeComboBox.getValue());
         settings.setMasterVolume(masterVolumeSlider.getValue());
@@ -430,7 +436,10 @@ public class SettingsWindow extends Stage {
             settingsService.save(settings);
             // Reconfigure logging with new settings
             LoggerService.configureLogging(settings);
+            logger.info("Settings saved and logging reconfigured; logDirectory={} rotationSizeMB={} retentionDays={}",
+                settings.getLogDirectory(), settings.getLogRotationSizeMB(), settings.getLogRetentionDays());
         } catch (Exception e) {
+            logger.error("Failed to save settings", e);
             showError("Failed to save settings", e.getMessage());
         }
         
@@ -451,8 +460,11 @@ public class SettingsWindow extends Stage {
         applyThemeToDialog(alert);
         
         if (alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+            logger.info("Resetting settings to defaults");
             settings.resetToDefaults();
             loadSettingsIntoControls();
+        } else {
+            logger.debug("Reset to defaults cancelled by user");
         }
     }
     
@@ -482,12 +494,13 @@ public class SettingsWindow extends Stage {
                 chooser.setInitialDirectory(currentDir);
             }
         } catch (Exception e) {
-            // Ignore, use default
+            logger.debug("Ignoring invalid log directory while browsing: {}", logDirectoryField.getText(), e);
         }
         
         File selected = chooser.showDialog(this);
         if (selected != null) {
             logDirectoryField.setText(selected.getAbsolutePath());
+            logger.info("User selected log directory: {}", selected.getAbsolutePath());
         }
     }
     
@@ -498,7 +511,9 @@ public class SettingsWindow extends Stage {
         try {
             LogViewer logViewer = new LogViewer(settings);
             logViewer.show();
+            logger.info("Opened LogViewer");
         } catch (Exception e) {
+            logger.error("Failed to open LogViewer", e);
             showError("Error", "Failed to open log viewer: " + e.getMessage());
         }
     }
@@ -509,7 +524,9 @@ public class SettingsWindow extends Stage {
     private void openLogFolder() {
         try {
             LoggerService.openLogDirectory(settings);
+            logger.info("Opened log folder: {}", settings.getLogDirectory());
         } catch (Exception e) {
+            logger.error("Failed to open log folder", e);
             showError("Error", "Failed to open log folder: " + e.getMessage());
         }
     }
@@ -522,6 +539,7 @@ public class SettingsWindow extends Stage {
             // Copy stylesheets from the settings window to the dialog
             dialog.getDialogPane().getStylesheets().clear();
             dialog.getDialogPane().getStylesheets().addAll(getScene().getStylesheets());
+            logger.debug("Applied theme to dialog");
         }
     }
 }

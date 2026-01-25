@@ -1,6 +1,7 @@
 package com.winlabs.model;
 
 import javafx.beans.property.*;
+import java.util.Objects;
 
 /**
  * Represents a single cue in the playlist.
@@ -30,7 +31,6 @@ public class Cue {
     
     /**
      * Creates a new Cue with specified values.
-     * TODO: Add validation as needed.
      * TODO: Add for other properties in overloaded constructors.
      * TODO: Consider using a Builder pattern for more complex construction.
      * TODO: Add Javadoc comments for parameters.
@@ -49,7 +49,7 @@ public class Cue {
     }
     
     public void setNumber(int value) {
-        number.set(value);
+        number.set(requireNonNegative(value, "number"));
     }
     
     public IntegerProperty numberProperty() {
@@ -62,7 +62,7 @@ public class Cue {
     }
     
     public void setName(String value) {
-        name.set(value);
+        name.set(requireNonNull(value, "name"));
     }
     
     public StringProperty nameProperty() {
@@ -75,7 +75,7 @@ public class Cue {
     }
     
     public void setDuration(double value) {
-        duration.set(value);
+        duration.set(requireNonNegative(value, "duration"));
     }
     
     public DoubleProperty durationProperty() {
@@ -88,7 +88,7 @@ public class Cue {
     }
     
     public void setPreWait(double value) {
-        preWait.set(value);
+        preWait.set(requireNonNegative(value, "preWait"));
     }
     
     public DoubleProperty preWaitProperty() {
@@ -101,7 +101,7 @@ public class Cue {
     }
     
     public void setPostWait(double value) {
-        postWait.set(value);
+        postWait.set(requireNonNegative(value, "postWait"));
     }
     
     public DoubleProperty postWaitProperty() {
@@ -127,7 +127,7 @@ public class Cue {
     }
     
     public void setFilePath(String value) {
-        filePath.set(value);
+        filePath.set(requireNonNull(value, "filePath"));
     }
     
     public StringProperty filePathProperty() {
@@ -137,5 +137,23 @@ public class Cue {
     @Override
     public String toString() {
         return String.format("Cue #%d: %s (%s)", getNumber(), getName(), getFilePath());
+    }
+
+    private int requireNonNegative(int value, String field) {
+        if (value < 0) {
+            throw new IllegalArgumentException(field + " must be non-negative");
+        }
+        return value;
+    }
+
+    private double requireNonNegative(double value, String field) {
+        if (value < 0) {
+            throw new IllegalArgumentException(field + " must be non-negative");
+        }
+        return value;
+    }
+
+    private String requireNonNull(String value, String field) {
+        return Objects.requireNonNull(value, field + " cannot be null");
     }
 }
