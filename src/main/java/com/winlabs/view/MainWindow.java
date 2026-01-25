@@ -33,16 +33,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-//TODO: Add context menu for file operations (open, delete, properties, etc.)
-//TODO: Add drag-and-drop support for adding files to cue list
-//TODO: Add keyboard shortcuts for common actions (go, pause, stop, next cue, etc.) These should be configurable in settings.
-//TODO: Add search/filter functionality to file browser
-//TODO: Add context menu for opening files/folders
-//TODO: Add an inspector panel for editing cue properties
-//TODO: make the cue table columns reorderable and resizable, and save/load their state with the playlist
-//TODO: Add multi-select support for cue table (for batch operations like delete, move, etc.) - make it so that Ctrl+Click and Shift+Click work as expected
-//TODO: Add drag-and-drop reordering of cues in the cue table
-//TODO: Make sure all specific key presses and actions can be remapped in settings
+//TODO: #69 Add context menu for file operations (open, delete, properties, etc.)
+//TODO: #70 Add drag-and-drop support for adding files to cue list
+//TODO: #71 Add keyboard shortcuts for common actions (go, pause, stop, next cue, etc.) These should be configurable in settings.
+//TODO: #72 Add search/filter functionality to file browser
+//TODO: #78 Add context menu for opening files/folders
+//TODO: #73 Add an inspector panel for editing cue properties
+//TODO: #74 make the cue table columns reorderable and resizable, and save/load their state with the playlist
+//TODO: #75 Add multi-select support for cue table (for batch operations like delete, move, etc.) - make it so that Ctrl+Click and Shift+Click work as expected
+//TODO: #76 Add drag-and-drop reordering of cues in the cue table
+//TODO: #77 Make sure all specific key presses and actions can be remapped in settings
 /**
  * Main application window for Win-Labs.
  * Contains the cue list, controls, and file browser.
