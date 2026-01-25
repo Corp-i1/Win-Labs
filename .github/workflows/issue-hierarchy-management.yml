@@ -361,11 +361,9 @@ jobs:
               console.log(`Created branch: ${branchName}`);
               
               // Create an initial commit to the branch
-              const initialCommitMessage = `Initialize branch for issue #${issueNumber}
-
-${issueData.title}
-
-This branch was automatically created for issue #${issueNumber}.`;
+              const initialCommitMessage = `Initialize branch for issue #${issueNumber}` + 
+                `\n\n${issueData.title}` + 
+                `\n\nThis branch was automatically created for issue #${issueNumber}.`;
               
               // Create a README file for this issue
               const readmeContent = `# Issue #${issueNumber}: ${issueData.title}
