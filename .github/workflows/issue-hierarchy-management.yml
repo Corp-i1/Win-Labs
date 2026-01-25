@@ -360,6 +360,73 @@ jobs:
               
               console.log(`Created branch: ${branchName}`);
               
+              // Create an initial commit to the branch
+              const initialCommitMessage = `Initialize branch for issue #${issueNumber}
+
+${issueData.title}
+
+This branch was automatically created for issue #${issueNumber}.`;
+              
+              // Create a README file for this issue
+              const readmeContent = `# Issue #${issueNumber}: ${issueData.title}
+
+## Description
+${issueData.body || 'No description provided'}
+
+## Progress
+- [ ] Work in progress
+
+---
+This branch was automatically created by the issue hierarchy management workflow.
+`;
+              
+              // Create blob for README
+              const { data: blob } = await github.rest.git.createBlob({
+                owner,
+                repo,
+                content: Buffer.from(readmeContent).toString('base64'),
+                encoding: 'base64'
+              });
+              
+              // Get current tree
+              const { data: baseTree } = await github.rest.git.getTree({
+                owner,
+                repo,
+                tree_sha: defaultBranch.commit.sha
+              });
+              
+              // Create new tree with README
+              const { data: newTree } = await github.rest.git.createTree({
+                owner,
+                repo,
+                base_tree: baseTree.sha,
+                tree: [{
+                  path: `docs/issue-${issueNumber}.md`,
+                  mode: '100644',
+                  type: 'blob',
+                  sha: blob.sha
+                }]
+              });
+              
+              // Create commit
+              const { data: newCommit } = await github.rest.git.createCommit({
+                owner,
+                repo,
+                message: initialCommitMessage,
+                tree: newTree.sha,
+                parents: [defaultBranch.commit.sha]
+              });
+              
+              // Update branch reference
+              await github.rest.git.updateRef({
+                owner,
+                repo,
+                ref: `heads/${branchName}`,
+                sha: newCommit.sha
+              });
+              
+              console.log(`Added initial commit to branch: ${branchName}`);
+              
               // Check if PR already exists
               const existingPR = await getPullRequestForIssue(issueNumber);
               if (existingPR) {
