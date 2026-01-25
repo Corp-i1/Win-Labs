@@ -43,10 +43,7 @@ public class Cue {
      * @param filePath the path to the audio file
      */
     public Cue(int number, String name, String filePath) {
-        this();
-        setNumber(number);
-        setName(name);
-        setFilePath(filePath);
+        this(number, name, filePath, 0.0, 0.0, 0.0, false);
     }
     
     /**
@@ -58,8 +55,7 @@ public class Cue {
      * @param duration the audio duration in seconds
      */
     public Cue(int number, String name, String filePath, double duration) {
-        this(number, name, filePath);
-        setDuration(duration);
+        this(number, name, filePath, duration, 0.0, 0.0, false);
     }
     
     /**
@@ -72,9 +68,7 @@ public class Cue {
      * @param postWait the post-wait time in seconds
      */
     public Cue(int number, String name, String filePath, double preWait, double postWait) {
-        this(number, name, filePath);
-        setPreWait(preWait);
-        setPostWait(postWait);
+        this(number, name, filePath, 0.0, preWait, postWait, false);
     }
     
     /**
@@ -88,8 +82,7 @@ public class Cue {
      * @param autoFollow whether to automatically follow to the next cue
      */
     public Cue(int number, String name, String filePath, double preWait, double postWait, boolean autoFollow) {
-        this(number, name, filePath, preWait, postWait);
-        setAutoFollow(autoFollow);
+        this(number, name, filePath, 0.0, preWait, postWait, autoFollow);
     }
     
     /**
@@ -104,8 +97,14 @@ public class Cue {
      * @param autoFollow whether to automatically follow to the next cue
      */
     public Cue(int number, String name, String filePath, double duration, double preWait, double postWait, boolean autoFollow) {
-        this(number, name, filePath, preWait, postWait, autoFollow);
+        this();
+        setNumber(number);
+        setName(name);
+        setFilePath(filePath);
         setDuration(duration);
+        setPreWait(preWait);
+        setPostWait(postWait);
+        setAutoFollow(autoFollow);
     }
     
     // Number property
