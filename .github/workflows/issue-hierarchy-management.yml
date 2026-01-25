@@ -16,7 +16,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ secrets.Issue_Management }}
         
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -26,11 +26,22 @@ jobs:
     - name: Process Issue Hierarchy
       uses: actions/github-script@v7
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ secrets.Issue_Management }}
         script: |
           const issue = context.payload.issue;
           const owner = context.repo.owner;
           const repo = context.repo.repo;
+          
+          // Validate required inputs
+          if (!issue) {
+            core.setFailed('No issue found in payload');
+            return;
+          }
+          
+          if (!owner || !repo) {
+            core.setFailed('Repository owner or name not found');
+            return;
+          }
           
           // Function to extract parent issue number from issue body/title
           function extractParentIssue(text) {
@@ -158,12 +169,28 @@ jobs:
               return true;
             } catch (error) {
               console.error(`Error merging branches: ${error.message}`);
+              
+              // Check if it's a merge conflict
+              if (error.message.includes('conflict') || error.message.includes('Merge conflict')) {
+                console.log('Merge conflict detected - will require manual resolution');
+              } else {
+                console.error('Unexpected merge error:', error);
+              }
+              
               return false;
             }
           }
           
           // Function to handle issue reparenting
           async function handleReparentedIssue(childIssueNumber, parentIssueNumber) {
+            if (!childIssueNumber || !parentIssueNumber) {
+              throw new Error(`Invalid issue numbers: child=${childIssueNumber}, parent=${parentIssueNumber}`);
+            }
+            
+            if (childIssueNumber === parentIssueNumber) {
+              throw new Error(`Issue cannot be parent of itself: #${childIssueNumber}`);
+            }
+            
             try {
               console.log(`Handling reparented issue #${childIssueNumber} -> parent #${parentIssueNumber}`);
               
@@ -293,12 +320,20 @@ jobs:
           
           // Function to create branch and PR for an issue
           async function createBranchAndPR(issueNumber) {
+            if (!issueNumber || issueNumber <= 0) {
+              throw new Error(`Invalid issue number: ${issueNumber}`);
+            }
+            
             try {
               const { data: issueData } = await github.rest.issues.get({
                 owner,
                 repo,
                 issue_number: issueNumber
               });
+              
+              if (!issueData) {
+                throw new Error(`Issue #${issueNumber} not found`);
+              }
               
               const branchName = createBranchName(issueNumber, issueData.title);
               
@@ -381,14 +416,15 @@ jobs:
             }
           }
           
-          // Main logic
-          console.log(`Processing issue #${issue.number}: ${issue.title}`);
-          
-          // Check if this issue has a parent
-          const parentIssueNumber = extractParentIssue(`${issue.title} ${issue.body || ''}`);
-          
-          // Check if this issue previously had no parent but now has one (reparenting scenario)
-          const existingChildPR = await getPullRequestForIssue(issue.number);
+          // Main logic wrapped in try-catch
+          try {
+            console.log(`Processing issue #${issue.number}: ${issue.title}`);
+            
+            // Check if this issue has a parent
+            const parentIssueNumber = extractParentIssue(`${issue.title} ${issue.body || ''}`);
+            
+            // Check if this issue previously had no parent but now has one (reparenting scenario)
+            const existingChildPR = await getPullRequestForIssue(issue.number);
           
           if (parentIssueNumber) {
             console.log(`Issue #${issue.number} has parent: #${parentIssueNumber}`);
@@ -440,4 +476,24 @@ jobs:
             } else {
               console.log(`Root issue #${issue.number} already has PR: ${existingChildPR.html_url}`);
             }
+            
+            console.log(`Successfully completed processing for issue #${issue.number}`);
+            
+          } catch (mainError) {
+            console.error(`Critical error processing issue #${issue.number}: ${mainError.message}`);
+            
+            // Try to add error comment to issue
+            try {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: issue.number,
+                body: `❌ **Workflow Error**: Failed to process issue hierarchy: ${mainError.message}`
+              });
+            } catch (commentError) {
+              console.error(`Failed to add error comment: ${commentError.message}`);
+            }
+            
+            // Fail the action
+            core.setFailed(`Issue hierarchy processing failed: ${mainError.message}`);
           }
