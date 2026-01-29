@@ -4,6 +4,8 @@ import com.winlabs.model.AudioTrack;
 import com.winlabs.model.Cue;
 import com.winlabs.model.PlaybackState;
 import com.winlabs.service.AudioService;
+import com.winlabs.service.PlatformIndicatorService;
+
 import javafx.animation.PauseTransition;
 import javafx.util.Duration;
 import org.slf4j.Logger;
@@ -131,9 +133,8 @@ public class AudioController {
             
             // Check for Linux-specific MediaException issues
             String errorMessage = e.getMessage();
-            String osName = System.getProperty("os.name", "").toLowerCase();
             
-            if (osName.contains("linux") && (
+            if (PlatformIndicatorService.IS_LINUX && (
                     errorMessage.contains("Could not create player") ||
                     errorMessage.contains("MediaException") ||
                     e.getCause() != null && e.getCause().getMessage() != null && 
