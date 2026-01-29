@@ -47,7 +47,6 @@ public class AudioController {
         }
         
         logger.info("Playing cue: {} ({})", cue.getNumber(), cue.getName());
-        currentCue = cue;
         String filePath = cue.getFilePath();
         
         if (filePath == null || filePath.isEmpty()) {
