@@ -33,6 +33,7 @@ public class WelcomeScreen extends Stage {
     private final Runnable onOpenPlaylist;
     private final Runnable onOpenSettings;
     private final Runnable onOpenDocumentation;
+    private final Runnable onOpenAbout;
     private final Runnable onExit;
     
     private FlowPane recentPlaylistsContainer;
@@ -41,12 +42,13 @@ public class WelcomeScreen extends Stage {
     private Consumer<String> onTogglePin; // Callback to toggle pin status
     
     public WelcomeScreen(Runnable onNewPlaylist, Runnable onOpenPlaylist, 
-                        Runnable onOpenSettings, Runnable onOpenDocumentation, Runnable onExit) {
+                        Runnable onOpenSettings, Runnable onOpenDocumentation, Runnable onOpenHelp, Runnable onExit) {
         // Defensive: validate all callbacks are provided
         this.onNewPlaylist = onNewPlaylist != null ? onNewPlaylist : () -> {};
         this.onOpenPlaylist = onOpenPlaylist != null ? onOpenPlaylist : () -> {};
         this.onOpenSettings = onOpenSettings != null ? onOpenSettings : () -> {};
         this.onOpenDocumentation = onOpenDocumentation != null ? onOpenDocumentation : () -> {};
+        this.onOpenAbout = onOpenHelp != null ? onOpenHelp : () -> {};
         this.onExit = onExit != null ? onExit : () -> System.exit(0);
         
         logger.info("WelcomeScreen initialized");
@@ -229,7 +231,7 @@ public class WelcomeScreen extends Stage {
     }
     
     /**
-     * Creates the footer section with settings, help, and exit buttons.
+     * Creates the footer section with settings, help, about, and exit buttons.
      */
     private VBox createFooterSection() {
         VBox footer = new VBox(8);
@@ -256,6 +258,15 @@ public class WelcomeScreen extends Stage {
                 showError("Failed to open documentation", ex.getMessage());
             }
         });
+
+        Button aboutBtn = createFooterButton("? About");
+        aboutBtn.setOnAction(e -> {
+            try {
+                onOpenAbout.run();
+            } catch (Exception ex) {
+                showError("Failed to open about", ex.getMessage());
+            }
+        });
         
         Button exitBtn = createFooterButton("✕ Exit");
         exitBtn.getStyleClass().add("exit-button");
@@ -273,7 +284,7 @@ public class WelcomeScreen extends Stage {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         
-        buttonBox.getChildren().addAll(settingsBtn, helpBtn, spacer, exitBtn);
+        buttonBox.getChildren().addAll(settingsBtn, helpBtn, aboutBtn, spacer, exitBtn);
         footer.getChildren().add(buttonBox);
         
         return footer;

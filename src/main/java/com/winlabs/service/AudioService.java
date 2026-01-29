@@ -14,7 +14,7 @@ import java.util.function.Consumer;
 
 // TODO: gapless playback,
 // TODO: equalizer settings, 
-//TODO: Crossfade between tracks
+// TODO: Crossfade between tracks
 
 
 /**
@@ -38,7 +38,7 @@ public class AudioService {
     // Multi-track mode fields
     private AudioPlayerPool playerPool;
     private boolean multiTrackMode;
-    
+
     /**
      * Creates a new AudioService in single-track mode (default).
      */

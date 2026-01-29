@@ -43,6 +43,7 @@ import java.util.Set;
 //TODO: #75 Add multi-select support for cue table (for batch operations like delete, move, etc.) - make it so that Ctrl+Click and Shift+Click work as expected
 //TODO: #76 Add drag-and-drop reordering of cues in the cue table
 //TODO: #77 Make sure all specific key presses and actions can be remapped in settings
+
 /**
  * Main application window for Win-Labs.
  * Contains the cue list, controls, and file browser.
@@ -72,8 +73,13 @@ public class MainWindow extends Stage {
     private VBox fileViewContainer;
     private SplitPane splitPane;
     private boolean isFileViewVisible = false;
+
+    private Runnable showDocumentationCallback;
+    private Runnable showAboutDialogCallback;
     
-    public MainWindow() {
+    public MainWindow(Runnable showDocumentationCallback, Runnable showAboutDialogCallback) {
+        this.showDocumentationCallback = showDocumentationCallback;
+        this.showAboutDialogCallback = showAboutDialogCallback;
         logger.info("Initializing MainWindow");
         this.playlist = new Playlist();
         this.playlistSettings = new PlaylistSettings();
@@ -228,20 +234,24 @@ public class MainWindow extends Stage {
         // Edit menu
         //TODO: Make functional
         Menu editMenu = new Menu("Edit");
+        editMenu.setDisable(true); // Disable until functional
         MenuItem addCueItem = new MenuItem("Add Cue");
+        addCueItem.setOnAction(e -> addNewCue());
         MenuItem deleteCueItem = new MenuItem("Delete Cue");
+        deleteCueItem.setOnAction(e -> deleteSelectedCue());
         MenuItem settingsItem = new MenuItem("Settings");
         settingsItem.setOnAction(e -> openSettings());
         
         editMenu.getItems().addAll(addCueItem, deleteCueItem, new SeparatorMenuItem(), settingsItem);
         
         // Help menu
-        //TODO: Make functional
         Menu helpMenu = new Menu("Help");
         MenuItem documentationItem = new MenuItem("Documentation");
+        documentationItem.setOnAction(e -> showDocumentation());
         MenuItem viewLogsItem = new MenuItem("View Logs...");
         viewLogsItem.setOnAction(e -> openLogViewer());
         MenuItem aboutItem = new MenuItem("About");
+        aboutItem.setOnAction(e -> showAboutDialog());
         
         helpMenu.getItems().addAll(
             documentationItem, 
@@ -424,7 +434,7 @@ public class MainWindow extends Stage {
         updateCueCount();
         
         // File view toggle button
-        Button fileViewToggle = new Button("📁");
+        Button fileViewToggle = new Button("FILE VIEW"); // Placeholder text
         fileViewToggle.setTooltip(new Tooltip("Toggle File View"));
         fileViewToggle.setStyle("-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 16px;");
         fileViewToggle.setOnAction(e -> toggleFileView());
@@ -764,6 +774,23 @@ public class MainWindow extends Stage {
         }
     }
     
+    /**
+     * Shows the documentation.
+     */
+    private void showDocumentation() {
+        if (showDocumentationCallback != null) {
+            showDocumentationCallback.run();
+        }
+    }
+    
+    /**
+     * Shows the about dialog.
+     */
+    private void showAboutDialog() {
+        if (showAboutDialogCallback != null) {
+            showAboutDialogCallback.run();
+        }
+    }
     
     /**
      * Shows the welcome screen and hides this main window.
@@ -795,6 +822,10 @@ public class MainWindow extends Stage {
             () -> {
                 // On documentation
                 showDocumentation();
+            },
+            () -> {
+                // On about
+                showAboutDialog();
             },
             () -> {
                 // On exit
@@ -882,26 +913,7 @@ public class MainWindow extends Stage {
         this.hide();
         welcomeScreenRef[0].show();
     }
-    
-    /**
-     * Shows documentation dialog.
-     */
-    private void showDocumentation() {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Win-Labs Documentation");
-        alert.setHeaderText("Help & Documentation");
-        alert.setContentText("Documentation is available at:\n" +
-            "https://github.com/Corp-i1/Win-Labs\n\n" +
-            "Features:\n" +
-            "• Create and manage audio cue lists\n" +
-            "• Set pre-wait and post-wait timers\n" +
-            "• Auto-follow functionality\n" +
-            "• Multi-track playback\n" +
-            "• Theme customization\n\n" +
-            "For more information, visit the repository.");
-        alert.showAndWait();
-    }
-    
+
     /**
      * Opens the settings dialog (public version for external callers).
      * Can be called from WelcomeScreen or other windows.
