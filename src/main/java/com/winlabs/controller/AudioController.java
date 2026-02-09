@@ -50,6 +50,7 @@ public class AudioController {
         
         logger.info("Playing cue: {} ({})", cue.getNumber(), cue.getName());
         String filePath = cue.getFilePath();
+        logger.debug("Cue file path: {}", filePath);
         
         if (filePath == null || filePath.isEmpty()) {
             logger.warn("Cue {} has no audio file path", cue.getNumber());
@@ -142,10 +143,8 @@ public class AudioController {
                 
                 String linuxErrorMsg = "Linux Audio Error: Missing multimedia libraries. " +
                     "Please install GStreamer libraries:\n" +
-                    "• Ubuntu/Debian: sudo apt install libavcodec-extra gstreamer1.0-libav gstreamer1.0-plugins-ugly gstreamer1.0-vaapi\n" +
-                    "• Fedora/RHEL: sudo dnf install gstreamer1-plugins-bad-free gstreamer1-libav gstreamer1-vaapi --allowerasing\n" +
-                    "• Arch: sudo pacman -S gst-libav gst-plugins-ugly gst-plugins-bad\n" +
-                    "For Fedora, you may also need RPM Fusion: sudo dnf install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm\n" +
+                    "• Fedora/RHEL: sudo dnf group upgrade multimedia sound-and-video --setopt=\"install_weak_deps=False\" --exclude=PackageKit-gstreamer-plugin && sudo dnf install ffmpeg-libs gstreamer* --allowerasing \n" +
+                    "• You also need RPM Fusion: sudo dnf install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm\n" +
                     "Then restart Win-Labs.";
                 logger.info(linuxErrorMsg);
                 logger.error("Linux multimedia libraries missing. User should install GStreamer codecs.");
