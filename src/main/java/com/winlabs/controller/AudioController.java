@@ -4,6 +4,8 @@ import com.winlabs.model.AudioTrack;
 import com.winlabs.model.Cue;
 import com.winlabs.model.PlaybackState;
 import com.winlabs.service.AudioService;
+import com.winlabs.service.PlatformIndicatorService;
+
 import javafx.animation.PauseTransition;
 import javafx.util.Duration;
 import org.slf4j.Logger;
@@ -29,6 +31,7 @@ public class AudioController {
     
     private PauseTransition preWaitTimer;
     private PauseTransition postWaitTimer;
+    private boolean error = false;
     
     public AudioController() {
         this.audioService = new AudioService(true); // Enable multi-track mode
@@ -46,8 +49,8 @@ public class AudioController {
         }
         
         logger.info("Playing cue: {} ({})", cue.getNumber(), cue.getName());
-        currentCue = cue;
         String filePath = cue.getFilePath();
+        logger.debug("Cue file path: {}", filePath);
         
         if (filePath == null || filePath.isEmpty()) {
             logger.warn("Cue {} has no audio file path", cue.getNumber());
@@ -73,12 +76,14 @@ public class AudioController {
      * Starts the actual audio playback.
      */
     private void startPlayback(Cue cue, String filePath) {
+        
         try {
             // Get the track before playing to set up listeners
             // This avoids a race condition with very short audio files
             var track = audioService.getPlayerPool().acquireTrack(filePath);
             currentTrackId = track.getTrackId();
-            
+
+            try {
             // Set up completion listener for this track
             // Store the pool's original listener to chain them
             var poolListener = track.getOnEndListener();
@@ -88,24 +93,65 @@ public class AudioController {
                     stateChangeListener.accept(getState());
                 }
                 handleCueComplete();
-                
+                try{
                 // Call the pool's listener to properly release the track
                 if (poolListener != null) {
                     poolListener.accept(audioTrack);
+                }}catch(Exception e){
+                    logger.error("Error in pool listener for cue {}: {}", cue.getNumber(), e.getMessage(), e);
+                    updateStatus("Error playing audio: " + e.getMessage());
+                    error = true;
+                    return;
                 }
-            });
-            
+            });   
+            } catch (Exception e) {
+                logger.error("Failed to set up listner for cue {}: {}",cue.getNumber(),e.getMessage(), e);
+                updateStatus("Error setting up listener: " + e.getMessage());
+                error = true;
+                return;
+            }
+
+            try{
             // Now start playback
             track.play();
-            
+            }catch(Exception e){
+                        logger.error("Error playing cue {}: {}", cue.getNumber(), e.getMessage(), e);
+                        updateStatus("Error playing audio: " + e.getMessage());
+                        error = true;
+                        return;
+            }
+
             if (stateChangeListener != null) {
                 stateChangeListener.accept(getState());
             }
-            
-            updateStatus("Playing: " + cue.getName());
+            if (!error) {
+            updateStatus("Playing: " + cue.getName());    
+            error = false;
+            return;
+            }
         } catch (Exception e) {
-            logger.error("Error playing cue {}: {}", cue.getNumber(), e.getMessage(), e);
-            updateStatus("Error loading audio: " + e.getMessage());
+            logger.error("Error starting Playback for cue {}: {}", cue.getNumber(), e.getMessage(), e);
+            
+            // Check for Linux-specific MediaException issues
+            String errorMessage = e.getMessage();
+            
+            if (PlatformIndicatorService.IS_LINUX && (
+                    errorMessage.contains("Could not create player") ||
+                    errorMessage.contains("MediaException") ||
+                    e.getCause() != null && e.getCause().getMessage() != null && 
+                    e.getCause().getMessage().contains("Could not create player"))) {
+                
+                String linuxErrorMsg = "Linux Audio Error: Missing multimedia libraries. " +
+                    "Please install GStreamer libraries:\n" +
+                    "• Fedora/RHEL: sudo dnf group upgrade multimedia sound-and-video --setopt=\"install_weak_deps=False\" --exclude=PackageKit-gstreamer-plugin && sudo dnf install ffmpeg-libs gstreamer* --allowerasing \n" +
+                    "• You also need RPM Fusion: sudo dnf install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm\n" +
+                    "Then restart Win-Labs.";
+                logger.info(linuxErrorMsg);
+                logger.error("Linux multimedia libraries missing. User should install GStreamer codecs.");
+                updateStatus("Linux multimedia libraries missing. User should install GStreamer codecs.");
+            } else {
+                updateStatus("Error loading audio: " + errorMessage);
+            }
         }
     }
     
@@ -165,7 +211,7 @@ public class AudioController {
         
         currentCue = null;
     }
-    
+
     /**
      * Pauses the current playback.
      */

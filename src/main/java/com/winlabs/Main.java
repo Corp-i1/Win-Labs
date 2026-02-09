@@ -24,6 +24,9 @@ import java.util.Set;
  * A cross-platform cue list manager for sound technicians.
  */
 public class Main extends Application {
+
+    //TODO: Add minimum window size constraints for all windows. (OS agnostic)
+    //TODO: Make sure all windows come to front when opened. (OS agnostic)
     
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
     private static String playlistFileToOpen;
@@ -50,7 +53,7 @@ public class Main extends Application {
         // If a playlist file was passed as argument, open it directly
         if (playlistFileToOpen != null) {
             logger.info("Opening playlist file from command line: {}", playlistFileToOpen);
-            MainWindow mainWindow = new MainWindow();
+            MainWindow mainWindow = new MainWindow(this::showDocumentation, this::showAboutDialog);
             mainWindow.openPlaylistFile(playlistFileToOpen);
             mainWindow.show();
         } else {
@@ -61,6 +64,7 @@ public class Main extends Application {
                 this::showOpenPlaylistWindow,
                 this::showSettings,
                 this::showDocumentation,
+                this::showAboutDialog,
                 this::closeApplication
             );
             // Apply theme AFTER the stage is created but before showing
@@ -69,7 +73,7 @@ public class Main extends Application {
             // Set callbacks for opening recent playlists and toggling pins
             welcomeScreen.setOnOpenRecentPlaylist((filePath) -> {
                 try {
-                    MainWindow mainWindow = new MainWindow();
+                    MainWindow mainWindow = new MainWindow(this::showDocumentation, this::showAboutDialog);
                     mainWindow.openPlaylistFile(filePath);
                     mainWindow.show();
                     if (welcomeScreen != null) {
@@ -196,7 +200,7 @@ public class Main extends Application {
      */
     private void showNewPlaylistWindow() {
         try {
-            MainWindow mainWindow = new MainWindow();
+            MainWindow mainWindow = new MainWindow(this::showDocumentation, this::showAboutDialog);
             mainWindow.newPlaylist(true); // Skip confirmation - nothing to lose from welcome screen
             // Check if a playlist was actually created (user didn't cancel)
             if (mainWindow.hasPlaylistLoaded()) {
@@ -219,7 +223,7 @@ public class Main extends Application {
      */
     private void showOpenPlaylistWindow() {
         try {
-            MainWindow mainWindow = new MainWindow();
+            MainWindow mainWindow = new MainWindow(this::showDocumentation, this::showAboutDialog);
             mainWindow.openPlaylist();
             // Only show the window if a playlist was successfully loaded
             if (mainWindow.hasPlaylistLoaded()) {
@@ -243,7 +247,7 @@ public class Main extends Application {
         try {
             SettingsService settingsService = new SettingsService();
             Settings settings = settingsService.load();
-            MainWindow tempWindow = new MainWindow();
+            MainWindow tempWindow = new MainWindow(this::showDocumentation, this::showAboutDialog);
             tempWindow.openSettings(settings, settingsService);
         } catch (Exception e) {
             logger.error("Error opening settings: {}", e.getMessage(), e);
@@ -271,6 +275,20 @@ public class Main extends Application {
         } catch (Exception e) {
             logger.error("Error showing documentation: {}", e.getMessage(), e);
         }
+    }
+
+    /**
+     * Shows the About dialog.
+     */
+    private void showAboutDialog(){
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("About Win-Labs");
+        alert.setHeaderText("Win-Labs Cue List Manager");
+        alert.setContentText("Version 1.0.0\n" +
+            "Developed by Win-Labs Team\n\n" +
+            "Win-Labs is an open-source application for managing and playing audio cue lists.\n" +
+            "For more information, visit https://github.com/Corp-i1/Win-Labs");
+        alert.showAndWait();
     }
     
     /**
