@@ -1,3 +1,9 @@
+#Future development will be paused untill my audio player libary is in a useable state.
+
+
+
+
+
 # Win-Labs
 ### My Website: [Corpi1.uk](https://Corpi1.uk)
 This project is my window alternative for Q-Labs for Sound technicians that dont want to or have to opertunity to use the real thing.
