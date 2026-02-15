@@ -1,5 +1,12 @@
 package com.winlabs.controller;
 
+
+import java.util.List;
+import java.util.function.Consumer;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.winlabs.model.AudioTrack;
 import com.winlabs.model.Cue;
 import com.winlabs.model.PlaybackState;
@@ -8,11 +15,6 @@ import com.winlabs.service.PlatformIndicatorService;
 
 import javafx.animation.PauseTransition;
 import javafx.util.Duration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.List;
-import java.util.function.Consumer;
 
 /**
  * Controller for managing audio playback logic.
@@ -101,7 +103,6 @@ public class AudioController {
                     logger.error("Error in pool listener for cue {}: {}", cue.getNumber(), e.getMessage(), e);
                     updateStatus("Error playing audio: " + e.getMessage());
                     error = true;
-                    return;
                 }
             });   
             } catch (Exception e) {
@@ -127,10 +128,9 @@ public class AudioController {
             if (!error) {
             updateStatus("Playing: " + cue.getName());    
             error = false;
-            return;
             }
         } catch (Exception e) {
-            logger.error("Error starting Playback for cue {}: {}", cue.getNumber(), e.getMessage(), e);
+            logger.error("Error starting Playback for cue {}:   {}", cue.getNumber(), e.getMessage(), e);
             
             // Check for Linux-specific MediaException issues
             String errorMessage = e.getMessage();
@@ -141,7 +141,7 @@ public class AudioController {
                     e.getCause() != null && e.getCause().getMessage() != null && 
                     e.getCause().getMessage().contains("Could not create player"))) {
                 
-                String linuxErrorMsg = "Linux Audio Error: Missing multimedia libraries. " +
+                String linuxErrorMsg = "Linux Audio Error: Missing multimedia libraries.\n" +
                     "Please install GStreamer libraries:\n" +
                     "• Fedora/RHEL: sudo dnf group upgrade multimedia sound-and-video --setopt=\"install_weak_deps=False\" --exclude=PackageKit-gstreamer-plugin && sudo dnf install ffmpeg-libs gstreamer* --allowerasing \n" +
                     "• You also need RPM Fusion: sudo dnf install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm\n" +
