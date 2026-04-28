@@ -117,6 +117,55 @@ async function ensureBranch(branchName) {
 }
 
 /* -------------------------
+   Init Commit
+--------------------------*/
+
+function encodeBase64(str) {
+  return Buffer.from(str).toString("base64");
+}
+
+async function createMarkerCommit(branchName, root, issues) {
+  const defaultBranch = await getDefaultBranch();
+
+  const content = `
+# Issue Group ${root}
+
+## Root
+${root}
+
+## Issues
+${issues.join(", ")}
+
+## Auto-generated
+Created by GitHub Action
+`;
+
+  const path = `issue-groups/group-${root}.md`;
+
+  await octokit.repos.createOrUpdateFileContents({
+    owner,
+    repo,
+    path,
+    message: `chore: init issue group #${root}`,
+    content: encodeBase64(content),
+    branch: branchName,
+  });
+
+  console.log("Marker commit created");
+}
+
+async function hasDiff(branchName, baseBranch) {
+  const compare = await octokit.repos.compareCommits({
+    owner,
+    repo,
+    base: baseBranch,
+    head: branchName,
+  });
+
+  return compare.data.files && compare.data.files.length > 0;
+}
+
+/* -------------------------
    PR MANAGEMENT
 --------------------------*/
 
@@ -201,9 +250,16 @@ ${marker}
 
     const branchName = `issue-group-${root}`;
 
+    // 1. Create branch
     await ensureBranch(branchName);
+
+    // 2. CREATE MARKER COMMIT (THIS FIXES YOUR ERROR)
+    await createMarkerCommit(branchName, root, group);
+
+    // 3. Now safe to create PR
     const pr = await ensurePR(branchName, root);
 
+    // 4. Attach issues
     await annotateIssues(group, branchName, pr);
 
     console.log("Done.");
