@@ -10,6 +10,9 @@ assignees: Corp-i1
 **Describe the bug**
 A clear and concise description of what the bug is.
 
+### Relationship
+Issue Parent: <!-- Leave blank if a root Issue -->
+
 **Install Folder**
 Upload the zip/rar file of your entire install folder.
 
