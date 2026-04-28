@@ -41,7 +41,3 @@ In short, when you submit code changes, your submissions are understood to be un
 # Report bugs using GitHub's issue tracker
 
 We use GitHub issues to track public bugs. Report a bug by opening a new issue.
-
-# License
-
-By contributing, you agree that your contributions will be licensed under its Corpi1 Software License.
