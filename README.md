@@ -16,8 +16,4 @@ To install please head to the latest relase [here](https://github.com/Corp-i1/Wi
 Will Update once project is in better state
 
 ## License  
-This project is licensed under the **Corpi1 Software License (Based on Mozilla Public License 2.0)**.  
-
-You are free to use, modify, and distribute the software. **Businesses and individuals can use it**, including in commercial activities. However, **you may not sell, repackage, or monetize the software itself**.  
-
-See the [LICENSE](LICENSE.md) file for full terms.  
+This project is licensed under the Mozilla Public License 2.0
