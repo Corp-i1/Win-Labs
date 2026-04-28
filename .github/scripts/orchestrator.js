@@ -36,10 +36,12 @@ async function findChildren(parentNumber) {
 // Find root issue
 async function findRoot(issueNum) {
   let current = issueNum;
-  const visited = new Set();
+  let visited = new Set();
+
+  let rootTitle = null;
 
   while (true) {
-    if (visited.has(current)) break; // cycle protection
+    if (visited.has(current)) break;
     visited.add(current);
 
     const issue = await octokit.issues.get({
@@ -48,13 +50,20 @@ async function findRoot(issueNum) {
       issue_number: current,
     });
 
+    if (!rootTitle) {
+      rootTitle = issue.data.title; // capture root title
+    }
+
     const parent = extractParent(issue.data.body);
 
     if (!parent) break;
     current = parent;
   }
 
-  return current;
+  return {
+    root: current,
+    title: rootTitle || `Issue #${current}`,
+  };
 }
 
 // Collect full tree (recursive)
@@ -169,7 +178,7 @@ async function hasDiff(branchName, baseBranch) {
    PR MANAGEMENT
 --------------------------*/
 
-async function ensurePR(branchName, root) {
+async function ensurePR(branchName, root, rootTitle) {
   const defaultBranch = await getDefaultBranch();
 
   const prs = await octokit.pulls.list({
@@ -187,10 +196,10 @@ async function ensurePR(branchName, root) {
   const pr = await octokit.pulls.create({
     owner,
     repo,
-    title: `Group for #${root}`,
+    title: `${rootTitle} (Group #${root})`,
     head: branchName,
     base: defaultBranch,
-    body: `Auto-generated PR for issue group rooted at #${root}`,
+    body: `Auto-generated PR for issue group rooted at #${root}\n\nRoot: ${rootTitle}`,
   });
 
   console.log("Created PR:", pr.data.number);
@@ -242,24 +251,18 @@ ${marker}
   try {
     console.log("Processing issue:", issueNumber);
 
-    const root = await findRoot(issueNumber);
-    console.log("Root issue:", root);
+    const { root, title } = await findRoot(issueNumber);
+    console.log("Root issue:", root, title);
 
     const group = await collectTree(root);
     console.log("Group:", group);
 
     const branchName = `issue-group-${root}`;
 
-    // 1. Create branch
     await ensureBranch(branchName);
 
-    // 2. CREATE MARKER COMMIT (THIS FIXES YOUR ERROR)
-    await createMarkerCommit(branchName, root, group);
+    const pr = await ensurePR(branchName, root, title);
 
-    // 3. Now safe to create PR
-    const pr = await ensurePR(branchName, root);
-
-    // 4. Attach issues
     await annotateIssues(group, branchName, pr);
 
     console.log("Done.");
