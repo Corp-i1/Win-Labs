@@ -36,10 +36,12 @@ async function findChildren(parentNumber) {
 // Find root issue
 async function findRoot(issueNum) {
   let current = issueNum;
-  const visited = new Set();
+  let visited = new Set();
+
+  let rootTitle = null;
 
   while (true) {
-    if (visited.has(current)) break; // cycle protection
+    if (visited.has(current)) break;
     visited.add(current);
 
     const issue = await octokit.issues.get({
@@ -48,13 +50,20 @@ async function findRoot(issueNum) {
       issue_number: current,
     });
 
+    if (!rootTitle) {
+      rootTitle = issue.data.title; // capture root title
+    }
+
     const parent = extractParent(issue.data.body);
 
     if (!parent) break;
     current = parent;
   }
 
-  return current;
+  return {
+    root: current,
+    title: rootTitle || `Issue #${current}`,
+  };
 }
 
 // Collect full tree (recursive)
@@ -117,10 +126,59 @@ async function ensureBranch(branchName) {
 }
 
 /* -------------------------
+   Init Commit
+--------------------------*/
+
+function encodeBase64(str) {
+  return Buffer.from(str).toString("base64");
+}
+
+async function createMarkerCommit(branchName, root, issues) {
+  const defaultBranch = await getDefaultBranch();
+
+  const content = `
+# Issue Group ${root}
+
+## Root
+${root}
+
+## Issues
+${issues.join(", ")}
+
+## Auto-generated
+Created by GitHub Action
+`;
+
+  const path = `issue-groups/group-${root}.md`;
+
+  await octokit.repos.createOrUpdateFileContents({
+    owner,
+    repo,
+    path,
+    message: `chore: init issue group #${root}`,
+    content: encodeBase64(content),
+    branch: branchName,
+  });
+
+  console.log("Marker commit created");
+}
+
+async function hasDiff(branchName, baseBranch) {
+  const compare = await octokit.repos.compareCommits({
+    owner,
+    repo,
+    base: baseBranch,
+    head: branchName,
+  });
+
+  return compare.data.files && compare.data.files.length > 0;
+}
+
+/* -------------------------
    PR MANAGEMENT
 --------------------------*/
 
-async function ensurePR(branchName, root) {
+async function ensurePR(branchName, root, rootTitle) {
   const defaultBranch = await getDefaultBranch();
 
   const prs = await octokit.pulls.list({
@@ -138,10 +196,10 @@ async function ensurePR(branchName, root) {
   const pr = await octokit.pulls.create({
     owner,
     repo,
-    title: `Group for #${root}`,
+    title: `${rootTitle} (Group #${root})`,
     head: branchName,
     base: defaultBranch,
-    body: `Auto-generated PR for issue group rooted at #${root}`,
+    body: `Auto-generated PR for issue group rooted at #${root}\n\nRoot: ${rootTitle}`,
   });
 
   console.log("Created PR:", pr.data.number);
@@ -193,8 +251,8 @@ ${marker}
   try {
     console.log("Processing issue:", issueNumber);
 
-    const root = await findRoot(issueNumber);
-    console.log("Root issue:", root);
+    const { root, title } = await findRoot(issueNumber);
+    console.log("Root issue:", root, title);
 
     const group = await collectTree(root);
     console.log("Group:", group);
@@ -202,7 +260,8 @@ ${marker}
     const branchName = `issue-group-${root}`;
 
     await ensureBranch(branchName);
-    const pr = await ensurePR(branchName, root);
+
+    const pr = await ensurePR(branchName, root, title);
 
     await annotateIssues(group, branchName, pr);
 
