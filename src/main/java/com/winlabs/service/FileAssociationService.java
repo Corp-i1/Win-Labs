@@ -1,9 +1,10 @@
 package com.winlabs.service;
 
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
 
 /**
  * Service for handling Windows file type associations for .wlp files.
@@ -72,7 +73,7 @@ public class FileAssociationService {
             );
             
             logger.info(".wlp file type registration completed successfully");
-        } catch (Exception e) {
+        } catch (IOException | InterruptedException e) {
             logger.error("Failed to register file type association: {}", e.getMessage(), e);
         }
     }
@@ -103,7 +104,7 @@ public class FileAssociationService {
             );
             
             logger.info("File type association unregistered successfully");
-        } catch (Exception e) {
+        } catch (IOException | InterruptedException e) {
             logger.error("Failed to unregister file type association: {}", e.getMessage(), e);
         }
     }
@@ -127,7 +128,7 @@ public class FileAssociationService {
             }
             
             return classPath;
-        } catch (Exception e) {
+        } catch (UnsupportedEncodingException e) {
             // Fallback: use system property with platform-agnostic path construction
             return System.getProperty("java.home") + java.io.File.separator + "bin" + java.io.File.separator + "javaw.exe";
         }

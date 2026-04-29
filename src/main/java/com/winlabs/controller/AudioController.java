@@ -141,11 +141,12 @@ public class AudioController {
                     e.getCause() != null && e.getCause().getMessage() != null && 
                     e.getCause().getMessage().contains("Could not create player"))) {
                 
-                String linuxErrorMsg = "Linux Audio Error: Missing multimedia libraries.\n" +
-                    "Please install GStreamer libraries:\n" +
-                    "• Fedora/RHEL: sudo dnf group upgrade multimedia sound-and-video --setopt=\"install_weak_deps=False\" --exclude=PackageKit-gstreamer-plugin && sudo dnf install ffmpeg-libs gstreamer* --allowerasing \n" +
-                    "• You also need RPM Fusion: sudo dnf install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm\n" +
-                    "Then restart Win-Labs.";
+                String linuxErrorMsg = """
+                                       Linux Audio Error: Missing multimedia libraries.
+                                       Please install GStreamer libraries:
+                                       \u2022 Fedora/RHEL: sudo dnf group upgrade multimedia sound-and-video --setopt="install_weak_deps=False" --exclude=PackageKit-gstreamer-plugin && sudo dnf install ffmpeg-libs gstreamer* --allowerasing 
+                                       \u2022 You also need RPM Fusion: sudo dnf install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+                                       Then restart Win-Labs.""";
                 logger.info(linuxErrorMsg);
                 logger.error("Linux multimedia libraries missing. User should install GStreamer codecs.");
                 updateStatus("Linux multimedia libraries missing. User should install GStreamer codecs.");
