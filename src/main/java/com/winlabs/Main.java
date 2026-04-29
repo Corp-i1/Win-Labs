@@ -1,23 +1,26 @@
 package com.winlabs;
 
-import com.winlabs.model.RecentPlaylist;
-import com.winlabs.service.FileAssociationService;
-import com.winlabs.service.LoggerService;
-import com.winlabs.service.SettingsService;
-import com.winlabs.model.Settings;
-import com.winlabs.view.MainWindow;
-import com.winlabs.view.WelcomeScreen;
-import javafx.application.Application;
-import javafx.scene.control.Alert;
-import javafx.stage.Stage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.winlabs.model.RecentPlaylist;
+import com.winlabs.model.Settings;
+import com.winlabs.service.FileAssociationService;
+import com.winlabs.service.LoggerService;
+import com.winlabs.service.SettingsService;
+import com.winlabs.view.MainWindow;
+import com.winlabs.view.WelcomeScreen;
+
+import javafx.application.Application;
+import javafx.scene.control.Alert;
+import javafx.stage.Stage;
 
 /**
  * Main entry point for Win-Labs application.
@@ -39,7 +42,7 @@ public class Main extends Application {
         Settings settings;
         try {
             settings = settingsService.load();
-        } catch (Exception e) {
+        } catch (IOException e) {
             logger.error("Failed to load settings, using defaults: {}", e.getMessage(), e);
             settings = new Settings();
         }
@@ -137,7 +140,7 @@ public class Main extends Application {
                     }
                     
                     welcomeScreen.updateRecentPlaylists(refreshedPlaylists);
-                } catch (Exception e) {
+                } catch (IOException e) {
                     logger.error("Failed to toggle pin status: {}", filePath, e);
                 }
             });
@@ -249,7 +252,7 @@ public class Main extends Application {
             Settings settings = settingsService.load();
             MainWindow tempWindow = new MainWindow(this::showDocumentation, this::showAboutDialog);
             tempWindow.openSettings(settings, settingsService);
-        } catch (Exception e) {
+        } catch (IOException e) {
             logger.error("Error opening settings: {}", e.getMessage(), e);
         }
     }
@@ -262,15 +265,18 @@ public class Main extends Application {
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setTitle("Win-Labs Documentation");
             alert.setHeaderText("Help & Documentation");
-            alert.setContentText("Documentation is available at:\n" +
-                "https://github.com/Corp-i1/Win-Labs\n\n" +
-                "Features:\n" +
-                "• Create and manage audio cue lists\n" +
-                "• Set pre-wait and post-wait timers\n" +
-                "• Auto-follow functionality\n" +
-                "• Multi-track playback\n" +
-                "• Theme customization\n\n" +
-                "For more information, visit the repository.");
+            alert.setContentText("""
+                                 Documentation is available at:
+                                 https://github.com/Corp-i1/Win-Labs
+                                 
+                                 Features:
+                                 \u2022 Create and manage audio cue lists
+                                 \u2022 Set pre-wait and post-wait timers
+                                 \u2022 Auto-follow functionality
+                                 \u2022 Multi-track playback
+                                 \u2022 Theme customization
+                                 
+                                 For more information, visit the repository.""");
             alert.showAndWait();
         } catch (Exception e) {
             logger.error("Error showing documentation: {}", e.getMessage(), e);
@@ -284,10 +290,12 @@ public class Main extends Application {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("About Win-Labs");
         alert.setHeaderText("Win-Labs Cue List Manager");
-        alert.setContentText("Version 1.0.0\n" +
-            "Developed by Win-Labs Team\n\n" +
-            "Win-Labs is an open-source application for managing and playing audio cue lists.\n" +
-            "For more information, visit https://github.com/Corp-i1/Win-Labs");
+        alert.setContentText("""
+                             Version 1.0.0
+                             Developed by Win-Labs Team
+                             
+                             Win-Labs is an open-source application for managing and playing audio cue lists.
+                             For more information, visit https://github.com/Corp-i1/Win-Labs""");
         alert.showAndWait();
     }
     

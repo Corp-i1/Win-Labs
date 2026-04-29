@@ -1,20 +1,22 @@
 package com.winlabs.service;
 
-import com.winlabs.model.PlaybackState;
-import javafx.scene.media.Media;
-import javafx.scene.media.MediaPlayer;
-import javafx.util.Duration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.function.Consumer;
 
-// TODO: gapless playback,
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.winlabs.model.PlaybackState;
+
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
+import javafx.util.Duration;
+
+// TODO: gap less playback,
 // TODO: equalizer settings, 
-// TODO: Crossfade between tracks
+// TODO: Cross fade between tracks
 
 
 /**
@@ -224,7 +226,7 @@ public class AudioService {
             
             double newTime = mediaPlayer.getCurrentTime().toSeconds();
             logger.trace("Current playback time after seek: {} seconds", newTime);
-            logger.info("Seeked from {} to {} seconds", currentTime, newTime);
+            logger.info("Sneaked from {} to {} seconds", currentTime, newTime);
             logger.debug("Seek operation completed successfully");
         } else {
             logger.warn("MediaPlayer is null, cannot seek");

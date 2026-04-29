@@ -1,5 +1,17 @@
 package com.winlabs.view;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.winlabs.controller.AudioController;
 import com.winlabs.model.Cue;
 import com.winlabs.model.PlaybackState;
@@ -13,25 +25,35 @@ import com.winlabs.service.SettingsService;
 import com.winlabs.util.PathUtil;
 import com.winlabs.util.TimeUtil;
 import com.winlabs.view.components.FileView;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.Label;
+import javafx.scene.control.Menu;
+import javafx.scene.control.MenuBar;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.Separator;
+import javafx.scene.control.SeparatorMenuItem;
+import javafx.scene.control.SplitPane;
+import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.ToolBar;
+import javafx.scene.control.Tooltip;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.*;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
 
 //TODO: #69 Add context menu for file operations (open, delete, properties, etc.)
 //TODO: #70 Add drag-and-drop support for adding files to cue list
@@ -93,7 +115,7 @@ public class MainWindow extends Stage {
         try {
             this.settings = settingsService.load();
             logger.debug("Settings loaded successfully");
-        } catch (Exception e) {
+        } catch (IOException e) {
             logger.error("Failed to load settings, using defaults", e);
             this.settings = new Settings();
         }
@@ -232,9 +254,8 @@ public class MainWindow extends Stage {
         );
         
         // Edit menu
-        //TODO: Make functional
         Menu editMenu = new Menu("Edit");
-        editMenu.setDisable(true); // Disable until functional
+        // editMenu.setDisable(true); // Disable until functional
         MenuItem addCueItem = new MenuItem("Add Cue");
         addCueItem.setOnAction(e -> addNewCue());
         MenuItem deleteCueItem = new MenuItem("Delete Cue");
@@ -551,35 +572,35 @@ public class MainWindow extends Stage {
      */
     private void handleStateChange(PlaybackState state) {
         switch (state) {
-            case PLAYING:
+            case PLAYING -> {
                 // GO button stays enabled for multi-track
                 pauseButton.setText("Pause");
                 pauseButton.setDisable(false);
                 stopButton.setDisable(false);
-                break;
-            case PAUSED:
+            }
+            case PAUSED -> {
                 pauseButton.setText("Resume");
                 pauseButton.setDisable(false);
                 stopButton.setDisable(false);
-                break;
-            case PRE_WAIT:
+            }
+            case PRE_WAIT -> {
                 // During pre-wait, allow pausing the timer
                 pauseButton.setText("Pause");
                 pauseButton.setDisable(false);
                 stopButton.setDisable(false);
-                break;
-            case POST_WAIT:
+            }
+            case POST_WAIT -> {
                 // During post-wait, allow pausing the timer
                 pauseButton.setText("Pause");
                 pauseButton.setDisable(false);
                 stopButton.setDisable(false);
-                break;
-            case STOPPED:
+            }
+            case STOPPED -> {
                 // GO button stays enabled for multi-track
                 pauseButton.setText("Pause");
                 pauseButton.setDisable(true);
                 stopButton.setDisable(true);
-                break;
+            }
         }
     }
     
@@ -684,13 +705,13 @@ public class MainWindow extends Stage {
                 settings.addRecentFile(filePath.toString());
                 try {
                     settingsService.save(settings);
-                } catch (Exception ex) {
+                } catch (IOException ex) {
                     logger.error("Failed to save recent file to settings", ex);
                 }
                 
                 updateCueCount();
                 updateStatus("Loaded playlist: " + loadedPlaylist.getName());
-            } catch (Exception e) {
+            } catch (IOException e) {
                 showError("Failed to load playlist", e.getMessage());
             }
         }
@@ -707,7 +728,7 @@ public class MainWindow extends Stage {
                 playlistService.save(playlist, playlist.getFilePath());
                 playlistSettingsService.save(currentPlaylistPath, playlistSettings);
                 updateStatus("Playlist saved");
-            } catch (Exception e) {
+            } catch (IOException e) {
                 showError("Failed to save playlist", e.getMessage());
             }
         }
@@ -734,7 +755,7 @@ public class MainWindow extends Stage {
                 currentPlaylistPath = filePath;
                 playlist.setFilePath(filePath.toString());
                 updateStatus("Playlist saved as: " + file.getName());
-            } catch (Exception e) {
+            } catch (IOException e) {
                 showError("Failed to save playlist", e.getMessage());
             }
         }
@@ -855,7 +876,7 @@ public class MainWindow extends Stage {
                 // Refresh the welcome screen to update the display
                 welcomeScreenRef[0].close();
                 showWelcomeScreen();
-            } catch (Exception e) {
+            } catch (IOException e) {
                 logger.error("Failed to toggle pin for {}", filePath, e);
                 showError("Failed to toggle pin", e.getMessage());
             }
@@ -874,9 +895,9 @@ public class MainWindow extends Stage {
                     String fileName = path.getFileName().toString();
                     String playlistName = fileName.replaceFirst("[.][^.]+$", "");
                     
-                    RecentPlaylist playlist = new RecentPlaylist(playlistName, filePath);
-                    playlist.setIsPinned(true);
-                    allPlaylists.add(playlist);
+                    RecentPlaylist singlePlaylist = new RecentPlaylist(playlistName, filePath);
+                    singlePlaylist.setIsPinned(true);
+                    allPlaylists.add(singlePlaylist);
                     logger.debug("Added pinned playlist: {}", filePath);
                 } catch (Exception e) {
                     logger.warn("Failed to add pinned playlist: {}", filePath, e);
@@ -899,9 +920,9 @@ public class MainWindow extends Stage {
                     String fileName = path.getFileName().toString();
                     String playlistName = fileName.replaceFirst("[.][^.]+$", "");
                     
-                    RecentPlaylist playlist = new RecentPlaylist(playlistName, filePath);
-                    playlist.setIsPinned(false);
-                    allPlaylists.add(playlist);
+                    RecentPlaylist SinglePlaylist = new RecentPlaylist(playlistName, filePath);
+                    SinglePlaylist.setIsPinned(false);
+                    allPlaylists.add(SinglePlaylist);
                 } catch (Exception e) {
                     logger.warn("Failed to add recent playlist: {}", filePath, e);
                 }
@@ -1029,7 +1050,7 @@ public class MainWindow extends Stage {
     public void openPlaylistFile(String filePath) {
         try {
             currentPlaylistPath = Paths.get(filePath);
-            PlaylistService playlistService = new PlaylistService();
+            this.playlistService = new PlaylistService();
             playlist.clear();
             Playlist loadedPlaylist = playlistService.load(filePath);
             for (Cue cue : loadedPlaylist.getCues()) {
@@ -1037,7 +1058,7 @@ public class MainWindow extends Stage {
             }
             playlistInitialized = true;
             updateStatus("Opened playlist: " + filePath);
-        } catch (Exception e) {
+        } catch (IOException e) {
             showError("Failed to open playlist", e.getMessage());
             currentPlaylistPath = null;
         }
@@ -1119,7 +1140,7 @@ public class MainWindow extends Stage {
                     settings.removeRecentFile(filePath);
                     try {
                         settingsService.save(settings);
-                    } catch (Exception ex) {
+                    } catch (IOException ex) {
                         logger.error("Failed to save settings after removing recent file", ex);
                     }
                 }
@@ -1144,14 +1165,14 @@ public class MainWindow extends Stage {
             settings.addRecentFile(filePath);
             try {
                 settingsService.save(settings);
-            } catch (Exception ex) {
+            } catch (IOException ex) {
                 logger.error("Failed to save recent file to settings", ex);
             }
             
             updateCueCount();
             updateStatus("Loaded playlist: " + loadedPlaylist.getName());
             logger.info("Opened recent playlist: {}", filePath);
-        } catch (Exception e) {
+        } catch (IOException e) {
             logger.error("Failed to open recent file: {}", filePath, e);
             showError("Failed to open playlist", e.getMessage());
         }
@@ -1173,7 +1194,7 @@ public class MainWindow extends Stage {
                 settingsService.save(settings);
                 updateStatus("Recent files cleared");
                 logger.info("Recent files list cleared");
-            } catch (Exception e) {
+            } catch (IOException e) {
                 logger.error("Failed to save settings after clearing recent files", e);
                 showError("Failed to clear recent files", e.getMessage());
             }

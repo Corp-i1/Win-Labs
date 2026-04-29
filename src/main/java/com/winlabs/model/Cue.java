@@ -1,7 +1,15 @@
 package com.winlabs.model;
 
-import javafx.beans.property.*;
 import java.util.Objects;
+
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 
 /*
      * TODO: Add unit tests covering all Cue factory methods and initialization paths.
@@ -10,7 +18,7 @@ import java.util.Objects;
  * Represents a single cue in the playlist.
  * Uses JavaFX properties for automatic UI binding.
  */
-public class Cue {
+public final class Cue {
     private final IntegerProperty number;
     private final StringProperty name;
     private final DoubleProperty duration; // in seconds
