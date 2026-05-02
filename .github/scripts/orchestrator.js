@@ -139,6 +139,30 @@ function encodeBase64(str) {
   return Buffer.from(str).toString("base64");
 }
 
+function buildRelatedIssuesSection(branchName, rootIssueNumber, issues) {
+  const uniqueIssues = [...new Set(issues)].sort((left, right) => left - right);
+  const relatedIssues = uniqueIssues.filter(issueNumber => issueNumber !== rootIssueNumber);
+  const relatedRefs = relatedIssues.map(issueNumber => `#${issueNumber}`).join(", ");
+
+  return `
+<!-- ISSUE_GROUP_LINKS:${branchName} -->
+## Related Issues
+Fixes #${rootIssueNumber}${relatedRefs ? `\nRefs: ${relatedRefs}` : ""}
+`;
+}
+
+function upsertRelatedIssuesSection(body, branchName, rootIssueNumber, issues) {
+  const marker = `<!-- ISSUE_GROUP_LINKS:${branchName} -->`;
+  const section = buildRelatedIssuesSection(branchName, rootIssueNumber, issues);
+  const existingBody = body || "";
+
+  if (existingBody.includes(marker)) {
+    return existingBody.replace(new RegExp(`\\n?${marker}[\\s\\S]*$`), section);
+  }
+
+  return `${existingBody.trim()}${existingBody.trim() ? "\n\n" : ""}${section}`;
+}
+
 async function createMarkerCommit(branchName, root, issues) {
   const content = `
 # Issue Group ${root}
@@ -165,6 +189,25 @@ Created by GitHub Action
   });
 
   console.log("Marker commit created");
+}
+
+async function syncPullRequestIssueLinks(branchName, rootIssueNumber, pr, issues) {
+  const body = pr.body || "";
+  const updatedBody = upsertRelatedIssuesSection(body, branchName, rootIssueNumber, issues);
+
+  if (body === updatedBody) {
+    return pr;
+  }
+
+  const updated = await octokit.pulls.update({
+    owner,
+    repo,
+    pull_number: pr.number,
+    body: updatedBody,
+  });
+
+  console.log(`Linked ${issues.length} issues to PR #${pr.number}`);
+  return updated.data;
 }
 
 async function hasDiff(branchName, baseBranch) {
@@ -218,7 +261,7 @@ async function ensurePR(branchName, root, rootTitle, issues) {
     title: `${rootTitle} (Group #${root})`,
     head: branchName,
     base: defaultBranch,
-    body: `Auto-generated PR for issue group rooted at #${root}\n\nRoot: ${rootTitle}`,
+    body: `Auto-generated PR for issue group rooted at #${root}\n\nRoot: ${rootTitle}${buildRelatedIssuesSection(branchName, root, issues)}`,
   });
 
   console.log("Created PR:", pr.data.number);
@@ -319,7 +362,7 @@ The orchestrator could not create a pull request because GitHub reported no comm
     await ensureBranch(branchName);
 
     const prResult = await ensurePR(branchName, root, title, group);
-    const pr = prResult.pr;
+    const pr = await syncPullRequestIssueLinks(branchName, root, prResult.pr, group);
 
     if (prResult.status === "skipped_no_diff") {
       await commentOnRootSkip(root, branchName);
