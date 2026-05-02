@@ -11,9 +11,6 @@ import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 
-/*
-     * TODO: Add unit tests covering all Cue factory methods and initialization paths.
- */
 /**
  * Represents a single cue in the playlist.
  * Uses JavaFX properties for automatic UI binding.

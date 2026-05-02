@@ -63,15 +63,17 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.scene.control.TextField;
+import javafx.scene.control.CheckBox;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.geometry.HPos;
 
 //TODO: #69 Add context menu for file operations (open, delete, properties, etc.)
-//TODO: #70 Add drag-and-drop support for adding files to cue list
 //TODO: #71 Add keyboard shortcuts for common actions (go, pause, stop, next cue, etc.) These should be configurable in settings.
 //TODO: #72 Add search/filter functionality to file browser
 //TODO: #78 Add context menu for opening files/folders
 //TODO: #73 Add an inspector panel for editing cue properties
-//TODO: #74 make the cue table columns reorderable and resizable, and save/load their state with the playlist
-//TODO: #75 Add multi-select support for cue table (for batch operations like delete, move, etc.) - make it so that Ctrl+Click and Shift+Click work as expected
 //TODO: #76 Add drag-and-drop reordering of cues in the cue table
 //TODO: #77 Make sure all specific key presses and actions can be remapped in settings
 
@@ -300,7 +302,6 @@ public class MainWindow extends Stage {
     /**
      * Creates the toolbar.
      */
-    //TODO: Add More toolbar buttons and functionality
     private ToolBar createToolbar() {
         ToolBar toolbar = new ToolBar();
         
@@ -591,13 +592,21 @@ public class MainWindow extends Stage {
             MenuItem deleteSelectedItem = new MenuItem("Delete Selected");
             deleteSelectedItem.setOnAction(e -> handleDeleteSelectedCues());
 
+            MenuItem propertiesItem = new MenuItem("Properties...");
+            propertiesItem.setOnAction(e -> handleEditProperties(row.getItem()));
+
+            MenuItem propertiesSelectedItem = new MenuItem("Edit Selected Properties...");
+            propertiesSelectedItem.setOnAction(e -> handleEditSelectedProperties());
+
             rowMenu.getItems().addAll(
                 playItem,
                 new SeparatorMenuItem(),
                 editNameItem,
                 changeFileItem,
+                propertiesItem,
                 duplicateItem,
                 duplicateSelectedItem,
+                propertiesSelectedItem,
                 new SeparatorMenuItem(),
                 openFileItem,
                 new SeparatorMenuItem(),
@@ -607,6 +616,7 @@ public class MainWindow extends Stage {
 
             duplicateSelectedItem.disableProperty().bind(Bindings.size(cueTable.getSelectionModel().getSelectedItems()).lessThan(2));
             deleteSelectedItem.disableProperty().bind(Bindings.size(cueTable.getSelectionModel().getSelectedItems()).lessThan(2));
+            propertiesSelectedItem.disableProperty().bind(Bindings.size(cueTable.getSelectionModel().getSelectedItems()).lessThan(1));
 
             row.contextMenuProperty().bind(Bindings.when(row.emptyProperty()).then((ContextMenu) null).otherwise(rowMenu));
 
@@ -654,6 +664,157 @@ public class MainWindow extends Stage {
                 showError("Invalid File", "Selected file is not a supported audio file.");
             }
         }
+    }
+
+    private void handleEditProperties(Cue cue) {
+        if (cue == null) return;
+        List<Cue> single = List.of(cue);
+        PropertiesResult res = showCuePropertiesDialog(single);
+        if (res == null) return; // cancelled
+
+        // Apply to single cue
+        cueController.applyProperties(cue, res.name, res.duration, res.preWait, res.postWait, res.autoFollow, res.filePath);
+        updateStatus("Updated properties for: " + cue.getName());
+    }
+
+    private void handleEditSelectedProperties() {
+        List<Cue> selected = getSelectedCuesSnapshot();
+        if (selected.isEmpty()) return;
+        PropertiesResult res = showCuePropertiesDialog(selected);
+        if (res == null) return;
+
+        cueController.applyPropertiesToSelected(selected, res.name, res.duration, res.preWait, res.postWait, res.autoFollow, res.filePath);
+        updateStatus("Applied properties to " + selected.size() + " selected cue(s)");
+    }
+
+    /**
+     * Shows a dialog allowing editing of cue properties. For multi-edit, if all selected cues share
+     * the same value for a property it will be pre-filled; otherwise left blank (skipped).
+     * Returns null if dialog was cancelled.
+     */
+    private PropertiesResult showCuePropertiesDialog(List<Cue> targetCues) {
+        Dialog<PropertiesResult> dialog = new Dialog<>();
+        dialog.setTitle(targetCues.size() == 1 ? "Cue Properties" : "Edit Properties for Selected Cues");
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+        applyThemeToDialog(dialog);
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+
+        Label nameLabel = new Label("Name:");
+        TextField nameField = new TextField();
+        grid.add(nameLabel, 0, 0);
+        grid.add(nameField, 1, 0);
+
+        Label durationLabel = new Label("Duration (s):");
+        TextField durationField = new TextField();
+        grid.add(durationLabel, 0, 1);
+        grid.add(durationField, 1, 1);
+
+        Label preLabel = new Label("Pre-Wait (s):");
+        TextField preField = new TextField();
+        grid.add(preLabel, 0, 2);
+        grid.add(preField, 1, 2);
+
+        Label postLabel = new Label("Post-Wait (s):");
+        TextField postField = new TextField();
+        grid.add(postLabel, 0, 3);
+        grid.add(postField, 1, 3);
+
+        Label autoLabel = new Label("Auto-Follow:");
+        CheckBox autoBox = new CheckBox();
+        grid.add(autoLabel, 0, 4);
+        grid.add(autoBox, 1, 4);
+
+        Label fileLabel = new Label("File:");
+        TextField fileField = new TextField();
+        fileField.setEditable(false);
+        Button chooseFileBtn = new Button("Choose...");
+        chooseFileBtn.setOnAction(e -> {
+            FileChooser chooser = new FileChooser();
+            chooser.setTitle("Select Audio File");
+            File f = chooser.showOpenDialog(this);
+            if (f != null) {
+                fileField.setText(f.toPath().toString());
+            }
+        });
+        grid.add(fileLabel, 0, 5);
+        grid.add(fileField, 1, 5);
+        grid.add(chooseFileBtn, 2, 5);
+
+        // Pre-fill fields when possible
+        if (targetCues.size() == 1) {
+            Cue c = targetCues.get(0);
+            nameField.setText(c.getName());
+            durationField.setText(String.valueOf(c.getDuration()));
+            preField.setText(String.valueOf(c.getPreWait()));
+            postField.setText(String.valueOf(c.getPostWait()));
+            autoBox.setSelected(c.isAutoFollow());
+            fileField.setText(c.getFilePath());
+        } else if (!targetCues.isEmpty()) {
+            // For multi-edit, only prefill if all equal
+            Cue first = targetCues.get(0);
+            boolean allSameName = targetCues.stream().allMatch(x -> x.getName().equals(first.getName()));
+            if (allSameName) nameField.setText(first.getName());
+
+            boolean allSameDuration = targetCues.stream().allMatch(x -> Double.compare(x.getDuration(), first.getDuration()) == 0);
+            if (allSameDuration) durationField.setText(String.valueOf(first.getDuration()));
+
+            boolean allSamePre = targetCues.stream().allMatch(x -> Double.compare(x.getPreWait(), first.getPreWait()) == 0);
+            if (allSamePre) preField.setText(String.valueOf(first.getPreWait()));
+
+            boolean allSamePost = targetCues.stream().allMatch(x -> Double.compare(x.getPostWait(), first.getPostWait()) == 0);
+            if (allSamePost) postField.setText(String.valueOf(first.getPostWait()));
+
+            boolean allSameAuto = targetCues.stream().allMatch(x -> x.isAutoFollow() == first.isAutoFollow());
+            if (allSameAuto) autoBox.setSelected(first.isAutoFollow());
+
+            boolean allSameFile = targetCues.stream().allMatch(x -> x.getFilePath().equals(first.getFilePath()));
+            if (allSameFile) fileField.setText(first.getFilePath());
+        }
+
+        dialog.getDialogPane().setContent(grid);
+
+        dialog.setResultConverter(btn -> {
+            if (btn == ButtonType.OK) {
+                PropertiesResult r = new PropertiesResult();
+                r.name = nameField.getText() != null && !nameField.getText().isEmpty() ? nameField.getText() : null;
+                try {
+                    r.duration = durationField.getText() != null && !durationField.getText().isEmpty() ? Double.parseDouble(durationField.getText()) : null;
+                } catch (NumberFormatException ex) {
+                    showError("Invalid value", "Duration must be a number");
+                    return null;
+                }
+                try {
+                    r.preWait = preField.getText() != null && !preField.getText().isEmpty() ? Double.parseDouble(preField.getText()) : null;
+                } catch (NumberFormatException ex) {
+                    showError("Invalid value", "Pre-Wait must be a number");
+                    return null;
+                }
+                try {
+                    r.postWait = postField.getText() != null && !postField.getText().isEmpty() ? Double.parseDouble(postField.getText()) : null;
+                } catch (NumberFormatException ex) {
+                    showError("Invalid value", "Post-Wait must be a number");
+                    return null;
+                }
+                r.autoFollow = autoBox.isSelected();
+                r.filePath = fileField.getText() != null && !fileField.getText().isEmpty() ? fileField.getText() : null;
+                return r;
+            }
+            return null;
+        });
+
+        return dialog.showAndWait().orElse(null);
+    }
+
+    private static class PropertiesResult {
+        String name;
+        Double duration;
+        Double preWait;
+        Double postWait;
+        Boolean autoFollow;
+        String filePath;
     }
 
     private void handleDuplicateCue(Cue cue) {

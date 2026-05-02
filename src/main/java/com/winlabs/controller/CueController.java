@@ -128,4 +128,43 @@ public class CueController {
             throw new java.io.FileNotFoundException("File location does not exist");
         }
     }
+
+    /**
+     * Apply a set of properties to a single cue. Any parameter that is null will be skipped.
+     */
+    public void applyProperties(Cue cue, String name, Double duration, Double preWait, Double postWait, Boolean autoFollow, String filePath) {
+        if (cue == null) return;
+
+        if (name != null) {
+            cue.setName(name);
+        }
+        if (duration != null) {
+            cue.setDuration(duration);
+        }
+        if (preWait != null) {
+            cue.setPreWait(preWait);
+        }
+        if (postWait != null) {
+            cue.setPostWait(postWait);
+        }
+        if (autoFollow != null) {
+            cue.setAutoFollow(autoFollow);
+        }
+        if (filePath != null) {
+            // only change file if valid audio file
+            if (PathUtil.isAudioFile(java.nio.file.Paths.get(filePath))) {
+                cue.setFilePath(filePath);
+            }
+        }
+    }
+
+    /**
+     * Apply the same property updates to a list of selected cues. Null parameters are skipped.
+     */
+    public void applyPropertiesToSelected(List<Cue> selectedCues, String name, Double duration, Double preWait, Double postWait, Boolean autoFollow, String filePath) {
+        if (selectedCues == null || selectedCues.isEmpty()) return;
+        for (Cue cue : selectedCues) {
+            applyProperties(cue, name, duration, preWait, postWait, autoFollow, filePath);
+        }
+    }
 }
