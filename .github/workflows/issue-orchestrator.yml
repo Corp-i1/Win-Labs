@@ -15,20 +15,31 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 24
 
       - name: Install dependencies
-        run: npm install @octokit/rest
+        run: npm install --no-audit --no-fund @octokit/rest
 
       - name: Run orchestrator script
+        id: orchestrator
         env:
           FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: node .github/scripts/orchestrator.js
+
+      - name: Orchestration summary
+        if: always()
+        run: |
+          echo "## Issue Orchestrator Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Job outcome: ${{ steps.orchestrator.outcome }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Root issue: ${{ steps.orchestrator.outputs.orchestrator_root || github.event.issue.number }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Branch: ${{ steps.orchestrator.outputs.orchestrator_branch || 'unknown' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- PR status: ${{ steps.orchestrator.outputs.orchestrator_pr_status || 'error' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- PR number: ${{ steps.orchestrator.outputs.orchestrator_pr_number || 'none' }}" >> "$GITHUB_STEP_SUMMARY"
