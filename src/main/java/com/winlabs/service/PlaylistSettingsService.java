@@ -52,6 +52,8 @@ public class PlaylistSettingsService {
         json.addProperty("playlistName", settings.getPlaylistName());
         json.addProperty("lastModified", settings.getLastModified());
         json.addProperty("isPinned", settings.isPinned());
+        json.addProperty("cueTableColumnOrder", settings.getCueTableColumnOrder());
+        json.addProperty("cueTableColumnWidths", settings.getCueTableColumnWidths());
         
         // Write to file
         String jsonString = gson.toJson(json);
@@ -104,6 +106,12 @@ public class PlaylistSettingsService {
             }
             if (json.has("isPinned")) {
                 settings.setIsPinned(json.get("isPinned").getAsBoolean());
+            }
+            if (json.has("cueTableColumnOrder")) {
+                settings.setCueTableColumnOrder(json.get("cueTableColumnOrder").getAsString());
+            }
+            if (json.has("cueTableColumnWidths")) {
+                settings.setCueTableColumnWidths(json.get("cueTableColumnWidths").getAsString());
             }
         } catch (JsonSyntaxException | IOException e) {
             // If parsing fails, return defaults

@@ -6,13 +6,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.winlabs.controller.AudioController;
+import com.winlabs.controller.CueController;
 import com.winlabs.model.Cue;
 import com.winlabs.model.PlaybackState;
 import com.winlabs.model.Playlist;
@@ -42,8 +45,14 @@ import javafx.scene.control.Separator;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.TableCell;
+import javafx.scene.control.SelectionMode;
+import javafx.scene.control.cell.TextFieldTableCell;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.TableRow;
+import javafx.beans.binding.Bindings;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.util.Callback;
 import javafx.scene.control.ToolBar;
 import javafx.scene.control.Tooltip;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -87,6 +96,7 @@ public class MainWindow extends Stage {
     private Label cueCountLabel;
     
     private AudioController audioController;
+    private CueController cueController;
     private PlaylistService playlistService;
     private PlaylistSettingsService playlistSettingsService;
     private SettingsService settingsService;
@@ -107,6 +117,7 @@ public class MainWindow extends Stage {
         this.playlistSettings = new PlaylistSettings();
         this.currentPlaylistPath = null;
         this.audioController = new AudioController();
+        this.cueController = new CueController(this.audioController);
         this.playlistService = new PlaylistService();
         this.playlistSettingsService = new PlaylistSettingsService();
         this.settingsService = new SettingsService();
@@ -321,22 +332,47 @@ public class MainWindow extends Stage {
     private TableView<Cue> createCueTable() {
         cueTable = new TableView<>();
         cueTable.setItems(playlist.getCues());
-        
+        cueTable.setPlaceholder(new Label("No cues in playlist"));
+        cueTable.setEditable(true);
+        cueTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        cueTable.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
+
+        setupColumns();
+
+        cueTable.setRowFactory(createRowFactory());
+
+        return cueTable;
+    }
+
+    /**
+     * Set up table columns for the cue table.
+     */
+    private void setupColumns() {
         // Number column
         TableColumn<Cue, Integer> numberCol = new TableColumn<>("No.");
+        numberCol.setId("number");
         numberCol.setCellValueFactory(new PropertyValueFactory<>("number"));
         numberCol.setPrefWidth(50);
-        
-        // Name column
+
+        // Name column (editable inline)
         TableColumn<Cue, String> nameCol = new TableColumn<>("Name");
+        nameCol.setId("name");
         nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
         nameCol.setPrefWidth(250);
-        
+        nameCol.setCellFactory(TextFieldTableCell.forTableColumn());
+        nameCol.setOnEditCommit(evt -> {
+            Cue cue = evt.getRowValue();
+            if (cue != null && evt.getNewValue() != null) {
+                cue.setName(evt.getNewValue());
+                updateStatus("Renamed cue to: " + evt.getNewValue());
+            }
+        });
+
         // Duration column
         TableColumn<Cue, Double> durationCol = new TableColumn<>("Duration");
+        durationCol.setId("duration");
         durationCol.setCellValueFactory(new PropertyValueFactory<>("duration"));
         durationCol.setPrefWidth(80);
-        // Format duration as MM:SS
         durationCol.setCellFactory(col -> new TableCell<Cue, Double>() {
             @Override
             protected void updateItem(Double item, boolean empty) {
@@ -348,9 +384,10 @@ public class MainWindow extends Stage {
                 }
             }
         });
-        
+
         // Pre-wait column
         TableColumn<Cue, Double> preWaitCol = new TableColumn<>("Pre-Wait");
+        preWaitCol.setId("preWait");
         preWaitCol.setCellValueFactory(new PropertyValueFactory<>("preWait"));
         preWaitCol.setPrefWidth(80);
         preWaitCol.setCellFactory(col -> new TableCell<Cue, Double>() {
@@ -364,9 +401,10 @@ public class MainWindow extends Stage {
                 }
             }
         });
-        
+
         // Post-wait column
         TableColumn<Cue, Double> postWaitCol = new TableColumn<>("Post-Wait");
+        postWaitCol.setId("postWait");
         postWaitCol.setCellValueFactory(new PropertyValueFactory<>("postWait"));
         postWaitCol.setPrefWidth(80);
         postWaitCol.setCellFactory(col -> new TableCell<Cue, Double>() {
@@ -380,9 +418,10 @@ public class MainWindow extends Stage {
                 }
             }
         });
-        
+
         // Auto-follow column
         TableColumn<Cue, Boolean> autoFollowCol = new TableColumn<>("Auto-Follow");
+        autoFollowCol.setId("autoFollow");
         autoFollowCol.setCellValueFactory(new PropertyValueFactory<>("autoFollow"));
         autoFollowCol.setPrefWidth(90);
         autoFollowCol.setCellFactory(col -> new TableCell<Cue, Boolean>() {
@@ -396,18 +435,305 @@ public class MainWindow extends Stage {
                 }
             }
         });
-        
-        // File path column
+
+        // File path column - show filename with tooltip for full path
         TableColumn<Cue, String> fileCol = new TableColumn<>("File");
+        fileCol.setId("filePath");
         fileCol.setCellValueFactory(new PropertyValueFactory<>("filePath"));
         fileCol.setPrefWidth(300);
-        
-		cueTable.getColumns().addAll(List.of(
-			numberCol, nameCol, durationCol, preWaitCol, 
-			postWaitCol, autoFollowCol, fileCol
-		));
-        
-        return cueTable;
+        fileCol.setCellFactory(col -> new TableCell<Cue, String>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null || item.isEmpty()) {
+                    setText(null);
+                    setTooltip(null);
+                } else {
+                    try {
+                        String fileName = Paths.get(item).getFileName().toString();
+                        setText(fileName);
+                        Tooltip tip = new Tooltip(item);
+                        setTooltip(tip);
+                    } catch (Exception ex) {
+                        setText(item);
+                        setTooltip(new Tooltip(item));
+                    }
+                }
+            }
+        });
+
+        cueTable.getColumns().setAll(List.of(numberCol, nameCol, durationCol, preWaitCol, postWaitCol, autoFollowCol, fileCol));
+
+        applyCueTableLayoutFromSettings();
+    }
+
+    /**
+
+    /**
+     * Captures the current cue table layout into playlist settings.
+     */
+    private void captureCueTableLayoutToSettings() {
+        if (cueTable == null || playlistSettings == null) {
+            return;
+        }
+
+        StringBuilder order = new StringBuilder();
+        StringBuilder widths = new StringBuilder();
+        boolean first = true;
+
+        for (TableColumn<Cue, ?> column : cueTable.getColumns()) {
+            String columnId = column.getId();
+            if (columnId == null || columnId.isEmpty()) {
+                continue;
+            }
+
+            if (!first) {
+                order.append(',');
+                widths.append(',');
+            }
+
+            order.append(columnId);
+            widths.append(columnId).append('=').append(column.getWidth());
+            first = false;
+        }
+
+        playlistSettings.setCueTableColumnOrder(order.toString());
+        playlistSettings.setCueTableColumnWidths(widths.toString());
+    }
+
+    /**
+     * Applies the saved cue table layout from playlist settings.
+     */
+    private void applyCueTableLayoutFromSettings() {
+        if (cueTable == null || playlistSettings == null) {
+            return;
+        }
+
+        String savedOrder = playlistSettings.getCueTableColumnOrder();
+        String savedWidths = playlistSettings.getCueTableColumnWidths();
+        if ((savedOrder == null || savedOrder.isEmpty()) && (savedWidths == null || savedWidths.isEmpty())) {
+            return;
+        }
+
+        Map<String, TableColumn<Cue, ?>> columnsById = new HashMap<>();
+        for (TableColumn<Cue, ?> column : cueTable.getColumns()) {
+            if (column.getId() != null) {
+                columnsById.put(column.getId(), column);
+            }
+        }
+
+        if (savedWidths != null && !savedWidths.isEmpty()) {
+            for (String entry : savedWidths.split(",")) {
+                String[] parts = entry.split("=", 2);
+                if (parts.length != 2) {
+                    continue;
+                }
+
+                TableColumn<Cue, ?> column = columnsById.get(parts[0]);
+                if (column != null) {
+                    try {
+                        column.setPrefWidth(Double.parseDouble(parts[1]));
+                    } catch (NumberFormatException ex) {
+                        logger.debug("Ignoring invalid stored width for column {}", parts[0]);
+                    }
+                }
+            }
+        }
+
+        if (savedOrder != null && !savedOrder.isEmpty()) {
+            List<TableColumn<Cue, ?>> orderedColumns = new ArrayList<>();
+            for (String id : savedOrder.split(",")) {
+                TableColumn<Cue, ?> column = columnsById.get(id);
+                if (column != null && !orderedColumns.contains(column)) {
+                    orderedColumns.add(column);
+                }
+            }
+
+            for (TableColumn<Cue, ?> column : cueTable.getColumns()) {
+                if (!orderedColumns.contains(column)) {
+                    orderedColumns.add(column);
+                }
+            }
+
+            cueTable.getColumns().setAll(orderedColumns);
+        }
+    }
+
+    /**
+     * Creates a row factory that attaches a context menu and double-click handler.
+     */
+    private Callback<TableView<Cue>, TableRow<Cue>> createRowFactory() {
+        return table -> {
+            TableRow<Cue> row = new TableRow<>();
+            ContextMenu rowMenu = new ContextMenu();
+
+            MenuItem playItem = new MenuItem("Play");
+            playItem.setOnAction(e -> handlePlayCue(row.getItem()));
+
+            MenuItem editNameItem = new MenuItem("Edit Name...");
+            editNameItem.setOnAction(e -> handleEditName(row.getItem()));
+
+            MenuItem changeFileItem = new MenuItem("Change File...");
+            changeFileItem.setOnAction(e -> handleChangeFile(row.getItem()));
+
+            MenuItem duplicateItem = new MenuItem("Duplicate");
+            duplicateItem.setOnAction(e -> handleDuplicateCue(row.getItem()));
+
+            MenuItem duplicateSelectedItem = new MenuItem("Duplicate Selected");
+            duplicateSelectedItem.setOnAction(e -> handleDuplicateSelectedCues());
+
+            MenuItem openFileItem = new MenuItem("Open File Location");
+            openFileItem.setOnAction(e -> handleOpenFileLocation(row.getItem()));
+
+            MenuItem deleteItem = new MenuItem("Delete");
+            deleteItem.setOnAction(e -> handleDeleteCue(row.getItem()));
+
+            MenuItem deleteSelectedItem = new MenuItem("Delete Selected");
+            deleteSelectedItem.setOnAction(e -> handleDeleteSelectedCues());
+
+            rowMenu.getItems().addAll(
+                playItem,
+                new SeparatorMenuItem(),
+                editNameItem,
+                changeFileItem,
+                duplicateItem,
+                duplicateSelectedItem,
+                new SeparatorMenuItem(),
+                openFileItem,
+                new SeparatorMenuItem(),
+                deleteItem,
+                deleteSelectedItem
+            );
+
+            duplicateSelectedItem.disableProperty().bind(Bindings.size(cueTable.getSelectionModel().getSelectedItems()).lessThan(2));
+            deleteSelectedItem.disableProperty().bind(Bindings.size(cueTable.getSelectionModel().getSelectedItems()).lessThan(2));
+
+            row.contextMenuProperty().bind(Bindings.when(row.emptyProperty()).then((ContextMenu) null).otherwise(rowMenu));
+
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2 && !row.isEmpty()) {
+                    handlePlayCue(row.getItem());
+                }
+            });
+
+            return row;
+        };
+    }
+
+    // Action handlers extracted for easier testing and separation
+    private void handlePlayCue(Cue cue) {
+        if (cue == null) return;
+        cueTable.getSelectionModel().select(cue);
+        cueController.play(cue);
+        updateStatus("Playing: " + cue.getName());
+    }
+
+    private void handleEditName(Cue cue) {
+        if (cue == null) return;
+        javafx.scene.control.TextInputDialog dlg = new javafx.scene.control.TextInputDialog(cue.getName());
+        dlg.setTitle("Edit Cue Name");
+        dlg.setHeaderText("Edit cue name");
+        dlg.setContentText("Name:");
+        applyThemeToDialog(dlg);
+        dlg.showAndWait().ifPresent(newName -> {
+            cueController.rename(cue, newName);
+            updateStatus("Renamed cue to: " + newName);
+        });
+    }
+
+    private void handleChangeFile(Cue cue) {
+        if (cue == null) return;
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Select Audio File");
+        File file = chooser.showOpenDialog(this);
+        if (file != null) {
+            boolean ok = cueController.changeFile(cue, file.toPath());
+            if (ok) {
+                updateStatus("Changed file for cue: " + cue.getName());
+            } else {
+                showError("Invalid File", "Selected file is not a supported audio file.");
+            }
+        }
+    }
+
+    private void handleDuplicateCue(Cue cue) {
+        if (cue == null) return;
+        Cue copy = cueController.duplicate(playlist, cue);
+        if (copy != null) {
+            updateCueCount();
+            updateStatus("Duplicated cue: " + cue.getName());
+        }
+    }
+
+    private void handleDuplicateSelectedCues() {
+        List<Cue> selectedCues = getSelectedCuesSnapshot();
+        if (selectedCues.size() < 2) {
+            return;
+        }
+
+        List<Cue> duplicates = cueController.duplicateSelected(playlist, selectedCues);
+        if (!duplicates.isEmpty()) {
+            updateCueCount();
+            cueTable.getSelectionModel().clearSelection();
+            for (Cue cue : duplicates) {
+                cueTable.getSelectionModel().select(cue);
+            }
+            updateStatus("Duplicated " + duplicates.size() + " selected cues");
+        }
+    }
+
+    private void handleDeleteCue(Cue cue) {
+        if (cue == null) return;
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Delete Cue");
+        confirm.setHeaderText("Delete cue: " + cue.getName() + "?");
+        applyThemeToDialog(confirm);
+        confirm.showAndWait().ifPresent(resp -> {
+            if (resp == ButtonType.OK) {
+                cueController.delete(playlist, cue);
+                updateCueCount();
+                updateStatus("Deleted cue: " + cue.getName());
+            }
+        });
+    }
+
+    private void handleDeleteSelectedCues() {
+        List<Cue> selectedCues = getSelectedCuesSnapshot();
+        if (selectedCues.isEmpty()) {
+            return;
+        }
+
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Delete Selected Cues");
+        confirm.setHeaderText("Delete " + selectedCues.size() + " selected cue(s)?");
+        confirm.setContentText("This will remove all currently selected cues from the playlist.");
+        applyThemeToDialog(confirm);
+        confirm.showAndWait().ifPresent(resp -> {
+            if (resp == ButtonType.OK) {
+                cueController.deleteSelected(playlist, selectedCues);
+                updateCueCount();
+                cueTable.getSelectionModel().clearSelection();
+                updateStatus("Deleted " + selectedCues.size() + " selected cue(s)");
+            }
+        });
+    }
+
+    private List<Cue> getSelectedCuesSnapshot() {
+        return new ArrayList<>(cueTable.getSelectionModel().getSelectedItems());
+    }
+
+    private void handleOpenFileLocation(Cue cue) {
+        if (cue == null) return;
+        String fp = cue.getFilePath();
+        if (fp != null && !fp.isEmpty()) {
+            try {
+                cueController.openFileLocation(cue);
+            } catch (UnsupportedOperationException ex) {
+                showError("Unsupported", "Desktop operations are not supported on this platform.");
+            } catch (Exception ex) {
+                showError("Failed to open file location", ex.getMessage());
+            }
+        }
     }
     
     /**
@@ -486,25 +812,34 @@ public class MainWindow extends Stage {
      * Adds a new empty cue to the playlist.
      */
     private void addNewCue() {
-        int nextNumber = playlist.size() + 1;
-        Cue newCue = new Cue(nextNumber, "New Cue", "");
-        playlist.addCue(newCue);
+        Cue newCue = cueController.createNewCue(playlist);
+        if (newCue == null) {
+            return;
+        }
         updateCueCount();
         updateStatus("Added new cue");
-        logger.debug("Added new cue with number {}", nextNumber);
+        logger.debug("Added new cue with number {}", newCue.getNumber());
     }
     
     /**
      * Deletes the selected cue from the playlist.
      */
     private void deleteSelectedCue() {
-        Cue selectedCue = cueTable.getSelectionModel().getSelectedItem();
-        if (selectedCue != null) {
-            playlist.removeCue(selectedCue);
-            playlist.renumberCues();
-            updateCueCount();
-            updateStatus("Deleted cue: " + selectedCue.getName());
+        List<Cue> selectedCues = getSelectedCuesSnapshot();
+        if (selectedCues.isEmpty()) {
+            return;
         }
+
+        if (selectedCues.size() > 1) {
+            handleDeleteSelectedCues();
+            return;
+        }
+
+        Cue selectedCue = selectedCues.get(0);
+        cueController.delete(playlist, selectedCue);
+        updateCueCount();
+        cueTable.getSelectionModel().clearSelection();
+        updateStatus("Deleted cue: " + selectedCue.getName());
     }
     
     /**
@@ -515,12 +850,11 @@ public class MainWindow extends Stage {
         Cue selectedCue = cueTable.getSelectionModel().getSelectedItem();
         if (selectedCue != null) {
             // Play the selected cue
-            audioController.playCue(selectedCue);
+            cueController.play(selectedCue);
             
             // Immediately advance to next cue
-            int currentIndex = playlist.getCues().indexOf(selectedCue);
-            if (currentIndex >= 0 && currentIndex < playlist.size() - 1) {
-                Cue nextCue = playlist.getCue(currentIndex + 1);
+            Cue nextCue = cueController.getNextCue(playlist, selectedCue);
+            if (nextCue != null) {
                 cueTable.getSelectionModel().select(nextCue);
                 updateStatus("Playing: " + selectedCue.getName() + " | Next: " + nextCue.getName());
             } else {
@@ -558,12 +892,10 @@ public class MainWindow extends Stage {
         if (currentCue == null) {
             return;
         }
-        
-        int currentIndex = playlist.getCues().indexOf(currentCue);
-        if (currentIndex >= 0 && currentIndex < playlist.size() - 1) {
-            Cue nextCue = playlist.getCue(currentIndex + 1);
+        Cue nextCue = cueController.getNextCue(playlist, currentCue);
+        if (nextCue != null) {
             cueTable.getSelectionModel().select(nextCue);
-            audioController.playCue(nextCue);
+            cueController.play(nextCue);
         }
     }
     
@@ -610,20 +942,12 @@ public class MainWindow extends Stage {
     private void handleFileDoubleClick() {
         Path selectedPath = fileView.getSelectedPath();
         if (selectedPath != null && PathUtil.isAudioFile(selectedPath)) {
-            addCueFromFile(selectedPath);
+            Cue newCue = cueController.createCueFromFile(playlist, selectedPath);
+            if (newCue != null) {
+                updateCueCount();
+                updateStatus("Added cue: " + PathUtil.getFileNameWithoutExtension(selectedPath));
+            }
         }
-    }
-    
-    /**
-     * Adds a cue from a file path.
-     */
-    private void addCueFromFile(Path filePath) {
-        int nextNumber = playlist.size() + 1;
-        String fileName = PathUtil.getFileNameWithoutExtension(filePath);
-        Cue newCue = new Cue(nextNumber, fileName, filePath.toString());
-        playlist.addCue(newCue);
-        updateCueCount();
-        updateStatus("Added cue: " + fileName);
     }
     
     /**
@@ -700,6 +1024,7 @@ public class MainWindow extends Stage {
                 currentPlaylistPath = filePath;
                 playlistSettings = playlistSettingsService.load(filePath);
                 playlistInitialized = true;
+                applyCueTableLayoutFromSettings();
                 
                 // Add to recent files
                 settings.addRecentFile(filePath.toString());
@@ -725,6 +1050,7 @@ public class MainWindow extends Stage {
             savePlaylistAs();
         } else {
             try {
+                captureCueTableLayoutToSettings();
                 playlistService.save(playlist, playlist.getFilePath());
                 playlistSettingsService.save(currentPlaylistPath, playlistSettings);
                 updateStatus("Playlist saved");
@@ -749,6 +1075,7 @@ public class MainWindow extends Stage {
         if (file != null) {
             try {
                 Path filePath = file.toPath();
+                captureCueTableLayoutToSettings();
                 playlistService.save(playlist, filePath.toString());
                 playlistSettings.setPlaylistName(playlist.getName());
                 playlistSettingsService.save(filePath, playlistSettings);
