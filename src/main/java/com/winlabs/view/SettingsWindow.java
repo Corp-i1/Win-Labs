@@ -1,24 +1,42 @@
 package com.winlabs.view;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.function.Consumer;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.winlabs.model.LogLevel;
 import com.winlabs.model.Settings;
 import com.winlabs.service.LoggerService;
 import com.winlabs.service.SettingsService;
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
-import javafx.scene.layout.*;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Separator;
+import javafx.scene.control.Slider;
+import javafx.scene.control.Spinner;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.util.function.Consumer;
 
 /**
  * Settings window for configuring application and workspace preferences.
@@ -438,7 +456,7 @@ public class SettingsWindow extends Stage {
             LoggerService.configureLogging(settings);
             logger.info("Settings saved and logging reconfigured; logDirectory={} rotationSizeMB={} retentionDays={}",
                 settings.getLogDirectory(), settings.getLogRotationSizeMB(), settings.getLogRetentionDays());
-        } catch (Exception e) {
+        } catch (IOException e) {
             logger.error("Failed to save settings", e);
             showError("Failed to save settings", e.getMessage());
         }

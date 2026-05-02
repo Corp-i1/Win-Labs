@@ -1,21 +1,6 @@
 package com.winlabs.service;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.AsyncAppender;
-import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.Appender;
-import ch.qos.logback.core.rolling.RollingFileAppender;
-import ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy;
-import ch.qos.logback.core.util.FileSize;
-import com.winlabs.model.LogLevel;
-import com.winlabs.model.Settings;
-import org.slf4j.LoggerFactory;
-
 import java.awt.Desktop;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -34,6 +19,22 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import org.slf4j.LoggerFactory;
+
+import com.winlabs.model.LogLevel;
+import com.winlabs.model.Settings;
+
+import ch.qos.logback.classic.AsyncAppender;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.Appender;
+import ch.qos.logback.core.rolling.RollingFileAppender;
+import ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy;
+import ch.qos.logback.core.util.FileSize;
 
 /**
  * Service for managing application logging configuration and operations.
@@ -150,7 +151,7 @@ public class LoggerService {
                 validatedSettings.setLogDirectory(resolvedPath.toString());
                 logDir = resolvedPath.toString();
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             // Path doesn't exist yet or can't be resolved - that's OK, we'll create it
             logger.debug("Could not resolve path '{}': {}", logDir, e.getMessage());
         }
@@ -200,7 +201,7 @@ public class LoggerService {
             if (!Files.deleteIfExists(testFile)) {
                 logger.warn("Test file '{}' was not deleted (may not exist)", testFile);
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             Path fallbackDir = Paths.get(System.getProperty("java.io.tmpdir"), "winlabs-logs");
             logger.error("Cannot write to log directory '{}': {}. " +
                 "Auto-correcting to fallback: {}. Please update your settings.", 
@@ -240,7 +241,7 @@ public class LoggerService {
                            "Consider reducing rotation size or retention days.",
                            logDir, usableSpace / MB_TO_BYTES_FACTOR, requiredSpace / MB_TO_BYTES_FACTOR, retentionDays);
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             logger.warn("Could not check disk space for log directory '{}': {}", logDir, e.getMessage());
         }
         
@@ -420,7 +421,7 @@ public class LoggerService {
                 Files.setPosixFilePermissions(directory, perms);
                 logger.debug("Set 755 permissions on Unix directory: {}", directory);
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             // Non-critical - log and continue
             logger.debug("Could not set platform-specific attributes on '{}': {}", 
                 directory, e.getMessage());
@@ -435,20 +436,14 @@ public class LoggerService {
             return Level.INFO;
         }
         
-        switch (logLevel) {
-            case TRACE:
-                return Level.TRACE;
-            case DEBUG:
-                return Level.DEBUG;
-            case INFO:
-                return Level.INFO;
-            case WARN:
-                return Level.WARN;
-            case ERROR:
-                return Level.ERROR;
-            default:
-                return Level.INFO;
-        }
+        return switch (logLevel) {
+            case TRACE -> Level.TRACE;
+            case DEBUG -> Level.DEBUG;
+            case INFO -> Level.INFO;
+            case WARN -> Level.WARN;
+            case ERROR -> Level.ERROR;
+            default -> Level.INFO;
+        };
     }
     
     /**
@@ -589,7 +584,7 @@ public class LoggerService {
                 }
             }
             
-        } catch (Exception e) {
+        } catch (IOException e) {
             logger.error("Failed to open log directory", e);
         }
     }

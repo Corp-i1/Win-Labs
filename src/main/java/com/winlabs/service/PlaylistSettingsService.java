@@ -1,14 +1,19 @@
 package com.winlabs.service;
 
-import com.google.gson.*;
-import com.winlabs.model.PlaylistSettings;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
+import com.winlabs.model.PlaylistSettings;
 
 /**
  * Service for saving and loading playlist-specific settings from .wlp files.
@@ -100,7 +105,7 @@ public class PlaylistSettingsService {
             if (json.has("isPinned")) {
                 settings.setIsPinned(json.get("isPinned").getAsBoolean());
             }
-        } catch (Exception e) {
+        } catch (JsonSyntaxException | IOException e) {
             // If parsing fails, return defaults
             logger.error("Failed to parse .wlp file: {}", wlpPath, e);
         }

@@ -1,9 +1,29 @@
 package com.winlabs.view;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.winlabs.model.PlaylistSettings;
 import com.winlabs.service.PlaylistSettingsService;
+
 import javafx.geometry.Insets;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.Label;
+import javafx.scene.control.Separator;
+import javafx.scene.control.Slider;
+import javafx.scene.control.Spinner;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -11,11 +31,6 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Window;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.nio.file.Path;
 
 /**
  * Settings dialog for playlist-specific configuration.
@@ -210,7 +225,7 @@ public class PlaylistSettingsWindow extends Dialog<Boolean> {
         try {
             logger.info("Applying and saving playlist settings");
             playlistSettingsService.save(playlistPath, playlistSettings);
-        } catch (Exception e) {
+        } catch (IOException e) {
             logger.error("Failed to save playlist settings: {}", e.getMessage(), e);
             Alert alert = new Alert(Alert.AlertType.ERROR, "Failed to save playlist settings: " + e.getMessage());
             alert.setTitle("Error");
