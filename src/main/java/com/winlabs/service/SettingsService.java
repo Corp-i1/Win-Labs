@@ -85,6 +85,8 @@ public class SettingsService {
         
         // Pinned playlists
         json.add("pinnedPlaylists", gson.toJsonTree(settings.getPinnedPlaylists()));
+        // Key bindings
+        json.add("keyBindings", gson.toJsonTree(settings.getKeyBindings()));
         
         String jsonString = gson.toJson(json);
         Files.writeString(appSettingsPath, jsonString);
@@ -189,6 +191,17 @@ public class SettingsService {
                 settings.setPinnedPlaylists(pinnedPlaylists);
             } catch (JsonSyntaxException e) {
                 logger.error("Failed to load pinned playlists: {}", e.getMessage(), e);
+            }
+        }
+
+        // Load key bindings
+        if (json.has("keyBindings")) {
+            try {
+                java.util.Map<String, String> keyBindings = gson.fromJson(json.get("keyBindings"),
+                    new com.google.gson.reflect.TypeToken<java.util.Map<String, String>>(){}.getType());
+                settings.setKeyBindings(keyBindings);
+            } catch (JsonSyntaxException e) {
+                logger.error("Failed to load key bindings: {}", e.getMessage(), e);
             }
         }
     }

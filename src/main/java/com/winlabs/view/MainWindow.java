@@ -33,6 +33,8 @@ import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.application.Platform;
+
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
@@ -146,6 +148,44 @@ public class MainWindow extends Stage {
         initializeUI();
         logger.info("MainWindow initialized successfully");
     }
+
+    /**
+     * Register keyboard accelerators from application settings onto the provided scene.
+     */
+
+
+    private void selectNextCue() {
+        if (playlist == null || playlist.size() == 0) {
+            return;
+        }
+        int idx = cueTable.getSelectionModel().getSelectedIndex();
+        if (idx < 0) {
+            cueTable.getSelectionModel().select(0);
+            cueTable.scrollTo(0);
+            return;
+        }
+        if (idx < playlist.size() - 1) {
+            cueTable.getSelectionModel().select(idx + 1);
+            cueTable.scrollTo(idx + 1);
+        }
+    }
+
+    private void selectPreviousCue() {
+        if (playlist == null || playlist.size() == 0) {
+            return;
+        }
+        int idx = cueTable.getSelectionModel().getSelectedIndex();
+        if (idx < 0) {
+            int last = playlist.size() - 1;
+            cueTable.getSelectionModel().select(last);
+            cueTable.scrollTo(last);
+            return;
+        }
+        if (idx > 0) {
+            cueTable.getSelectionModel().select(idx - 1);
+            cueTable.scrollTo(idx - 1);
+        }
+    }
     
     /**
      * Sets up listeners for the audio controller.
@@ -219,6 +259,7 @@ public class MainWindow extends Stage {
         // Create scene
         Scene scene = new Scene(root);
         setScene(scene);
+
         
         // Apply saved theme or default to dark
         applyThemeFromSettings();
@@ -571,23 +612,14 @@ public class MainWindow extends Stage {
             MenuItem playItem = new MenuItem("Play");
             playItem.setOnAction(e -> handlePlayCue(row.getItem()));
 
-            MenuItem editNameItem = new MenuItem("Edit Name...");
-            editNameItem.setOnAction(e -> handleEditName(row.getItem()));
-
             MenuItem changeFileItem = new MenuItem("Change File...");
             changeFileItem.setOnAction(e -> handleChangeFile(row.getItem()));
-
-            MenuItem duplicateItem = new MenuItem("Duplicate");
-            duplicateItem.setOnAction(e -> handleDuplicateCue(row.getItem()));
 
             MenuItem duplicateSelectedItem = new MenuItem("Duplicate Selected");
             duplicateSelectedItem.setOnAction(e -> handleDuplicateSelectedCues());
 
             MenuItem openFileItem = new MenuItem("Open File Location");
             openFileItem.setOnAction(e -> handleOpenFileLocation(row.getItem()));
-
-            MenuItem deleteItem = new MenuItem("Delete");
-            deleteItem.setOnAction(e -> handleDeleteCue(row.getItem()));
 
             MenuItem deleteSelectedItem = new MenuItem("Delete Selected");
             deleteSelectedItem.setOnAction(e -> handleDeleteSelectedCues());
@@ -601,24 +633,28 @@ public class MainWindow extends Stage {
             rowMenu.getItems().addAll(
                 playItem,
                 new SeparatorMenuItem(),
-                editNameItem,
                 changeFileItem,
                 propertiesItem,
-                duplicateItem,
                 duplicateSelectedItem,
                 propertiesSelectedItem,
                 new SeparatorMenuItem(),
                 openFileItem,
                 new SeparatorMenuItem(),
-                deleteItem,
                 deleteSelectedItem
             );
 
-            duplicateSelectedItem.disableProperty().bind(Bindings.size(cueTable.getSelectionModel().getSelectedItems()).lessThan(2));
-            deleteSelectedItem.disableProperty().bind(Bindings.size(cueTable.getSelectionModel().getSelectedItems()).lessThan(2));
+            duplicateSelectedItem.disableProperty().bind(Bindings.size(cueTable.getSelectionModel().getSelectedItems()).lessThan(1));
+            deleteSelectedItem.disableProperty().bind(Bindings.size(cueTable.getSelectionModel().getSelectedItems()).lessThan(1));
             propertiesSelectedItem.disableProperty().bind(Bindings.size(cueTable.getSelectionModel().getSelectedItems()).lessThan(1));
 
             row.contextMenuProperty().bind(Bindings.when(row.emptyProperty()).then((ContextMenu) null).otherwise(rowMenu));
+
+            row.setOnContextMenuRequested(event -> {
+                if (row.isEmpty()) return;
+                if (!row.isSelected()) {
+                    cueTable.getSelectionModel().clearAndSelect(row.getIndex());
+                }
+            });
 
             row.setOnMouseClicked(event -> {
                 if (event.getClickCount() == 2 && !row.isEmpty()) {
@@ -636,19 +672,6 @@ public class MainWindow extends Stage {
         cueTable.getSelectionModel().select(cue);
         cueController.play(cue);
         updateStatus("Playing: " + cue.getName());
-    }
-
-    private void handleEditName(Cue cue) {
-        if (cue == null) return;
-        javafx.scene.control.TextInputDialog dlg = new javafx.scene.control.TextInputDialog(cue.getName());
-        dlg.setTitle("Edit Cue Name");
-        dlg.setHeaderText("Edit cue name");
-        dlg.setContentText("Name:");
-        applyThemeToDialog(dlg);
-        dlg.showAndWait().ifPresent(newName -> {
-            cueController.rename(cue, newName);
-            updateStatus("Renamed cue to: " + newName);
-        });
     }
 
     private void handleChangeFile(Cue cue) {
@@ -672,8 +695,7 @@ public class MainWindow extends Stage {
         PropertiesResult res = showCuePropertiesDialog(single);
         if (res == null) return; // cancelled
 
-        // Apply to single cue
-        cueController.applyProperties(cue, res.name, res.duration, res.preWait, res.postWait, res.autoFollow, res.filePath);
+        applyPropertiesToCue(cue, res);
         updateStatus("Updated properties for: " + cue.getName());
     }
 
@@ -683,7 +705,9 @@ public class MainWindow extends Stage {
         PropertiesResult res = showCuePropertiesDialog(selected);
         if (res == null) return;
 
-        cueController.applyPropertiesToSelected(selected, res.name, res.duration, res.preWait, res.postWait, res.autoFollow, res.filePath);
+        for (Cue cue : selected) {
+            applyPropertiesToCue(cue, res);
+        }
         updateStatus("Applied properties to " + selected.size() + " selected cue(s)");
     }
 
@@ -817,18 +841,20 @@ public class MainWindow extends Stage {
         String filePath;
     }
 
-    private void handleDuplicateCue(Cue cue) {
-        if (cue == null) return;
-        Cue copy = cueController.duplicate(playlist, cue);
-        if (copy != null) {
-            updateCueCount();
-            updateStatus("Duplicated cue: " + cue.getName());
-        }
+    private void applyPropertiesToCue(Cue cue, PropertiesResult res) {
+        if (cue == null || res == null) return;
+
+        if (res.name != null) cue.setName(res.name);
+        if (res.duration != null) cue.setDuration(res.duration);
+        if (res.preWait != null) cue.setPreWait(res.preWait);
+        if (res.postWait != null) cue.setPostWait(res.postWait);
+        if (res.autoFollow != null) cue.setAutoFollow(res.autoFollow);
+        if (res.filePath != null) cue.setFilePath(res.filePath);
     }
 
     private void handleDuplicateSelectedCues() {
         List<Cue> selectedCues = getSelectedCuesSnapshot();
-        if (selectedCues.size() < 2) {
+        if (selectedCues.isEmpty()) {
             return;
         }
 
@@ -841,21 +867,6 @@ public class MainWindow extends Stage {
             }
             updateStatus("Duplicated " + duplicates.size() + " selected cues");
         }
-    }
-
-    private void handleDeleteCue(Cue cue) {
-        if (cue == null) return;
-        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
-        confirm.setTitle("Delete Cue");
-        confirm.setHeaderText("Delete cue: " + cue.getName() + "?");
-        applyThemeToDialog(confirm);
-        confirm.showAndWait().ifPresent(resp -> {
-            if (resp == ButtonType.OK) {
-                cueController.delete(playlist, cue);
-                updateCueCount();
-                updateStatus("Deleted cue: " + cue.getName());
-            }
-        });
     }
 
     private void handleDeleteSelectedCues() {

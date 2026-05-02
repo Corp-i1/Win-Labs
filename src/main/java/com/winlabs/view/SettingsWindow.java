@@ -2,6 +2,10 @@ package com.winlabs.view;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import org.slf4j.Logger;
@@ -12,6 +16,8 @@ import com.winlabs.model.Settings;
 import com.winlabs.service.LoggerService;
 import com.winlabs.service.SettingsService;
 
+import javafx.animation.Animation;
+import javafx.animation.PauseTransition;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -29,6 +35,9 @@ import javafx.scene.control.Spinner;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -37,6 +46,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 /**
  * Settings window for configuring application and workspace preferences.
@@ -68,6 +78,9 @@ public class SettingsWindow extends Stage {
     private TextField logDirectoryField;
     private Spinner<Integer> logRotationSizeSpinner;
     private Spinner<Integer> logRetentionDaysSpinner;
+
+    // Keyboard shortcuts controls
+    private java.util.Map<String, TextField> shortcutFields = new java.util.HashMap<>();
     
     /**
      * Creates a new settings window.
@@ -111,6 +124,7 @@ public class SettingsWindow extends Stage {
         TabPane tabPane = new TabPane();
         tabPane.getTabs().addAll(
             createApplicationSettingsTab(),
+            createKeyboardShortcutsTab(),
             createWorkspaceSettingsTab(),
             createLoggingSettingsTab()
         );
@@ -266,6 +280,176 @@ public class SettingsWindow extends Stage {
         
         tab.setContent(scrollPane);
         return tab;
+    }
+
+    /**
+     * Creates the keyboard shortcuts tab.
+     */
+    private Tab createKeyboardShortcutsTab() {
+        Tab tab = new Tab("Keyboard Shortcuts");
+        tab.setClosable(false);
+
+        VBox content = new VBox(12);
+        content.setPadding(new Insets(20));
+
+        Label heading = new Label("Keyboard Shortcuts:");
+        heading.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
+        content.getChildren().add(heading);
+
+        // Define a small set of actions to expose
+        String[][] actions = new String[][] {
+            {"go", "Play/Go"},
+            {"pause", "Pause/Resume"},
+            {"stop", "Stop"},
+            {"next", "Next Cue"},
+            {"previous", "Previous Cue"},
+            {"add", "Add Cue"},
+            {"deleteSelected", "Delete Selected"},
+            {"duplicateSelected", "Duplicate Selected"}
+        };
+
+        for (var a : actions) {
+            String id = a[0];
+            String label = a[1];
+
+            Label actLabel = new Label(label + ":");
+            TextField tf = new TextField();
+            tf.setPrefWidth(200);
+            String current = settings.getApplicationSettings().getKeyBinding(id);
+            if (current != null) tf.setText(current);
+
+            Button recordBtn = new Button("Record");
+            recordBtn.setOnAction(e -> {
+                String captured = captureKeyCombination();
+                if (captured != null) tf.setText(captured);
+            });
+
+            Button resetBtn = new Button("Reset");
+            resetBtn.setOnAction(e -> tf.setText(settings.getApplicationSettings().getKeyBinding(id)));
+
+            Button resetDefaultBtn = new Button("Reset to Default");
+            resetDefaultBtn.setOnAction(e -> {
+                String def = settings.getApplicationSettings().getDefaultKeyBinding(id);
+                if (def != null) tf.setText(def);
+            });
+
+            HBox row = new HBox(8, actLabel, tf, recordBtn, resetBtn, resetDefaultBtn);
+            row.setAlignment(Pos.CENTER_LEFT);
+            content.getChildren().add(row);
+
+            shortcutFields.put(id, tf);
+        }
+
+        // Global reset to defaults for all keybindings
+        Button resetAllBtn = new Button("Reset All To Defaults");
+        resetAllBtn.setOnAction(e -> {
+            for (var a : actions) {
+                String id = a[0];
+                TextField tf = shortcutFields.get(id);
+                if (tf != null) {
+                    String def = settings.getApplicationSettings().getDefaultKeyBinding(id);
+                    if (def != null) tf.setText(def);
+                    else tf.clear();
+                }
+            }
+        });
+        content.getChildren().add(new Separator());
+        content.getChildren().add(resetAllBtn);
+
+        ScrollPane scroll = new ScrollPane(content);
+        scroll.setFitToWidth(true);
+        tab.setContent(scroll);
+        return tab;
+    }
+
+    /**
+     * Shows a small modal to capture a key sequence and returns a string like "Shift+Ctrl+D+C".
+     * Allows multiple keys to be pressed in sequence. Waits for 0.5 seconds of inactivity to finalize.
+     */
+    private String captureKeyCombination() {
+        final List<String> keySequence = new ArrayList<>();
+        final Set<String> keyNamesSeen = new HashSet<>();
+        final PauseTransition[] timeoutTimer = new PauseTransition[1];
+        
+        Stage stage = new Stage();
+        stage.setTitle("Record Shortcut");
+        stage.initModality(Modality.APPLICATION_MODAL);
+        
+        Label prompt = new Label("Press keys in sequence.\nRelease and wait 0.5 seconds to finish.");
+        Label currentBinding = new Label("Current: (empty)");
+        currentBinding.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
+        
+        VBox v = new VBox(10, prompt, currentBinding);
+        v.setPadding(new Insets(10));
+        Scene scene = new Scene(v, 350, 120);
+
+        scene.setOnKeyPressed(ev -> {
+            // Cancel any active timeout when a new key is pressed
+            if (timeoutTimer[0] != null && timeoutTimer[0].getStatus() == Animation.Status.RUNNING) {
+                timeoutTimer[0].stop();
+            }
+            
+            KeyCode code = ev.getCode();
+            // Ignore pure modifier key presses
+            if (code == KeyCode.CONTROL || code == KeyCode.ALT || code == KeyCode.SHIFT || code == KeyCode.META) {
+                ev.consume();
+                return;
+            }
+
+            String keyName = code.getName().toUpperCase();
+
+            // Do not allow the same non-modifier key more than once in a single sequence.
+            if (keyNamesSeen.contains(keyName)) {
+                ev.consume();
+                return;
+            }
+
+            String keyStr;
+            // Include modifiers only for the first key in the sequence
+            if (keySequence.isEmpty()) {
+                StringBuilder sb = new StringBuilder();
+                if (ev.isControlDown()) sb.append("CTRL+");
+                if (ev.isAltDown()) sb.append("ALT+");
+                if (ev.isShiftDown()) sb.append("SHIFT+");
+                if (ev.isMetaDown()) sb.append("META+");
+                sb.append(keyName);
+                keyStr = sb.toString();
+            } else {
+                keyStr = keyName;
+            }
+
+            // Avoid duplicates from key repeat
+            if (keySequence.isEmpty() || !keySequence.get(keySequence.size() - 1).equals(keyStr)) {
+                keySequence.add(keyStr);
+                keyNamesSeen.add(keyName);
+            }
+
+            // Update display in real-time
+            currentBinding.setText("Current: " + String.join("+", keySequence));
+            
+            ev.consume();
+        });
+
+        scene.setOnKeyReleased(ev -> {
+            // After any key release, wait 0.5 seconds for another key press
+            PauseTransition timeout = new PauseTransition(Duration.millis(500));
+            timeout.setOnFinished(e -> {
+                if (!keySequence.isEmpty()) {
+                    stage.close();
+                }
+            });
+            timeout.play();
+            timeoutTimer[0] = timeout;
+            ev.consume();
+        });
+
+        if (getScene() != null) {
+            scene.getStylesheets().addAll(getScene().getStylesheets());
+        }
+        stage.setScene(scene);
+        stage.showAndWait();
+        
+        return keySequence.isEmpty() ? null : String.join("+", keySequence);
     }
     
     /**
@@ -451,6 +635,17 @@ public class SettingsWindow extends Stage {
         
         // Save to file
         try {
+            // Update key bindings from UI
+            if (shortcutFields != null && !shortcutFields.isEmpty()) {
+                java.util.Map<String, String> newBindings = new java.util.HashMap<>();
+                for (var e : shortcutFields.entrySet()) {
+                    String v = e.getValue().getText();
+                    if (v != null && !v.isEmpty()) {
+                        newBindings.put(e.getKey(), v);
+                    }
+                }
+                settings.getApplicationSettings().setKeyBindings(newBindings);
+            }
             settingsService.save(settings);
             // Reconfigure logging with new settings
             LoggerService.configureLogging(settings);

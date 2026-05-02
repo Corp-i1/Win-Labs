@@ -2,7 +2,11 @@ package com.winlabs.model;
 
 import javafx.beans.property.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.List;
 import java.util.Set;
 
@@ -36,6 +40,22 @@ public class ApplicationSettings {
     private final DoubleProperty preWaitDefault;
     private final DoubleProperty postWaitDefault;
     private final BooleanProperty autoFollowDefault;
+    // Key bindings: actionId -> KeyCombination string (e.g. "CTRL+G")
+    private final Map<String, String> keyBindings;
+    private static final Map<String, String> DEFAULT_KEY_BINDINGS = createDefaultKeyBindings();
+
+    private static Map<String, String> createDefaultKeyBindings() {
+        Map<String, String> defaults = new LinkedHashMap<>();
+        defaults.put("go", "SPACE");
+        defaults.put("pause", "GO");
+        defaults.put("stop", "ESC");
+        defaults.put("next", ",");
+        defaults.put("previous", ".");
+        defaults.put("add", "CTRL+N");
+        defaults.put("deleteSelected", "DELETE");
+        defaults.put("duplicateSelected", "CTRL+D");
+        return Collections.unmodifiableMap(defaults);
+    }
     
     /**
      * Creates default application settings.
@@ -58,6 +78,8 @@ public class ApplicationSettings {
         this.preWaitDefault = new SimpleDoubleProperty(0.0);
         this.postWaitDefault = new SimpleDoubleProperty(0.0);
         this.autoFollowDefault = new SimpleBooleanProperty(false);
+        this.keyBindings = new HashMap<>();
+        this.keyBindings.putAll(DEFAULT_KEY_BINDINGS);
     }
     
     // Theme property
@@ -351,5 +373,49 @@ public class ApplicationSettings {
         setLogRetentionDays(5);
         clearRecentFiles();
         clearPinnedPlaylists();
+        clearKeyBindings();
+        this.keyBindings.putAll(DEFAULT_KEY_BINDINGS);
+    }
+
+    /**
+     * Gets a copy of the key bindings map.
+     */
+    public Map<String, String> getKeyBindings() {
+        return new HashMap<>(keyBindings);
+    }
+
+    /**
+     * Replaces all key bindings with the provided map.
+     */
+    public void setKeyBindings(Map<String, String> bindings) {
+        keyBindings.clear();
+        if (bindings != null) {
+            keyBindings.putAll(bindings);
+        }
+    }
+
+    /**
+     * Returns the default key binding for a given action id without modifying current settings.
+     */
+    public String getDefaultKeyBinding(String actionId) {
+        if (actionId == null) return null;
+        return DEFAULT_KEY_BINDINGS.get(actionId);
+    }
+
+    public String getKeyBinding(String actionId) {
+        return keyBindings.get(actionId);
+    }
+
+    public void setKeyBinding(String actionId, String binding) {
+        if (actionId == null) return;
+        if (binding == null) {
+            keyBindings.remove(actionId);
+        } else {
+            keyBindings.put(actionId, binding);
+        }
+    }
+
+    public void clearKeyBindings() {
+        keyBindings.clear();
     }
 }
