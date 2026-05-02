@@ -261,6 +261,7 @@ async function ensurePR(branchName, root, rootTitle, issues) {
     title: `${rootTitle} (Group #${root})`,
     head: branchName,
     base: defaultBranch,
+    draft: true,
     body: `Auto-generated PR for issue group rooted at #${root}\n\nRoot: ${rootTitle}${buildRelatedIssuesSection(branchName, root, issues)}`,
   });
 
