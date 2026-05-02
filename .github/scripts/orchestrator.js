@@ -3,8 +3,15 @@ const { Octokit } = require("@octokit/rest");
 const token = process.env.GITHUB_TOKEN;
 const [owner, repo] = process.env.REPO.split("/");
 const issueNumber = parseInt(process.env.ISSUE_NUMBER);
+const githubOutputPath = process.env.GITHUB_OUTPUT;
 
 const octokit = new Octokit({ auth: token });
+
+function appendGitHubOutput(key, value) {
+  if (!githubOutputPath) return;
+  const fs = require("fs");
+  fs.appendFileSync(githubOutputPath, `${key}=${value}\n`);
+}
 
 /* -------------------------
    RELATIONSHIP PARSING
@@ -50,13 +57,12 @@ async function findRoot(issueNum) {
       issue_number: current,
     });
 
-    if (!rootTitle) {
-      rootTitle = issue.data.title; // capture root title
-    }
-
     const parent = extractParent(issue.data.body);
 
-    if (!parent) break;
+    if (!parent) {
+      rootTitle = issue.data.title || `Issue #${current}`;
+      break;
+    }
     current = parent;
   }
 
@@ -133,9 +139,31 @@ function encodeBase64(str) {
   return Buffer.from(str).toString("base64");
 }
 
-async function createMarkerCommit(branchName, root, issues) {
-  const defaultBranch = await getDefaultBranch();
+function buildRelatedIssuesSection(branchName, rootIssueNumber, issues) {
+  const uniqueIssues = [...new Set(issues)].sort((left, right) => left - right);
+  const relatedIssues = uniqueIssues.filter(issueNumber => issueNumber !== rootIssueNumber);
+  const relatedRefs = relatedIssues.map(issueNumber => `#${issueNumber}`).join(", ");
 
+  return `
+<!-- ISSUE_GROUP_LINKS:${branchName} -->
+## Related Issues
+Fixes #${rootIssueNumber}${relatedRefs ? `\nRefs: ${relatedRefs}` : ""}
+`;
+}
+
+function upsertRelatedIssuesSection(body, branchName, rootIssueNumber, issues) {
+  const marker = `<!-- ISSUE_GROUP_LINKS:${branchName} -->`;
+  const section = buildRelatedIssuesSection(branchName, rootIssueNumber, issues);
+  const existingBody = body || "";
+
+  if (existingBody.includes(marker)) {
+    return existingBody.replace(new RegExp(`\\n?${marker}[\\s\\S]*$`), section);
+  }
+
+  return `${existingBody.trim()}${existingBody.trim() ? "\n\n" : ""}${section}`;
+}
+
+async function createMarkerCommit(branchName, root, issues) {
   const content = `
 # Issue Group ${root}
 
@@ -163,6 +191,25 @@ Created by GitHub Action
   console.log("Marker commit created");
 }
 
+async function syncPullRequestIssueLinks(branchName, rootIssueNumber, pr, issues) {
+  const body = pr.body || "";
+  const updatedBody = upsertRelatedIssuesSection(body, branchName, rootIssueNumber, issues);
+
+  if (body === updatedBody) {
+    return pr;
+  }
+
+  const updated = await octokit.pulls.update({
+    owner,
+    repo,
+    pull_number: pr.number,
+    body: updatedBody,
+  });
+
+  console.log(`Linked ${issues.length} issues to PR #${pr.number}`);
+  return updated.data;
+}
+
 async function hasDiff(branchName, baseBranch) {
   const compare = await octokit.repos.compareCommits({
     owner,
@@ -171,14 +218,14 @@ async function hasDiff(branchName, baseBranch) {
     head: branchName,
   });
 
-  return compare.data.files && compare.data.files.length > 0;
+  return compare.data.ahead_by > 0;
 }
 
 /* -------------------------
    PR MANAGEMENT
 --------------------------*/
 
-async function ensurePR(branchName, root, rootTitle) {
+async function ensurePR(branchName, root, rootTitle, issues) {
   const defaultBranch = await getDefaultBranch();
 
   const prs = await octokit.pulls.list({
@@ -190,7 +237,22 @@ async function ensurePR(branchName, root, rootTitle) {
 
   if (prs.data.length > 0) {
     console.log("PR exists:", prs.data[0].number);
-    return prs.data[0];
+    return { pr: prs.data[0], status: "existing" };
+  }
+
+  // GitHub rejects PR creation when there are no commits between base/head.
+  // Ensure the branch has at least one marker commit before creating the PR.
+  let diffExists = await hasDiff(branchName, defaultBranch);
+
+  if (!diffExists) {
+    console.log("No diff found. Creating marker commit...");
+    await createMarkerCommit(branchName, root, issues && issues.length ? issues : [root]);
+    diffExists = await hasDiff(branchName, defaultBranch);
+  }
+
+  if (!diffExists) {
+    console.log("Skipping PR creation: still no diff after marker commit.");
+    return { pr: null, status: "skipped_no_diff" };
   }
 
   const pr = await octokit.pulls.create({
@@ -199,11 +261,11 @@ async function ensurePR(branchName, root, rootTitle) {
     title: `${rootTitle} (Group #${root})`,
     head: branchName,
     base: defaultBranch,
-    body: `Auto-generated PR for issue group rooted at #${root}\n\nRoot: ${rootTitle}`,
+    body: `Auto-generated PR for issue group rooted at #${root}\n\nRoot: ${rootTitle}${buildRelatedIssuesSection(branchName, root, issues)}`,
   });
 
   console.log("Created PR:", pr.data.number);
-  return pr.data;
+  return { pr: pr.data, status: "created" };
 }
 
 /* -------------------------
@@ -211,6 +273,11 @@ async function ensurePR(branchName, root, rootTitle) {
 --------------------------*/
 
 async function annotateIssues(issues, branch, pr) {
+  if (!pr) {
+    console.log("Skipping issue annotation because no PR was created or found.");
+    return;
+  }
+
   for (const num of issues) {
     const issue = await octokit.issues.get({
       owner,
@@ -218,10 +285,12 @@ async function annotateIssues(issues, branch, pr) {
       issue_number: num,
     });
 
+    const existingBody = issue.data.body || "";
+
     const marker = `<!-- ISSUE_GROUP:${branch} -->`;
 
     // Idempotency check
-    if (issue.data.body.includes(marker)) {
+    if (existingBody.includes(marker)) {
       continue;
     }
 
@@ -236,11 +305,42 @@ ${marker}
       owner,
       repo,
       issue_number: num,
-      body: issue.data.body + bodyUpdate,
+      body: existingBody + bodyUpdate,
     });
 
     console.log(`Annotated issue #${num}`);
   }
+}
+
+async function commentOnRootSkip(rootIssueNumber, branchName) {
+  const issue = await octokit.issues.get({
+    owner,
+    repo,
+    issue_number: rootIssueNumber,
+  });
+
+  const existingBody = issue.data.body || "";
+  const marker = `<!-- ISSUE_GROUP_SKIP:${branchName} -->`;
+
+  if (existingBody.includes(marker)) {
+    return;
+  }
+
+  const comment = `
+${marker}
+---
+**Issue group branch:** ${branchName}
+The orchestrator could not create a pull request because GitHub reported no commits between the branch and the default branch. A marker commit was attempted, but the branch still had no diff.
+`;
+
+  await octokit.issues.update({
+    owner,
+    repo,
+    issue_number: rootIssueNumber,
+    body: existingBody + comment,
+  });
+
+  console.log(`Added skip notice to root issue #${rootIssueNumber}`);
 }
 
 /* -------------------------
@@ -261,9 +361,23 @@ ${marker}
 
     await ensureBranch(branchName);
 
-    const pr = await ensurePR(branchName, root, title);
+    const prResult = await ensurePR(branchName, root, title, group);
+    const pr = await syncPullRequestIssueLinks(branchName, root, prResult.pr, group);
+
+    if (prResult.status === "skipped_no_diff") {
+      await commentOnRootSkip(root, branchName);
+    }
 
     await annotateIssues(group, branchName, pr);
+
+    const prNumber = pr ? pr.number : "none";
+    const summary = `ORCHESTRATOR_SUMMARY root=${root} branch=${branchName} pr_status=${prResult.status} pr_number=${prNumber}`;
+    console.log(summary);
+
+    appendGitHubOutput("orchestrator_root", root);
+    appendGitHubOutput("orchestrator_branch", branchName);
+    appendGitHubOutput("orchestrator_pr_status", prResult.status);
+    appendGitHubOutput("orchestrator_pr_number", prNumber);
 
     console.log("Done.");
   } catch (err) {
