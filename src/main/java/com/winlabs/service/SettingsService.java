@@ -88,6 +88,9 @@ public class SettingsService {
         // Key bindings
         json.add("keyBindings", gson.toJsonTree(settings.getKeyBindings()));
         
+        // Keyboard settings
+        json.addProperty("allowKeyRepeat", settings.isAllowKeyRepeat());
+        
         String jsonString = gson.toJson(json);
         Files.writeString(appSettingsPath, jsonString);
     }
@@ -203,6 +206,11 @@ public class SettingsService {
             } catch (JsonSyntaxException e) {
                 logger.error("Failed to load key bindings: {}", e.getMessage(), e);
             }
+        }
+        
+        // Load keyboard settings
+        if (json.has("allowKeyRepeat")) {
+            settings.setAllowKeyRepeat(json.get("allowKeyRepeat").getAsBoolean());
         }
     }
     

@@ -56,16 +56,16 @@ public class LogViewer extends Stage {
         // Bottom: Status bar
         root.setBottom(createStatusBar());
         
-        Scene scene = new Scene(root);
-        setScene(scene);
+        Scene logViewerScene = new Scene(root);
+        setScene(logViewerScene);
         
         // Apply theme if settings available
         if (settings != null && settings.getTheme() != null) {
             try {
                 String themeFile = "/css/" + settings.getTheme() + "-theme.css";
-                scene.getStylesheets().add(getClass().getResource(themeFile).toExternalForm());
-            } catch (Exception e) {
-                logger.warn("Failed to apply theme to log viewer", e);
+                logViewerScene.getStylesheets().add(getClass().getResource(themeFile).toExternalForm());
+            } catch (Exception exception) {
+                logger.warn("Failed to apply theme to log viewer", exception);
             }
         }
     }
@@ -151,8 +151,8 @@ public class LogViewer extends Stage {
                 return;
             }
             
-            for (File file : logFiles) {
-                fileComboBox.getItems().add(file.getName());
+            for (File logFile : logFiles) {
+                fileComboBox.getItems().add(logFile.getName());
             }
             
             // Select the most recent log file (first in list)
@@ -163,10 +163,10 @@ public class LogViewer extends Stage {
             
             statusLabel.setText("Found " + logFiles.size() + " log file(s)");
             
-        } catch (Exception e) {
-            logger.error("Failed to load log files", e);
+        } catch (Exception exception) {
+            logger.error("Failed to load log files", exception);
             statusLabel.setText("Error loading log files");
-            showError("Error", "Failed to load log files: " + e.getMessage());
+            showError("Error", "Failed to load log files: " + exception.getMessage());
         }
     }
     
@@ -257,9 +257,9 @@ public class LogViewer extends Stage {
         try {
             LoggerService.openLogDirectory(settings);
             statusLabel.setText("Opened log folder");
-        } catch (Exception e) {
-            logger.error("Failed to open log folder", e);
-            showError("Error", "Failed to open log folder: " + e.getMessage());
+        } catch (Exception exception) {
+            logger.error("Failed to open log folder", exception);
+            showError("Error", "Failed to open log folder: " + exception.getMessage());
         }
     }
     
@@ -279,8 +279,8 @@ public class LogViewer extends Stage {
                 alert.getDialogPane().getStylesheets().add(
                     getClass().getResource(themeFile).toExternalForm()
                 );
-            } catch (Exception e) {
-                logger.warn("Failed to apply theme to error dialog", e);
+            } catch (Exception exception) {
+                logger.warn("Failed to apply theme to error dialog", exception);
             }
         }
         

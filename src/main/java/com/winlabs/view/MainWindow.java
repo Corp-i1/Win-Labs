@@ -22,6 +22,7 @@ import com.winlabs.model.Playlist;
 import com.winlabs.model.PlaylistSettings;
 import com.winlabs.model.RecentPlaylist;
 import com.winlabs.model.Settings;
+import com.winlabs.service.KeyBindingService;
 import com.winlabs.service.PlaylistService;
 import com.winlabs.service.PlaylistSettingsService;
 import com.winlabs.service.SettingsService;
@@ -34,6 +35,7 @@ import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.application.Platform;
+import javafx.event.EventHandler;
 
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -57,6 +59,7 @@ import javafx.scene.control.TableView;
 import javafx.util.Callback;
 import javafx.scene.control.ToolBar;
 import javafx.scene.control.Tooltip;
+import javafx.scene.control.TextInputControl;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -67,11 +70,11 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.scene.control.TextField;
 import javafx.scene.control.CheckBox;
+import javafx.scene.input.KeyCombination;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.geometry.HPos;
-
-//TODO: #69 Add context menu for file operations (open, delete, properties, etc.)
 //TODO: #71 Add keyboard shortcuts for common actions (go, pause, stop, next cue, etc.) These should be configurable in settings.
 //TODO: #72 Add search/filter functionality to file browser
 //TODO: #78 Add context menu for opening files/folders
@@ -109,6 +112,16 @@ public class MainWindow extends Stage {
     private VBox fileViewContainer;
     private SplitPane splitPane;
     private boolean isFileViewVisible = false;
+    
+    // Keyboard acceleration state: track last execution time per action to prevent
+    // shortcuts from firing multiple times during a single key hold
+    private final Map<String, Long> lastActionExecutionTime = new HashMap<>();
+    private static final long ACTION_DEBOUNCE_MS = 50; // Minimum ms between same action firings
+    // Track accelerators we've added so we can clear them when re-registering
+    private final Set<KeyCombination> registeredAccelerators = new java.util.HashSet<>();
+    // Event filter attached to the scene to capture key presses before nodes consume them
+    private EventHandler<KeyEvent> acceleratorEventFilter = null;
+    private boolean conflictWarningShown = false;
 
     private Runnable showDocumentationCallback;
     private Runnable showAboutDialogCallback;
@@ -150,9 +163,178 @@ public class MainWindow extends Stage {
     }
 
     /**
-     * Register keyboard accelerators from application settings onto the provided scene.
+     * Handle an accelerator-invoked action. Respects `allowKeyRepeat` and applies
+     * per-action debouncing when repeats are disabled.
      */
+    private void handleAcceleratorAction(String actionId) {
+        if (actionId == null || actionId.isEmpty()) return;
 
+        try {
+            logger.debug("Accelerator invoked: {}", actionId);
+            boolean allowRepeat = settings.getApplicationSettings().isAllowKeyRepeat();
+            long now = System.currentTimeMillis();
+
+            if (!allowRepeat) {
+                Long lastExecution = lastActionExecutionTime.get(actionId);
+                if (lastExecution != null && (now - lastExecution) < ACTION_DEBOUNCE_MS) {
+                    logger.trace("Skipping action '{}' due to debounce ({} ms since last)", actionId, (now - lastExecution));
+                    // Skip repeated firing while key is held
+                    return;
+                }
+                lastActionExecutionTime.put(actionId, now);
+            }
+
+            logger.info("Executing keyboard action via accelerator: {}", actionId);
+            executeKeyboardAction(actionId);
+        } catch (Exception e) {
+            logger.error("Error handling accelerator action {}: {}", actionId, e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Registers keyboard accelerators from application settings.
+     * Parses stored key bindings and registers them on the scene for global key dispatch.
+     */
+    private void registerKeyboardAccelerators(Scene keyboardAccelScene) {
+        if (keyboardAccelScene == null) {
+            logger.warn("Cannot register keyboard accelerators: scene is null");
+            return;
+        }
+
+        // Store for tracking key repeats
+        final Map<KeyCombination, String> actionByKeyCombination = new HashMap<>();
+        final Map<String, String> configuredActionBindings = settings.getApplicationSettings().getKeyBindings();
+
+        if (configuredActionBindings == null || configuredActionBindings.isEmpty()) {
+            logger.debug("No keyboard bindings configured");
+            return;
+        }
+
+        // Parse all bindings
+        for (Map.Entry<String, String> configuredBinding : configuredActionBindings.entrySet()) {
+            String actionId = configuredBinding.getKey();
+            String bindingStr = configuredBinding.getValue();
+
+            if (bindingStr == null || bindingStr.isEmpty()) {
+                continue;
+            }
+
+            try {
+                KeyCombination binding = KeyBindingService.parseBinding(bindingStr);
+                actionByKeyCombination.put(binding, actionId);
+                logger.debug("Registered keyboard shortcut for {}: {}", actionId, bindingStr);
+            } catch (IllegalArgumentException e) {
+                logger.error("Failed to parse keyboard binding for {}: {} ({})", actionId, bindingStr, e.getMessage());
+            }
+        }
+
+        if (actionByKeyCombination.isEmpty()) {
+            logger.warn("No valid keyboard bindings were registered");
+            return;
+        }
+
+        // Remove any previously registered accelerators to avoid duplicates
+        try {
+            for (KeyCombination keyCombination : registeredAccelerators) {
+                keyboardAccelScene.getAccelerators().remove(keyCombination);
+            }
+            logger.debug("Cleared {} previously registered keyboard accelerators", registeredAccelerators.size());
+        } catch (Exception ex) {
+            logger.warn("Error clearing previous accelerators: {}", ex.getMessage());
+        }
+        registeredAccelerators.clear();
+
+        // Register global accelerators on the scene so they work regardless of focused node
+        for (Map.Entry<KeyCombination, String> actionEntry : actionByKeyCombination.entrySet()) {
+            KeyCombination keyCombination = actionEntry.getKey();
+            String actionId = actionEntry.getValue();
+            keyboardAccelScene.getAccelerators().put(keyCombination, () -> handleAcceleratorAction(actionId));
+            registeredAccelerators.add(keyCombination);
+            logger.debug("Registered accelerator for action '{}' -> {}", actionId, keyCombination.getName());
+        }
+
+        // Also add a capturing-level event filter so we can detect combos before
+        // individual controls consume the key event (useful for global shortcuts).
+        // Remove previous filter if present.
+        try {
+            if (acceleratorEventFilter != null) {
+                keyboardAccelScene.removeEventFilter(KeyEvent.KEY_PRESSED, acceleratorEventFilter);
+            }
+        } catch (Exception ex) {
+            // ignore
+        }
+
+        acceleratorEventFilter = keyEvent -> {
+            // Ignore if target is a text input control to not interfere with typing
+            if (keyEvent.getTarget() instanceof TextInputControl) {
+                return;
+            }
+
+            // Check bindings manually (capture phase) and handle matching action
+            for (Map.Entry<KeyCombination, String> actionEntry : actionByKeyCombination.entrySet()) {
+                try {
+                    if (KeyBindingService.matchesKeyEvent(actionEntry.getKey(), keyEvent)) {
+                        // Found a match - handle it (debounce applied inside)
+                        handleAcceleratorAction(actionEntry.getValue());
+                        keyEvent.consume();
+                        return;
+                    }
+                } catch (Exception ex) {
+                    // continue checking others
+                }
+            }
+        };
+
+        keyboardAccelScene.addEventFilter(KeyEvent.KEY_PRESSED, acceleratorEventFilter);
+    }
+
+    // Old key-press dispatch removed. Global accelerators use
+    // `Scene.getAccelerators()` + a capturing event filter and
+    // `handleAcceleratorAction()` to manage per-action debouncing.
+
+    /**
+     * Executes the action associated with a keyboard shortcut.
+     */
+    private void executeKeyboardAction(String actionId) {
+        if (actionId == null || actionId.isEmpty()) {
+            return;
+        }
+
+        logger.debug("Executing keyboard action: {}", actionId);
+
+        try {
+            switch (actionId) {
+                case "go":
+                    onGoClicked();
+                    break;
+                case "pause":
+                    onPauseResumeToggle();
+                    break;
+                case "stop":
+                    onStopClicked();
+                    break;
+                case "next":
+                    selectNextCue();
+                    break;
+                case "previous":
+                    selectPreviousCue();
+                    break;
+                case "add":
+                    addNewCue();
+                    break;
+                case "deleteSelected":
+                    deleteSelectedCue();
+                    break;
+                case "duplicateSelected":
+                    handleDuplicateSelectedCues();
+                    break;
+                default:
+                    logger.warn("Unknown keyboard action: {}", actionId);
+            }
+        } catch (Exception e) {
+            logger.error("Error executing keyboard action {}: {}", actionId, e.getMessage(), e);
+        }
+    }
 
     private void selectNextCue() {
         if (playlist == null || playlist.size() == 0) {
@@ -257,9 +439,11 @@ public class MainWindow extends Stage {
         root.setBottom(bottomContainer);
         
         // Create scene
-        Scene scene = new Scene(root);
-        setScene(scene);
-
+        Scene keyboardAccelScene = new Scene(root);
+        setScene(keyboardAccelScene);
+        
+        // Register keyboard shortcuts
+        registerKeyboardAccelerators(keyboardAccelScene);
         
         // Apply saved theme or default to dark
         applyThemeFromSettings();
@@ -510,8 +694,6 @@ public class MainWindow extends Stage {
     }
 
     /**
-
-    /**
      * Captures the current cue table layout into playlist settings.
      */
     private void captureCueTableLayoutToSettings() {
@@ -758,9 +940,9 @@ public class MainWindow extends Stage {
         chooseFileBtn.setOnAction(e -> {
             FileChooser chooser = new FileChooser();
             chooser.setTitle("Select Audio File");
-            File f = chooser.showOpenDialog(this);
-            if (f != null) {
-                fileField.setText(f.toPath().toString());
+            File selectedFile = chooser.showOpenDialog(this);
+            if (selectedFile != null) {
+                fileField.setText(selectedFile.toPath().toString());
             }
         });
         grid.add(fileLabel, 0, 5);
@@ -1507,9 +1689,9 @@ public class MainWindow extends Stage {
      * Applies a theme to the window.
      */
     private void applyTheme(String themePath) {
-        Scene scene = getScene();
-        scene.getStylesheets().clear();
-        scene.getStylesheets().add(getClass().getResource(themePath).toExternalForm());
+        Scene currentScene = getScene();
+        currentScene.getStylesheets().clear();
+        currentScene.getStylesheets().add(getClass().getResource(themePath).toExternalForm());
     }
     
     /**

@@ -69,8 +69,8 @@ public class AudioController {
             } else {
                 startPlayback(cue, filePath);
             }
-        } catch (Exception e) {
-            updateStatus("Error playing cue: " + e.getMessage());
+        } catch (Exception exception) {
+            updateStatus("Error playing cue: " + exception.getMessage());
         }
     }
     
@@ -82,14 +82,14 @@ public class AudioController {
         try {
             // Get the track before playing to set up listeners
             // This avoids a race condition with very short audio files
-            var track = audioService.getPlayerPool().acquireTrack(filePath);
-            currentTrackId = track.getTrackId();
+            var audioTrack = audioService.getPlayerPool().acquireTrack(filePath);
+            currentTrackId = audioTrack.getTrackId();
 
             try {
             // Set up completion listener for this track
             // Store the pool's original listener to chain them
-            var poolListener = track.getOnEndListener();
-            track.setOnEndListener(audioTrack -> {
+            var poolTrackEndListener = audioTrack.getOnEndListener();
+            audioTrack.setOnEndListener(completedTrack -> {
                 // Track has finished playing
                 if (stateChangeListener != null) {
                     stateChangeListener.accept(getState());
@@ -97,27 +97,27 @@ public class AudioController {
                 handleCueComplete();
                 try{
                 // Call the pool's listener to properly release the track
-                if (poolListener != null) {
-                    poolListener.accept(audioTrack);
-                }}catch(Exception e){
-                    logger.error("Error in pool listener for cue {}: {}", cue.getNumber(), e.getMessage(), e);
-                    updateStatus("Error playing audio: " + e.getMessage());
+                if (poolTrackEndListener != null) {
+                    poolTrackEndListener.accept(completedTrack);
+                }}catch(Exception exception){
+                    logger.error("Error in pool listener for cue {}: {}", cue.getNumber(), exception.getMessage(), exception);
+                    updateStatus("Error playing audio: " + exception.getMessage());
                     error = true;
                 }
             });   
-            } catch (Exception e) {
-                logger.error("Failed to set up listner for cue {}: {}",cue.getNumber(),e.getMessage(), e);
-                updateStatus("Error setting up listener: " + e.getMessage());
+            } catch (Exception exception) {
+                logger.error("Failed to set up listner for cue {}: {}",cue.getNumber(),exception.getMessage(), exception);
+                updateStatus("Error setting up listener: " + exception.getMessage());
                 error = true;
                 return;
             }
 
             try{
             // Now start playback
-            track.play();
-            }catch(Exception e){
-                        logger.error("Error playing cue {}: {}", cue.getNumber(), e.getMessage(), e);
-                        updateStatus("Error playing audio: " + e.getMessage());
+            audioTrack.play();
+            }catch(Exception exception){
+                        logger.error("Error playing cue {}: {}", cue.getNumber(), exception.getMessage(), exception);
+                        updateStatus("Error playing audio: " + exception.getMessage());
                         error = true;
                         return;
             }
@@ -129,17 +129,17 @@ public class AudioController {
             updateStatus("Playing: " + cue.getName());    
             error = false;
             }
-        } catch (Exception e) {
-            logger.error("Error starting Playback for cue {}:   {}", cue.getNumber(), e.getMessage(), e);
+        } catch (Exception exception) {
+            logger.error("Error starting Playback for cue {}:   {}", cue.getNumber(), exception.getMessage(), exception);
             
             // Check for Linux-specific MediaException issues
-            String errorMessage = e.getMessage();
+            String errorMessage = exception.getMessage();
             
             if (PlatformIndicatorService.IS_LINUX && (
                     errorMessage.contains("Could not create player") ||
                     errorMessage.contains("MediaException") ||
-                    e.getCause() != null && e.getCause().getMessage() != null && 
-                    e.getCause().getMessage().contains("Could not create player"))) {
+                exception.getCause() != null && exception.getCause().getMessage() != null && 
+                exception.getCause().getMessage().contains("Could not create player"))) {
                 
                 String linuxErrorMsg = """
                                        Linux Audio Error: Missing multimedia libraries.

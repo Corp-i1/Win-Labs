@@ -3,8 +3,10 @@ package com.winlabs.view;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -35,9 +37,9 @@ import javafx.scene.control.Spinner;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TextField;
-import javafx.scene.input.KeyEvent;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCombination;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -80,7 +82,7 @@ public class SettingsWindow extends Stage {
     private Spinner<Integer> logRetentionDaysSpinner;
 
     // Keyboard shortcuts controls
-    private java.util.Map<String, TextField> shortcutFields = new java.util.HashMap<>();
+    private final Map<String, TextField> shortcutFields = new HashMap<>();
     
     /**
      * Creates a new settings window.
@@ -178,9 +180,20 @@ public class SettingsWindow extends Stage {
         HBox intervalBox = new HBox(10, intervalLabel, autoSaveIntervalSpinner);
         intervalBox.setAlignment(Pos.CENTER_LEFT);
         
+        // Keyboard settings section
+        Label keyboardLabel = new Label("Keyboard:");
+        keyboardLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
+        keyboardLabel.setPadding(new Insets(10, 0, 0, 0));
+        
+        CheckBox allowKeyRepeatCheckBox = new CheckBox("Allow keyboard repeat");
+        allowKeyRepeatCheckBox.selectedProperty().bindBidirectional(settings.getApplicationSettings().allowKeyRepeatProperty());
+        Label keyRepeatNote = new Label("When disabled, holding a key fires the action only once. When enabled, it repeats while held.");
+        keyRepeatNote.setStyle("-fx-font-size: 10px; -fx-text-fill: gray;");
+        
         content.getChildren().addAll(
             appearanceLabel, themeBox, new Separator(),
-            autoSaveLabel, autoSaveCheckBox, autoSaveNote, intervalBox
+            autoSaveLabel, autoSaveCheckBox, autoSaveNote, intervalBox,
+            keyboardLabel, allowKeyRepeatCheckBox, keyRepeatNote
         );
         
         ScrollPane scrollPane = new ScrollPane(content);
@@ -308,48 +321,57 @@ public class SettingsWindow extends Stage {
             {"duplicateSelected", "Duplicate Selected"}
         };
 
-        for (var a : actions) {
-            String id = a[0];
-            String label = a[1];
+        for (String[] action : actions) {
+            String actionId = action[0];
+            String actionLabel = action[1];
 
-            Label actLabel = new Label(label + ":");
-            TextField tf = new TextField();
-            tf.setPrefWidth(200);
-            String current = settings.getApplicationSettings().getKeyBinding(id);
-            if (current != null) tf.setText(current);
+            Label actionNameLabel = new Label(actionLabel + ":");
+            TextField shortcutField = new TextField();
+            shortcutField.setPrefWidth(200);
+            String currentBinding = settings.getApplicationSettings().getKeyBinding(actionId);
+            if (currentBinding != null) {
+                shortcutField.setText(currentBinding);
+            }
 
             Button recordBtn = new Button("Record");
-            recordBtn.setOnAction(e -> {
+            recordBtn.setOnAction(event -> {
                 String captured = captureKeyCombination();
-                if (captured != null) tf.setText(captured);
+                if (captured != null) {
+                    shortcutField.setText(captured);
+                }
             });
 
             Button resetBtn = new Button("Reset");
-            resetBtn.setOnAction(e -> tf.setText(settings.getApplicationSettings().getKeyBinding(id)));
+            resetBtn.setOnAction(event -> shortcutField.setText(settings.getApplicationSettings().getKeyBinding(actionId)));
 
             Button resetDefaultBtn = new Button("Reset to Default");
-            resetDefaultBtn.setOnAction(e -> {
-                String def = settings.getApplicationSettings().getDefaultKeyBinding(id);
-                if (def != null) tf.setText(def);
+            resetDefaultBtn.setOnAction(event -> {
+                String defaultBinding = settings.getApplicationSettings().getDefaultKeyBinding(actionId);
+                if (defaultBinding != null) {
+                    shortcutField.setText(defaultBinding);
+                }
             });
 
-            HBox row = new HBox(8, actLabel, tf, recordBtn, resetBtn, resetDefaultBtn);
+            HBox row = new HBox(8, actionNameLabel, shortcutField, recordBtn, resetBtn, resetDefaultBtn);
             row.setAlignment(Pos.CENTER_LEFT);
             content.getChildren().add(row);
 
-            shortcutFields.put(id, tf);
+            shortcutFields.put(actionId, shortcutField);
         }
 
         // Global reset to defaults for all keybindings
         Button resetAllBtn = new Button("Reset All To Defaults");
-        resetAllBtn.setOnAction(e -> {
-            for (var a : actions) {
-                String id = a[0];
-                TextField tf = shortcutFields.get(id);
-                if (tf != null) {
-                    String def = settings.getApplicationSettings().getDefaultKeyBinding(id);
-                    if (def != null) tf.setText(def);
-                    else tf.clear();
+        resetAllBtn.setOnAction(event -> {
+            for (String[] action : actions) {
+                String actionId = action[0];
+                TextField shortcutField = shortcutFields.get(actionId);
+                if (shortcutField != null) {
+                    String defaultBinding = settings.getApplicationSettings().getDefaultKeyBinding(actionId);
+                    if (defaultBinding != null) {
+                        shortcutField.setText(defaultBinding);
+                    } else {
+                        shortcutField.clear();
+                    }
                 }
             }
         });
@@ -637,11 +659,11 @@ public class SettingsWindow extends Stage {
         try {
             // Update key bindings from UI
             if (shortcutFields != null && !shortcutFields.isEmpty()) {
-                java.util.Map<String, String> newBindings = new java.util.HashMap<>();
-                for (var e : shortcutFields.entrySet()) {
-                    String v = e.getValue().getText();
-                    if (v != null && !v.isEmpty()) {
-                        newBindings.put(e.getKey(), v);
+                Map<String, String> newBindings = new HashMap<>();
+                for (Map.Entry<String, TextField> shortcutEntry : shortcutFields.entrySet()) {
+                    String bindingValue = shortcutEntry.getValue().getText();
+                    if (bindingValue != null && !bindingValue.isEmpty()) {
+                        newBindings.put(shortcutEntry.getKey(), bindingValue);
                     }
                 }
                 settings.getApplicationSettings().setKeyBindings(newBindings);
