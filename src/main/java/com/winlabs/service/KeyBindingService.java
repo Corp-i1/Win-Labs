@@ -5,6 +5,8 @@ import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Service for parsing and matching keyboard shortcuts.
@@ -19,7 +21,61 @@ public final class KeyBindingService {
     }
 
     /**
-     * Parses a binding string into a KeyCombination.
+     * Parses a multi-key sequence string into a list of KeyCombination objects.
+     * Format: [CTRL+][ALT+][SHIFT+][META+]KeyName[;[CTRL+]...KeyName]*
+     * Examples: "SPACE", "CTRL+S", "SHIFT+Alt+D", "CTRL+A;B", "CTRL+A;ALT+B;C"
+     *
+     * @param sequenceStr the sequence string to parse (may contain multiple key combinations separated by semicolon)
+     * @return a list of KeyCombination objects (guaranteed non-empty)
+     * @throws IllegalArgumentException if the sequence string is null, empty, or invalid
+     */
+    public static List<KeyCombination> parseMultiKeySequence(String sequenceStr) {
+        if (sequenceStr == null || sequenceStr.trim().isEmpty()) {
+            throw new IllegalArgumentException("Sequence string cannot be null or empty");
+        }
+
+        List<KeyCombination> result = new ArrayList<>();
+        String[] keyCombinations = sequenceStr.trim().split(";");
+
+        if (keyCombinations.length == 0) {
+            throw new IllegalArgumentException("Invalid sequence format: " + sequenceStr);
+        }
+
+        for (String keyCombStr : keyCombinations) {
+            try {
+                KeyCombination kc = parseSingleKeyBinding(keyCombStr.trim());
+                result.add(kc);
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Failed to parse key combination in sequence '" + sequenceStr + "': " + e.getMessage(), e);
+            }
+        }
+
+        if (result.isEmpty()) {
+            throw new IllegalArgumentException("No valid key combinations found in sequence: " + sequenceStr);
+        }
+
+        return result;
+    }
+
+    /**
+     * Parses a single key binding string into a KeyCombination.
+     * Format: [CTRL+][ALT+][SHIFT+][META+]KeyName
+     * Examples: "SPACE", "CTRL+S", "SHIFT+Alt+D"
+     *
+     * @param bindingStr the binding string to parse
+     * @return a KeyCombination object
+     * @throws IllegalArgumentException if the binding string is null, empty, or invalid
+     */
+    private static KeyCombination parseSingleKeyBinding(String bindingStr) {
+        if (bindingStr == null || bindingStr.trim().isEmpty()) {
+            throw new IllegalArgumentException("Binding string cannot be null or empty");
+        }
+
+        return parseSingleKeyBindingInternal(bindingStr);
+    }
+
+    /**
+     * Parses a binding string into a KeyCombination
      * Format: [CTRL+][ALT+][SHIFT+][META+]KeyName
      * Examples: "SPACE", "CTRL+S", "SHIFT+Alt+D"
      *
@@ -32,6 +88,13 @@ public final class KeyBindingService {
             throw new IllegalArgumentException("Binding string cannot be null or empty");
         }
 
+        return parseSingleKeyBindingInternal(bindingStr);
+    }
+
+    /**
+     * Internal method to parse a single key binding.
+     */
+    private static KeyCombination parseSingleKeyBindingInternal(String bindingStr) {
         String trimmed = bindingStr.trim().toUpperCase();
         String[] parts = trimmed.split("\\+");
 

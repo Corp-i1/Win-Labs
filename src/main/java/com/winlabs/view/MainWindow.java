@@ -117,12 +117,18 @@ public class MainWindow extends Stage {
     // shortcuts from firing multiple times during a single key hold
     private final Map<String, Long> lastActionExecutionTime = new HashMap<>();
     private static final long ACTION_DEBOUNCE_MS = 50; // Minimum ms between same action firings
+    private static final long SEQUENCE_TIMEOUT_MS = 500; // Timeout between keys in multi-key sequence
+    
     // Track accelerators we've added so we can clear them when re-registering
     private final Set<KeyCombination> registeredAccelerators = new java.util.HashSet<>();
+    
+    // Multi-key sequence tracking
+    private final Map<String, List<KeyCombination>> multiKeySequences = new HashMap<>(); // action -> sequence
+    private final Map<String, Integer> sequenceProgress = new HashMap<>(); // action -> how many keys matched
+    private final Map<String, Long> sequenceTimestamps = new HashMap<>(); // action -> last key press time
+    
     // Event filter attached to the scene to capture key presses before nodes consume them
     private EventHandler<KeyEvent> acceleratorEventFilter = null;
-    private boolean conflictWarningShown = false;
-
     private Runnable showDocumentationCallback;
     private Runnable showAboutDialogCallback;
     
@@ -193,6 +199,7 @@ public class MainWindow extends Stage {
 
     /**
      * Registers keyboard accelerators from application settings.
+     * Supports both single key bindings (e.g., "CTRL+S") and multi-key sequences (e.g., "CTRL+A;B;C").
      * Parses stored key bindings and registers them on the scene for global key dispatch.
      */
     private void registerKeyboardAccelerators(Scene keyboardAccelScene) {
@@ -210,6 +217,11 @@ public class MainWindow extends Stage {
             return;
         }
 
+        // Clear previous multi-key sequence data
+        multiKeySequences.clear();
+        sequenceProgress.clear();
+        sequenceTimestamps.clear();
+
         // Parse all bindings
         for (Map.Entry<String, String> configuredBinding : configuredActionBindings.entrySet()) {
             String actionId = configuredBinding.getKey();
@@ -220,21 +232,31 @@ public class MainWindow extends Stage {
             }
 
             try {
-                KeyCombination binding = KeyBindingService.parseBinding(bindingStr);
-                String existingActionId = actionByKeyCombination.get(binding);
-                if (existingActionId != null) {
-                    logger.warn("Duplicate keyboard shortcut {} for action {} conflicts with existing action {}; ignoring duplicate binding",
-                            bindingStr, actionId, existingActionId);
-                    continue;
+                // Check if this is a multi-key sequence (contains semicolon)
+                if (bindingStr.contains(";")) {
+                    // Parse as multi-key sequence
+                    List<KeyCombination> sequence = KeyBindingService.parseMultiKeySequence(bindingStr);
+                    multiKeySequences.put(actionId, sequence);
+                    sequenceProgress.put(actionId, 0); // Start at 0 keys matched
+                    logger.debug("Registered multi-key sequence for {}: {} ({} keys)", actionId, bindingStr, sequence.size());
+                } else {
+                    // Parse as single key binding
+                    KeyCombination binding = KeyBindingService.parseBinding(bindingStr);
+                    String existingActionId = actionByKeyCombination.get(binding);
+                    if (existingActionId != null) {
+                        logger.warn("Duplicate keyboard shortcut {} for action {} conflicts with existing action {}; ignoring duplicate binding",
+                                bindingStr, actionId, existingActionId);
+                        continue;
+                    }
+                    actionByKeyCombination.put(binding, actionId);
+                    logger.debug("Registered single keyboard shortcut for {}: {}", actionId, bindingStr);
                 }
-                actionByKeyCombination.put(binding, actionId);
-                logger.debug("Registered keyboard shortcut for {}: {}", actionId, bindingStr);
             } catch (IllegalArgumentException e) {
                 logger.error("Failed to parse keyboard binding for {}: {} ({})", actionId, bindingStr, e.getMessage());
             }
         }
 
-        if (actionByKeyCombination.isEmpty()) {
+        if (actionByKeyCombination.isEmpty() && multiKeySequences.isEmpty()) {
             logger.warn("No valid keyboard bindings were registered");
             return;
         }
@@ -250,7 +272,7 @@ public class MainWindow extends Stage {
         }
         registeredAccelerators.clear();
 
-        // Register global accelerators on the scene so they work regardless of focused node
+        // Register single-key accelerators on the scene
         for (Map.Entry<KeyCombination, String> actionEntry : actionByKeyCombination.entrySet()) {
             KeyCombination keyCombination = actionEntry.getKey();
             String actionId = actionEntry.getValue();
@@ -259,15 +281,16 @@ public class MainWindow extends Stage {
             logger.debug("Registered accelerator for action '{}' -> {}", actionId, keyCombination.getName());
         }
 
-        // Also add a capturing-level event filter so we can detect combos before
-        // individual controls consume the key event (useful for global shortcuts).
-        // Remove previous filter if present.
+        // Create a copy of single-key bindings and multi-key sequences for event filter
+        final Map<KeyCombination, String> finalActionByKeyCombination = actionByKeyCombination;
+
+        // Add a capturing-level event filter to handle both single and multi-key sequences
         try {
             if (acceleratorEventFilter != null) {
                 keyboardAccelScene.removeEventFilter(KeyEvent.KEY_PRESSED, acceleratorEventFilter);
             }
         } catch (Exception ex) {
-            // ignore
+            logger.debug("Could not remove previous event filter: {}", ex.getMessage());
         }
 
         acceleratorEventFilter = keyEvent -> {
@@ -276,17 +299,71 @@ public class MainWindow extends Stage {
                 return;
             }
 
-            // Check bindings manually (capture phase) and handle matching action
-            for (Map.Entry<KeyCombination, String> actionEntry : actionByKeyCombination.entrySet()) {
+            // First, check single-key bindings (capture phase)
+            for (Map.Entry<KeyCombination, String> actionEntry : finalActionByKeyCombination.entrySet()) {
                 try {
                     if (KeyBindingService.matchesKeyEvent(actionEntry.getKey(), keyEvent)) {
-                        // Found a match - handle it (debounce applied inside)
                         handleAcceleratorAction(actionEntry.getValue());
                         keyEvent.consume();
                         return;
                     }
                 } catch (Exception ex) {
-                    // continue checking others
+                    logger.debug("Error checking single-key binding: {}", ex.getMessage());
+                }
+            }
+
+            // Then check multi-key sequences
+            for (Map.Entry<String, List<KeyCombination>> seqEntry : multiKeySequences.entrySet()) {
+                String actionId = seqEntry.getKey();
+                List<KeyCombination> sequence = seqEntry.getValue();
+                
+                long now = System.currentTimeMillis();
+                Integer progress = sequenceProgress.getOrDefault(actionId, 0);
+                Long lastTimestamp = sequenceTimestamps.get(actionId);
+
+                // Check if sequence has timed out
+                if (lastTimestamp != null && (now - lastTimestamp) > SEQUENCE_TIMEOUT_MS) {
+                    progress = 0; // Reset progress
+                }
+
+                // Check if current key matches the next key in the sequence
+                if (progress < sequence.size()) {
+                    try {
+                        if (KeyBindingService.matchesKeyEvent(sequence.get(progress), keyEvent)) {
+                            progress++;
+                            sequenceTimestamps.put(actionId, now);
+                            sequenceProgress.put(actionId, progress);
+                            
+                            // Check if sequence is complete
+                            if (progress == sequence.size()) {
+                                logger.debug("Multi-key sequence completed for action: {}", actionId);
+                                handleAcceleratorAction(actionId);
+                                // Reset for next sequence
+                                sequenceProgress.put(actionId, 0);
+                                sequenceTimestamps.remove(actionId);
+                            } else {
+                                logger.debug("Multi-key sequence progress for {}: {} / {}", actionId, progress, sequence.size());
+                            }
+                            
+                            keyEvent.consume();
+                            return;
+                        }
+                    } catch (Exception ex) {
+                        logger.debug("Error checking multi-key sequence: {}", ex.getMessage());
+                    }
+                }
+
+                // If a key doesn't match the expected next key, reset progress for this sequence
+                if (progress > 0) {
+                    // But first check if this key could be the start of a new sequence
+                    try {
+                        if (!KeyBindingService.matchesKeyEvent(sequence.get(0), keyEvent)) {
+                            sequenceProgress.put(actionId, 0);
+                            sequenceTimestamps.remove(actionId);
+                        }
+                    } catch (Exception ex) {
+                        logger.debug("Error resetting sequence: {}", ex.getMessage());
+                    }
                 }
             }
         };
@@ -1660,6 +1737,11 @@ public class MainWindow extends Stage {
             applyThemeFromSettings();
             // Also update the settings window's theme
             applyThemeToWindow(settingsWindow);
+            // Rebuild keyboard accelerators immediately so changed shortcuts take effect
+            Scene currentScene = getScene();
+            if (currentScene != null) {
+                registerKeyboardAccelerators(currentScene);
+            }
             // Apply audio settings
             if (audioController.getAudioService() != null && 
                 audioController.getAudioService().getPlayerPool() != null) {

@@ -385,7 +385,7 @@ public class SettingsWindow extends Stage {
     }
 
     /**
-     * Shows a small modal to capture a key sequence and returns a string like "Shift+Ctrl+D+C".
+     * Shows a small modal to capture a key sequence and returns a string like "Shift+Ctrl+D;C".
      * Allows multiple keys to be pressed in sequence. Waits for 0.5 seconds of inactivity to finalize.
      */
     private String captureKeyCombination() {
@@ -447,7 +447,7 @@ public class SettingsWindow extends Stage {
             }
 
             // Update display in real-time
-            currentBinding.setText("Current: " + String.join("+", keySequence));
+            currentBinding.setText("Current: " + String.join(" → ", keySequence));
             
             ev.consume();
         });
@@ -471,7 +471,7 @@ public class SettingsWindow extends Stage {
         stage.setScene(scene);
         stage.showAndWait();
         
-        return keySequence.isEmpty() ? null : String.join("+", keySequence);
+        return keySequence.isEmpty() ? null : String.join(";", keySequence);
     }
     
     /**
@@ -656,10 +656,18 @@ public class SettingsWindow extends Stage {
         settings.setLogRetentionDays(logRetentionDaysSpinner.getValue());
         
         // Save to file
-        try {
-            // Do not rebuild shortcut bindings from the text fields here.
-            // resetToDefaults() updates the settings model directly, and stale
-            // shortcut field contents would overwrite those reset values during save.
+        try {   
+            // Update key bindings from UI
+            if (shortcutFields != null && !shortcutFields.isEmpty()) {
+                Map<String, String> newBindings = new HashMap<>();
+                for (Map.Entry<String, TextField> shortcutEntry : shortcutFields.entrySet()) {
+                    String bindingValue = shortcutEntry.getValue().getText();
+                    if (bindingValue != null && !bindingValue.isEmpty()) {
+                        newBindings.put(shortcutEntry.getKey(), bindingValue);
+                    }
+                }
+                settings.getApplicationSettings().setKeyBindings(newBindings);
+            }
             settingsService.save(settings);
             // Reconfigure logging with new settings
             LoggerService.configureLogging(settings);
