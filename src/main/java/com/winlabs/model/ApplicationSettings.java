@@ -60,7 +60,7 @@ public class ApplicationSettings {
     private static Map<String, String> createDefaultKeyBindings() {
         Map<String, String> defaults = new LinkedHashMap<>();
         defaults.put("go", "SPACE");
-        defaults.put("pause", "GO");
+        defaults.put("pause", "P");
         defaults.put("stop", "ESC");
         defaults.put("next", ",");
         defaults.put("previous", ".");

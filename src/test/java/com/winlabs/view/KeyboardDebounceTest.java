@@ -17,7 +17,7 @@ import org.junit.jupiter.api.Test;
 class KeyboardDebounceTest {
 
     /**
-     * Simulates the debouncing logic from MainWindow.dispatchKeyboardAction()
+     * Simulates the keyboard-action debouncing behavior used by MainWindow.
      * Returns true if the action should fire, false if it should be debounced.
      */
     private boolean shouldFireAction(String actionId, java.util.Map<String, Long> lastActionExecutionTime, long debounceMs) {

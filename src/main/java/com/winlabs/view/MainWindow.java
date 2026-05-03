@@ -221,6 +221,12 @@ public class MainWindow extends Stage {
 
             try {
                 KeyCombination binding = KeyBindingService.parseBinding(bindingStr);
+                String existingActionId = actionByKeyCombination.get(binding);
+                if (existingActionId != null) {
+                    logger.warn("Duplicate keyboard shortcut {} for action {} conflicts with existing action {}; ignoring duplicate binding",
+                            bindingStr, actionId, existingActionId);
+                    continue;
+                }
                 actionByKeyCombination.put(binding, actionId);
                 logger.debug("Registered keyboard shortcut for {}: {}", actionId, bindingStr);
             } catch (IllegalArgumentException e) {
@@ -988,18 +994,30 @@ public class MainWindow extends Stage {
                 r.name = nameField.getText() != null && !nameField.getText().isEmpty() ? nameField.getText() : null;
                 try {
                     r.duration = durationField.getText() != null && !durationField.getText().isEmpty() ? Double.parseDouble(durationField.getText()) : null;
+                    if (r.duration != null && r.duration < 0) {
+                        showError("Invalid value", "Duration must be zero or greater");
+                        return null;
+                    }
                 } catch (NumberFormatException ex) {
                     showError("Invalid value", "Duration must be a number");
                     return null;
                 }
                 try {
                     r.preWait = preField.getText() != null && !preField.getText().isEmpty() ? Double.parseDouble(preField.getText()) : null;
+                    if (r.preWait != null && r.preWait < 0) {
+                        showError("Invalid value", "Pre-Wait must be zero or greater");
+                        return null;
+                    }
                 } catch (NumberFormatException ex) {
                     showError("Invalid value", "Pre-Wait must be a number");
                     return null;
                 }
                 try {
                     r.postWait = postField.getText() != null && !postField.getText().isEmpty() ? Double.parseDouble(postField.getText()) : null;
+                    if (r.postWait != null && r.postWait < 0) {
+                        showError("Invalid value", "Post-Wait must be zero or greater");
+                        return null;
+                    }
                 } catch (NumberFormatException ex) {
                     showError("Invalid value", "Post-Wait must be a number");
                     return null;

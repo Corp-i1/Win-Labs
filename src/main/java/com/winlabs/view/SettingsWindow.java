@@ -186,7 +186,7 @@ public class SettingsWindow extends Stage {
         keyboardLabel.setPadding(new Insets(10, 0, 0, 0));
         
         CheckBox allowKeyRepeatCheckBox = new CheckBox("Allow keyboard repeat");
-        allowKeyRepeatCheckBox.selectedProperty().bindBidirectional(settings.getApplicationSettings().allowKeyRepeatProperty());
+        allowKeyRepeatCheckBox.setSelected(settings.getApplicationSettings().isAllowKeyRepeat());
         Label keyRepeatNote = new Label("When disabled, holding a key fires the action only once. When enabled, it repeats while held.");
         keyRepeatNote.setStyle("-fx-font-size: 10px; -fx-text-fill: gray;");
         
@@ -657,17 +657,9 @@ public class SettingsWindow extends Stage {
         
         // Save to file
         try {
-            // Update key bindings from UI
-            if (shortcutFields != null && !shortcutFields.isEmpty()) {
-                Map<String, String> newBindings = new HashMap<>();
-                for (Map.Entry<String, TextField> shortcutEntry : shortcutFields.entrySet()) {
-                    String bindingValue = shortcutEntry.getValue().getText();
-                    if (bindingValue != null && !bindingValue.isEmpty()) {
-                        newBindings.put(shortcutEntry.getKey(), bindingValue);
-                    }
-                }
-                settings.getApplicationSettings().setKeyBindings(newBindings);
-            }
+            // Do not rebuild shortcut bindings from the text fields here.
+            // resetToDefaults() updates the settings model directly, and stale
+            // shortcut field contents would overwrite those reset values during save.
             settingsService.save(settings);
             // Reconfigure logging with new settings
             LoggerService.configureLogging(settings);

@@ -106,7 +106,7 @@ public class AudioController {
                 }
             });   
             } catch (Exception exception) {
-                logger.error("Failed to set up listner for cue {}: {}",cue.getNumber(),exception.getMessage(), exception);
+                logger.error("Failed to set up listener for cue {}: {}",cue.getNumber(),exception.getMessage(), exception);
                 updateStatus("Error setting up listener: " + exception.getMessage());
                 error = true;
                 return;
