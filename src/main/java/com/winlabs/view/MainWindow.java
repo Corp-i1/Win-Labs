@@ -1621,6 +1621,13 @@ public class MainWindow extends Stage {
             for (Cue cue : loadedPlaylist.getCues()) {
                 playlist.addCue(cue);
             }
+            // Ensure playlist metadata is set and saved layout applied
+            playlist.setName(loadedPlaylist.getName());
+            playlist.setFilePath(filePath);
+            // Load and apply playlist-specific settings (column order/widths)
+            playlistSettings = playlistSettingsService.load(currentPlaylistPath);
+            applyCueTableLayoutFromSettings();
+
             playlistInitialized = true;
             updateStatus("Opened playlist: " + filePath);
         } catch (IOException e) {
@@ -1725,6 +1732,8 @@ public class MainWindow extends Stage {
             currentPlaylistPath = path;
             playlistSettings = playlistSettingsService.load(path);
             playlistInitialized = true;
+            // Apply saved cue table layout when opening recent files
+            applyCueTableLayoutFromSettings();
             
             // Move to front of recent files list
             settings.addRecentFile(filePath);
