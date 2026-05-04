@@ -22,8 +22,14 @@ public final class KeyBindingService {
 
     /**
      * Parses a multi-key sequence string into a list of KeyCombination objects.
-     * Format: [CTRL+][ALT+][SHIFT+][META+]KeyName[;[CTRL+]...KeyName]*
-     * Examples: "SPACE", "CTRL+S", "SHIFT+Alt+D", "CTRL+A;B", "CTRL+A;ALT+B;C"
+     * Format Details:
+     * - First key: may have modifiers [CTRL+][ALT+][SHIFT+][META+]
+     * - Subsequent keys: bare key names ONLY (no modifiers in the format string)
+     * 
+     * Examples: "SPACE", "CTRL+S", "SHIFT+Alt+D", "CTRL+A;B", "CTRL+A;B;C"
+     * 
+     * Lenient Matching: Non-first keys match by key code only, allowing users to hold modifiers
+     * from the previous key press (e.g., "CTRL+A;B" works even if user holds Ctrl while pressing B).
      *
      * @param sequenceStr the sequence string to parse (may contain multiple key combinations separated by semicolon)
      * @return a list of KeyCombination objects (guaranteed non-empty)
@@ -174,6 +180,55 @@ public final class KeyBindingService {
             return false;
         }
         return binding.match(event);
+    }
+
+    /**
+     * Matches a KeyEvent against a KeyCombination by key code only, ignoring modifiers.
+     * This is used for non-first keys in multi-key sequences, where users may still have
+     * modifiers held from the previous key press.
+     *
+     * @param binding the KeyCombination to match against
+     * @param event   the KeyEvent to test
+     * @return true if the event's key code matches the binding's key code, false otherwise
+     */
+    public static boolean matchesKeyCodeOnly(KeyCombination binding, KeyEvent event) {
+        if (binding == null || event == null) {
+            return false;
+        }
+        try {
+            // Extract the key code from the binding string and compare with event
+            // We need to get the main key from the binding without modifiers
+            KeyCode expectedCode = extractMainKeyCode(binding);
+            KeyCode eventCode = event.getCode();
+            
+            return expectedCode != null && expectedCode == eventCode;
+        } catch (Exception e) {
+            // Fallback to exact match
+            return binding.match(event);
+        }
+    }
+
+    /**
+     * Extracts the main key code from a KeyCombination name, stripping modifiers.
+     * Avoids regex for performance on the hot path.
+     *
+     * @param binding the KeyCombination to extract from
+     * @return the KeyCode of the main key, or null if unable to extract
+     */
+    private static KeyCode extractMainKeyCode(KeyCombination binding) {
+        if (binding == null) {
+            return null;
+        }
+        try {
+            String bindingName = binding.getName().toUpperCase();
+            // Find the last '+' and take everything after it as the main key
+            // This is more efficient than regex
+            int lastPlusIndex = bindingName.lastIndexOf('+');
+            String mainKey = (lastPlusIndex >= 0) ? bindingName.substring(lastPlusIndex + 1) : bindingName;
+            return parseKeyCode(mainKey);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     /**

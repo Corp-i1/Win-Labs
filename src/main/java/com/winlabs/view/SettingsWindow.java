@@ -385,8 +385,22 @@ public class SettingsWindow extends Stage {
     }
 
     /**
-     * Shows a small modal to capture a key sequence and returns a string like "Shift+Ctrl+D;C".
-     * Allows multiple keys to be pressed in sequence. Waits for 0.5 seconds of inactivity to finalize.
+    * Captures a keyboard shortcut sequence from the user (single or multi-key).
+    * Returns a string in the format "CTRL+A;B;C" where:
+    * - First key may have modifiers (CTRL+, ALT+, SHIFT+, META+)
+    * - Subsequent keys are bare key names only
+    * - Keys are separated by semicolons (CRITICAL FORMAT)
+    * 
+    * Lenient Matching: Users do NOT need to release modifiers between key presses.
+    * For example, recording CTRL+A;B is lenient when user presses CTRL+A then presses B while still holding CTRL.
+    * The system matches by key code only for non-first keys, ignoring held modifiers.
+    * 
+    * Timeout: 0.5 seconds of no key presses finalizes the sequence.
+    * 
+    * The semicolon separator is required by KeyBindingService.parseMultiKeySequence(),
+    * which splits the string to identify multi-key sequences during keyboard registration.
+    * 
+    * @return formatted key sequence string (e.g., "SPACE", "CTRL+S", "CTRL+A;B"), or null if cancelled
      */
     private String captureKeyCombination() {
         final List<String> keySequence = new ArrayList<>();

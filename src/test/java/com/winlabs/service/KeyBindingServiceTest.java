@@ -177,6 +177,66 @@ class KeyBindingServiceTest {
      * Note: In a real test environment, you might use a testing framework that
      * can properly mock KeyEvent. This creates a minimal stub for testing matching logic.
      */
+        @Test
+        void matchesKeyCodeOnlyReturnsTrueForKeyCodeMatch() {
+            // Test that F key matches by key code only, ignoring modifiers
+            KeyCombination binding = KeyBindingService.parseBinding("F");
+            KeyEvent fEvent = createKeyEvent(KeyCode.F, false, false, false, false);
+        
+            assertTrue(KeyBindingService.matchesKeyCodeOnly(binding, fEvent),
+                "Should match F key without modifiers");
+        }
+
+        @Test
+        void matchesKeyCodeOnlyIgnoresHeldModifiers() {
+            // Test lenient matching: F key should match even with held Ctrl
+            // This simulates user holding Ctrl while pressing F (CTRL+F physically)
+            KeyCombination binding = KeyBindingService.parseBinding("F");
+            KeyEvent ctrlFEvent = createKeyEvent(KeyCode.F, true, false, false, false);
+        
+            assertTrue(KeyBindingService.matchesKeyCodeOnly(binding, ctrlFEvent),
+                "Should match F key code even when Ctrl is held (lenient matching)");
+        }
+
+        @Test
+        void matchesKeyCodeOnlyIgnoresAllModifiers() {
+            // Test that all modifiers are ignored for key code only matching
+            KeyCombination binding = KeyBindingService.parseBinding("B");
+            KeyEvent ctrlShiftAltMetaBEvent = createKeyEvent(KeyCode.B, true, true, true, true);
+        
+            assertTrue(KeyBindingService.matchesKeyCodeOnly(binding, ctrlShiftAltMetaBEvent),
+                "Should match B key code even with all modifiers held");
+        }
+
+        @Test
+        void matchesKeyCodeOnlyReturnsFalseForDifferentKeyCode() {
+            // Test that different key code does not match even with same modifiers
+            KeyCombination bindingB = KeyBindingService.parseBinding("B");
+            KeyEvent cEvent = createKeyEvent(KeyCode.C, true, false, false, false);
+        
+            assertFalse(KeyBindingService.matchesKeyCodeOnly(bindingB, cEvent),
+                "Should not match different key code even with modifiers");
+        }
+
+        @Test
+        void matchesKeyCodeOnlyHandlesNullBinding() {
+            KeyEvent event = createKeyEvent(KeyCode.F, true, false, false, false);
+            assertFalse(KeyBindingService.matchesKeyCodeOnly(null, event),
+                "Should return false for null binding");
+        }
+
+        @Test
+        void matchesKeyCodeOnlyHandlesNullEvent() {
+            KeyCombination binding = KeyBindingService.parseBinding("F");
+            assertFalse(KeyBindingService.matchesKeyCodeOnly(binding, null),
+                "Should return false for null event");
+        }
+
+        /**
+         * Helper to create a mock KeyEvent for testing.
+         * Note: In a real test environment, you might use a testing framework that
+         * can properly mock KeyEvent. This creates a minimal stub for testing matching logic.
+         */
     private KeyEvent createKeyEvent(KeyCode code, boolean ctrl, boolean alt, boolean shift, boolean meta) {
         // In a real test, you'd use a proper mock or test framework.
         // For now, we'll rely on the fact that KeyCombination matching

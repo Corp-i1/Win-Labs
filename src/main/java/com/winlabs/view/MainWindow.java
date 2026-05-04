@@ -75,12 +75,10 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.geometry.HPos;
-//TODO: #71 Add keyboard shortcuts for common actions (go, pause, stop, next cue, etc.) These should be configurable in settings.
 //TODO: #72 Add search/filter functionality to file browser
 //TODO: #78 Add context menu for opening files/folders
 //TODO: #73 Add an inspector panel for editing cue properties
 //TODO: #76 Add drag-and-drop reordering of cues in the cue table
-//TODO: #77 Make sure all specific key presses and actions can be remapped in settings
 
 /**
  * Main application window for Win-Labs.
@@ -190,7 +188,6 @@ public class MainWindow extends Stage {
                 lastActionExecutionTime.put(actionId, now);
             }
 
-            logger.info("Executing keyboard action via accelerator: {}", actionId);
             executeKeyboardAction(actionId);
         } catch (Exception e) {
             logger.error("Error handling accelerator action {}: {}", actionId, e.getMessage(), e);
@@ -201,6 +198,18 @@ public class MainWindow extends Stage {
      * Registers keyboard accelerators from application settings.
      * Supports both single key bindings (e.g., "CTRL+S") and multi-key sequences (e.g., "CTRL+A;B;C").
      * Parses stored key bindings and registers them on the scene for global key dispatch.
+     * 
+     * Multi-key Sequences Behavior:
+     * - First key MUST match exactly (including modifiers): User presses CTRL+A, system matches CTRL+A
+     * - Subsequent keys match by KEY CODE ONLY (modifiers ignored): User presses B (even while holding CTRL),
+     *   system matches just 'B' code. This is lenient to handle users who don't perfectly release modifiers
+     *   between key presses.
+     * - Timeout: 500ms between keys; if exceeded, sequence resets
+     * 
+     * Example: For binding "CTRL+S;F", user can:
+     * 1. Press CTRL+S (exact match required)
+     * 2. Keep holding CTRL and press F (lenient: F key code matches, CTRL is ignored)
+     * 3. Action triggers after F is pressed
      */
     private void registerKeyboardAccelerators(Scene keyboardAccelScene) {
         if (keyboardAccelScene == null) {
@@ -238,7 +247,9 @@ public class MainWindow extends Stage {
                     List<KeyCombination> sequence = KeyBindingService.parseMultiKeySequence(bindingStr);
                     multiKeySequences.put(actionId, sequence);
                     sequenceProgress.put(actionId, 0); // Start at 0 keys matched
-                    logger.debug("Registered multi-key sequence for {}: {} ({} keys)", actionId, bindingStr, sequence.size());
+                    logger.debug("Registered multi-key sequence for '{}': {} (sequence: {} keys: {})", 
+                        actionId, bindingStr, sequence.size(), 
+                        sequence.stream().map(KeyCombination::getName).toList());
                 } else {
                     // Parse as single key binding
                     KeyCombination binding = KeyBindingService.parseBinding(bindingStr);
@@ -249,10 +260,10 @@ public class MainWindow extends Stage {
                         continue;
                     }
                     actionByKeyCombination.put(binding, actionId);
-                    logger.debug("Registered single keyboard shortcut for {}: {}", actionId, bindingStr);
+                    logger.debug("Registered single keyboard shortcut for '{}': {}", actionId, bindingStr);
                 }
             } catch (IllegalArgumentException e) {
-                logger.error("Failed to parse keyboard binding for {}: {} ({})", actionId, bindingStr, e.getMessage());
+                logger.error("Failed to parse keyboard binding for '{}': {} ({})", actionId, bindingStr, e.getMessage());
             }
         }
 
@@ -323,33 +334,44 @@ public class MainWindow extends Stage {
 
                 // Check if sequence has timed out
                 if (lastTimestamp != null && (now - lastTimestamp) > SEQUENCE_TIMEOUT_MS) {
+                    logger.debug("Multi-key sequence timeout for action '{}' (timed out after {} ms)", actionId, now - lastTimestamp);
                     progress = 0; // Reset progress
                 }
 
                 // Check if current key matches the next key in the sequence
                 if (progress < sequence.size()) {
                     try {
-                        if (KeyBindingService.matchesKeyEvent(sequence.get(progress), keyEvent)) {
+                        KeyCombination expectedKey = sequence.get(progress);
+                        // For first key (progress=0), match with modifiers. For subsequent keys, match key code only
+                        // because users may still have modifiers held from previous key press
+                        boolean matches = (progress == 0) 
+                            ? KeyBindingService.matchesKeyEvent(expectedKey, keyEvent)
+                            : KeyBindingService.matchesKeyCodeOnly(expectedKey, keyEvent);
+                        
+                        logger.debug("Multi-key sequence '{}': checking key {} of {}, expected: {}, matches: {}", 
+                            actionId, progress, sequence.size(), expectedKey.getName(), matches);
+                        
+                        if (matches) {
                             progress++;
                             sequenceTimestamps.put(actionId, now);
                             sequenceProgress.put(actionId, progress);
                             
                             // Check if sequence is complete
                             if (progress == sequence.size()) {
-                                logger.debug("Multi-key sequence completed for action: {}", actionId);
+                                logger.debug("Multi-key sequence COMPLETED for action: {}", actionId);
                                 handleAcceleratorAction(actionId);
                                 // Reset for next sequence
                                 sequenceProgress.put(actionId, 0);
                                 sequenceTimestamps.remove(actionId);
                             } else {
-                                logger.debug("Multi-key sequence progress for {}: {} / {}", actionId, progress, sequence.size());
+                                logger.debug("Multi-key sequence PROGRESS for {}: {} / {} keys matched", actionId, progress, sequence.size());
                             }
                             
                             keyEvent.consume();
                             return;
                         }
                     } catch (Exception ex) {
-                        logger.debug("Error checking multi-key sequence: {}", ex.getMessage());
+                        logger.debug("Error checking multi-key sequence: {}", ex.getMessage(), ex);
                     }
                 }
 
@@ -357,7 +379,10 @@ public class MainWindow extends Stage {
                 if (progress > 0) {
                     // But first check if this key could be the start of a new sequence
                     try {
-                        if (!KeyBindingService.matchesKeyEvent(sequence.get(0), keyEvent)) {
+                        KeyCombination firstKey = sequence.get(0);
+                        boolean isRestart = KeyBindingService.matchesKeyEvent(firstKey, keyEvent);
+                        if (!isRestart) {
+                            logger.debug("Multi-key sequence '{}': key didn't match, resetting progress", actionId);
                             sequenceProgress.put(actionId, 0);
                             sequenceTimestamps.remove(actionId);
                         }
