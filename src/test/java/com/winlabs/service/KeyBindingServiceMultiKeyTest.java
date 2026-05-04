@@ -2,6 +2,8 @@ package com.winlabs.service;
 
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.KeyCombination;
 import java.util.List;
 
@@ -95,40 +97,72 @@ class KeyBindingServiceMultiKeyTest {
 
     @Test
     void testMultiKeySequenceWithHeldModifiers_FirstKeyExact() {
-        // Test that first key in sequence must match exactly (with modifiers)
         List<KeyCombination> sequence = KeyBindingService.parseMultiKeySequence("CTRL+A;B");
-        
-        // First key MUST match CTRL+A exactly
+
         KeyCombination firstKey = sequence.get(0);
         assertNotNull(firstKey);
-        // Verify it requires Ctrl modifier (would need JavaFX engine to fully test)
-        assertEquals(2, sequence.size(), "Sequence should have 2 keys");
+
+        assertTrue(KeyBindingService.matchesKeyEvent(
+            firstKey,
+            createKeyEvent(KeyCode.A, true, false, false, false)));
+        assertFalse(KeyBindingService.matchesKeyEvent(
+            firstKey,
+            createKeyEvent(KeyCode.A, false, false, false, false)));
+        assertEquals(2, sequence.size());
     }
 
     @Test
     void testMultiKeySequenceWithHeldModifiers_SecondKeyLenient() {
-        // Test that second key in sequence uses lenient matching
-        // This verifies the structure allows lenient matching for non-first keys
         List<KeyCombination> sequence = KeyBindingService.parseMultiKeySequence("CTRL+S;F");
         
         KeyCombination secondKey = sequence.get(1);
-        assertNotNull(secondKey, "Second key should be parsed");
-        // Second key 'F' should match with key code only (lenient)
-        // This would be verified at runtime with KeyBindingService.matchesKeyCodeOnly()
+        assertNotNull(secondKey);
+        assertTrue(KeyBindingService.matchesKeyCodeOnly(
+            secondKey,
+            createKeyEvent(KeyCode.F, true, false, false, false)));
+        assertTrue(KeyBindingService.matchesKeyCodeOnly(
+            secondKey,
+            createKeyEvent(KeyCode.F, true, true, true, true)));
+        assertFalse(KeyBindingService.matchesKeyCodeOnly(
+            secondKey,
+            createKeyEvent(KeyCode.G, true, false, false, false)));
         assertEquals(2, sequence.size());
     }
 
     @Test
     void testMultiKeySequenceWithAllLenientKeys() {
-        // Test sequence where all keys after first use lenient matching
         List<KeyCombination> sequence = KeyBindingService.parseMultiKeySequence("CTRL+ALT+D;A;B;C");
         
         assertEquals(4, sequence.size());
-        // First key: CTRL+ALT+D (exact match required)
-        // Keys 2-4: A, B, C (lenient matching - key code only)
         assertNotNull(sequence.get(0));
         assertNotNull(sequence.get(1));
         assertNotNull(sequence.get(2));
         assertNotNull(sequence.get(3));
+
+        assertTrue(KeyBindingService.matchesKeyEvent(
+            sequence.get(0),
+            createKeyEvent(KeyCode.D, true, true, false, false)));
+        assertTrue(KeyBindingService.matchesKeyCodeOnly(
+            sequence.get(1),
+            createKeyEvent(KeyCode.A, false, false, false, false)));
+        assertTrue(KeyBindingService.matchesKeyCodeOnly(
+            sequence.get(2),
+            createKeyEvent(KeyCode.B, true, false, true, false)));
+        assertTrue(KeyBindingService.matchesKeyCodeOnly(
+            sequence.get(3),
+            createKeyEvent(KeyCode.C, false, true, true, true)));
+    }
+
+    private KeyEvent createKeyEvent(KeyCode code, boolean ctrl, boolean alt, boolean shift, boolean meta) {
+        return new KeyEvent(
+            KeyEvent.KEY_PRESSED,
+            "",
+            code.toString(),
+            code,
+            shift,
+            ctrl,
+            alt,
+            meta
+        );
     }
 }

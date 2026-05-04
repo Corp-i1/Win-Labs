@@ -50,12 +50,17 @@ class KeyBindingServiceTest {
         KeyCombination enter = KeyBindingService.parseBinding("ENTER");
         KeyCombination escape = KeyBindingService.parseBinding("ESC");
         KeyCombination comma = KeyBindingService.parseBinding("COMMA");
-        KeyCombination period = KeyBindingService.parseBinding(",");
+        KeyCombination period = KeyBindingService.parseBinding("PERIOD");
         
         assertNotNull(enter);
         assertNotNull(escape);
         assertNotNull(comma);
         assertNotNull(period);
+
+        assertTrue(KeyBindingService.matchesKeyEvent(enter, createKeyEvent(KeyCode.ENTER, false, false, false, false)));
+        assertTrue(KeyBindingService.matchesKeyEvent(escape, createKeyEvent(KeyCode.ESCAPE, false, false, false, false)));
+        assertTrue(KeyBindingService.matchesKeyEvent(comma, createKeyEvent(KeyCode.COMMA, false, false, false, false)));
+        assertTrue(KeyBindingService.matchesKeyEvent(period, createKeyEvent(KeyCode.PERIOD, false, false, false, false)));
     }
 
     @Test
@@ -170,6 +175,9 @@ class KeyBindingServiceTest {
         
         assertNotNull(f1);
         assertNotNull(f12);
+
+        assertTrue(KeyBindingService.matchesKeyEvent(f1, createKeyEvent(KeyCode.F1, false, false, false, false)));
+        assertTrue(KeyBindingService.matchesKeyEvent(f12, createKeyEvent(KeyCode.F12, false, false, false, false)));
     }
 
     /**

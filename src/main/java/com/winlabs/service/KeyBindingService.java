@@ -7,6 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
 
 /**
  * Service for parsing and matching keyboard shortcuts.
@@ -49,7 +51,7 @@ public final class KeyBindingService {
 
         for (String keyCombStr : keyCombinations) {
             try {
-                KeyCombination kc = parseSingleKeyBinding(keyCombStr.trim());
+                KeyCombination kc = parseSingleKeyBindingInternal(keyCombStr.trim());
                 result.add(kc);
             } catch (IllegalArgumentException e) {
                 throw new IllegalArgumentException("Failed to parse key combination in sequence '" + sequenceStr + "': " + e.getMessage(), e);
@@ -64,24 +66,7 @@ public final class KeyBindingService {
     }
 
     /**
-     * Parses a single key binding string into a KeyCombination.
-     * Format: [CTRL+][ALT+][SHIFT+][META+]KeyName
-     * Examples: "SPACE", "CTRL+S", "SHIFT+Alt+D"
-     *
-     * @param bindingStr the binding string to parse
-     * @return a KeyCombination object
-     * @throws IllegalArgumentException if the binding string is null, empty, or invalid
-     */
-    private static KeyCombination parseSingleKeyBinding(String bindingStr) {
-        if (bindingStr == null || bindingStr.trim().isEmpty()) {
-            throw new IllegalArgumentException("Binding string cannot be null or empty");
-        }
-
-        return parseSingleKeyBindingInternal(bindingStr);
-    }
-
-    /**
-     * Parses a binding string into a KeyCombination
+     * Parses a binding string into a KeyCombination.
      * Format: [CTRL+][ALT+][SHIFT+][META+]KeyName
      * Examples: "SPACE", "CTRL+S", "SHIFT+Alt+D"
      *
@@ -183,9 +168,9 @@ public final class KeyBindingService {
     }
 
     /**
-     * Matches a KeyEvent against a KeyCombination by key code only, ignoring modifiers.
-     * This is used for non-first keys in multi-key sequences, where users may still have
-     * modifiers held from the previous key press.
+     * Matches a KeyEvent against a KeyCombination by key code only.
+     * This lenient match is used for later keys in a multi-key sequence, where the
+     * user may still be holding modifiers from the previous key press.
      *
      * @param binding the KeyCombination to match against
      * @param event   the KeyEvent to test
@@ -209,8 +194,7 @@ public final class KeyBindingService {
     }
 
     /**
-     * Extracts the main key code from a KeyCombination name, stripping modifiers.
-     * Avoids regex for performance on the hot path.
+     * Extracts the main key code from a KeyCombination by stripping any modifiers first.
      *
      * @param binding the KeyCombination to extract from
      * @return the KeyCode of the main key, or null if unable to extract
@@ -219,21 +203,132 @@ public final class KeyBindingService {
         if (binding == null) {
             return null;
         }
-        try {
-            String bindingName = binding.getName().toUpperCase();
-            // Find the last '+' and take everything after it as the main key
-            // This is more efficient than regex
-            int lastPlusIndex = bindingName.lastIndexOf('+');
-            String mainKey = (lastPlusIndex >= 0) ? bindingName.substring(lastPlusIndex + 1) : bindingName;
-            return parseKeyCode(mainKey);
-        } catch (Exception e) {
+        return parseKeyCode(extractMainKeyName(binding.getName()));
+    }
+
+    /**
+     * Extracts the final key token from a binding name after removing any modifiers.
+     *
+     * @param bindingName the KeyCombination name, such as CTRL+SHIFT+S
+     * @return the main key token, or null if the input is null or empty
+     */
+    private static String extractMainKeyName(String bindingName) {
+        if (bindingName == null || bindingName.isEmpty()) {
             return null;
+        }
+
+        String normalizedBinding = bindingName.toUpperCase();
+        int lastPlusIndex = normalizedBinding.lastIndexOf('+');
+        return lastPlusIndex >= 0 ? normalizedBinding.substring(lastPlusIndex + 1) : normalizedBinding;
+    }
+
+    /**
+     * Registry of key name aliases mapped to their KeyCode values.
+     * Centralizes all special key name handling in one place for maintainability.
+     */
+    private static class KeyCodeRegistry {
+        private static final Map<String, KeyCode> REGISTRY = buildRegistry();
+
+        private static Map<String, KeyCode> buildRegistry() {
+            Map<String, KeyCode> map = new HashMap<>();
+            // Space and spacebar
+            map.put("SPACE", KeyCode.SPACE);
+            map.put("SPACEBAR", KeyCode.SPACE);
+            // Enter/return
+            map.put("ENTER", KeyCode.ENTER);
+            map.put("RETURN", KeyCode.ENTER);
+            // Escape
+            map.put("ESC", KeyCode.ESCAPE);
+            map.put("ESCAPE", KeyCode.ESCAPE);
+            // Tab
+            map.put("TAB", KeyCode.TAB);
+            // Backspace
+            map.put("BACKSPACE", KeyCode.BACK_SPACE);
+            map.put("BACK_SPACE", KeyCode.BACK_SPACE);
+            // Delete
+            map.put("DELETE", KeyCode.DELETE);
+            map.put("DEL", KeyCode.DELETE);
+            // Insert
+            map.put("INSERT", KeyCode.INSERT);
+            map.put("INS", KeyCode.INSERT);
+            // Navigation
+            map.put("HOME", KeyCode.HOME);
+            map.put("END", KeyCode.END);
+            map.put("PAGE_UP", KeyCode.PAGE_UP);
+            map.put("PAGEUP", KeyCode.PAGE_UP);
+            map.put("PRIOR", KeyCode.PAGE_UP);
+            map.put("PAGE_DOWN", KeyCode.PAGE_DOWN);
+            map.put("PAGEDOWN", KeyCode.PAGE_DOWN);
+            map.put("NEXT", KeyCode.PAGE_DOWN);
+            // Arrow keys
+            map.put("UP", KeyCode.UP);
+            map.put("ARROW_UP", KeyCode.UP);
+            map.put("DOWN", KeyCode.DOWN);
+            map.put("ARROW_DOWN", KeyCode.DOWN);
+            map.put("LEFT", KeyCode.LEFT);
+            map.put("ARROW_LEFT", KeyCode.LEFT);
+            map.put("RIGHT", KeyCode.RIGHT);
+            map.put("ARROW_RIGHT", KeyCode.RIGHT);
+            // Punctuation
+            map.put("COMMA", KeyCode.COMMA);
+            map.put(",", KeyCode.COMMA);
+            map.put("PERIOD", KeyCode.PERIOD);
+            map.put("DOT", KeyCode.PERIOD);
+            map.put(".", KeyCode.PERIOD);
+            map.put("SEMICOLON", KeyCode.SEMICOLON);
+            map.put(";", KeyCode.SEMICOLON);
+            map.put("SLASH", KeyCode.SLASH);
+            map.put("/", KeyCode.SLASH);
+            map.put("BACKSLASH", KeyCode.BACK_SLASH);
+            map.put("\\", KeyCode.BACK_SLASH);
+            map.put("QUOTE", KeyCode.QUOTE);
+            map.put("'", KeyCode.QUOTE);
+            map.put("DOUBLE_QUOTE", KeyCode.QUOTE);
+            map.put("\"", KeyCode.QUOTE);
+            map.put("BACKTICK", KeyCode.BACK_QUOTE);
+            map.put("`", KeyCode.BACK_QUOTE);
+            map.put("EQUALS", KeyCode.EQUALS);
+            map.put("EQUAL", KeyCode.EQUALS);
+            map.put("=", KeyCode.EQUALS);
+            map.put("MINUS", KeyCode.MINUS);
+            map.put("-", KeyCode.MINUS);
+            map.put("OPEN_BRACKET", KeyCode.OPEN_BRACKET);
+            map.put("[", KeyCode.OPEN_BRACKET);
+            map.put("CLOSE_BRACKET", KeyCode.CLOSE_BRACKET);
+            map.put("]", KeyCode.CLOSE_BRACKET);
+            return map;
+        }
+
+        /**
+         * Look up a key name alias in the registry.
+         * Falls back to KeyCode.getKeyCode() if not found in registry.
+         *
+         * @param normalizedKeyName the normalized (uppercase) key name
+         * @return the KeyCode, or null if not found
+         */
+        static KeyCode lookup(String normalizedKeyName) {
+            if (normalizedKeyName == null || normalizedKeyName.isEmpty()) {
+                return null;
+            }
+            // Try registry first for special aliases
+            KeyCode registered = REGISTRY.get(normalizedKeyName);
+            if (registered != null) {
+                return registered;
+            }
+            // Fall back to JavaFX KeyCode enum for standard names (A-Z, F1-F12, etc.)
+            try {
+                return KeyCode.getKeyCode(normalizedKeyName);
+            } catch (IllegalArgumentException e) {
+                logger.debug("Unknown key name: {}", normalizedKeyName);
+                return null;
+            }
         }
     }
 
     /**
      * Parses a key name string to KeyCode.
-     * Handles various naming conventions (e.g., "Space", "SPACE", "A", "ENTER", "Enter")
+     * Handles various naming conventions (e.g., "Space", "SPACE", "A", "ENTER", "Enter").
+     * Uses KeyCodeRegistry for special aliases, falls back to JavaFX KeyCode enum for standard names.
      *
      * @param keyName the key name to parse
      * @return the KeyCode, or null if not found
@@ -242,101 +337,7 @@ public final class KeyBindingService {
         if (keyName == null || keyName.isEmpty()) {
             return null;
         }
-
         String normalized = keyName.toUpperCase().replace(" ", "_");
-
-        // Handle special cases
-        switch (normalized) {
-            case "SPACE":
-            case "SPACEBAR":
-                return KeyCode.SPACE;
-            case "ENTER":
-            case "RETURN":
-                return KeyCode.ENTER;
-            case "ESC":
-            case "ESCAPE":
-                return KeyCode.ESCAPE;
-            case "TAB":
-                return KeyCode.TAB;
-            case "BACKSPACE":
-            case "BACK_SPACE":
-                return KeyCode.BACK_SPACE;
-            case "DELETE":
-            case "DEL":
-                return KeyCode.DELETE;
-            case "INSERT":
-            case "INS":
-                return KeyCode.INSERT;
-            case "HOME":
-                return KeyCode.HOME;
-            case "END":
-                return KeyCode.END;
-            case "PAGE_UP":
-            case "PAGEUP":
-            case "PRIOR":
-                return KeyCode.PAGE_UP;
-            case "PAGE_DOWN":
-            case "PAGEDOWN":
-            case "NEXT":
-                return KeyCode.PAGE_DOWN;
-            case "UP":
-            case "ARROW_UP":
-                return KeyCode.UP;
-            case "DOWN":
-            case "ARROW_DOWN":
-                return KeyCode.DOWN;
-            case "LEFT":
-            case "ARROW_LEFT":
-                return KeyCode.LEFT;
-            case "RIGHT":
-            case "ARROW_RIGHT":
-                return KeyCode.RIGHT;
-            case "COMMA":
-            case ",":
-                return KeyCode.COMMA;
-            case "PERIOD":
-            case "DOT":
-            case ".":
-                return KeyCode.PERIOD;
-            case "SEMICOLON":
-            case ";":
-                return KeyCode.SEMICOLON;
-            case "SLASH":
-            case "/":
-                return KeyCode.SLASH;
-            case "BACKSLASH":
-            case "\\":
-                return KeyCode.BACK_SLASH;
-            case "QUOTE":
-            case "'":
-                return KeyCode.QUOTE;
-            case "DOUBLE_QUOTE":
-            case "\"":
-                return KeyCode.QUOTE;
-            case "BACKTICK":
-            case "`":
-                return KeyCode.BACK_QUOTE;
-            case "EQUALS":
-            case "EQUAL":
-            case "=":
-                return KeyCode.EQUALS;
-            case "MINUS":
-            case "-":
-                return KeyCode.MINUS;
-            case "OPEN_BRACKET":
-            case "[":
-                return KeyCode.OPEN_BRACKET;
-            case "CLOSE_BRACKET":
-            case "]":
-                return KeyCode.CLOSE_BRACKET;
-            default:
-                // Try to find by KeyCode enum value
-                try {
-                    return KeyCode.getKeyCode(normalized);
-                } catch (IllegalArgumentException e) {
-                    logger.debug("Unknown key name: {}", keyName);
-                    return null;
-                }
-        }
+        return KeyCodeRegistry.lookup(normalized);
     }
 }

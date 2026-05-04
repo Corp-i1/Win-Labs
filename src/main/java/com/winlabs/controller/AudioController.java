@@ -17,8 +17,7 @@ import javafx.animation.PauseTransition;
 import javafx.util.Duration;
 
 /**
- * Controller for managing audio playback logic.
- * Handles play, pause, stop, and auto-follow functionality.
+ * Coordinates cue playback, timer-based waits, and auto-follow behavior.
  */
 public class AudioController {
     
@@ -41,7 +40,7 @@ public class AudioController {
     }
     
     /**
-     * Plays a cue.
+     * Starts playback for a cue after validating the cue and honoring any pre-wait delay.
      */
     public void playCue(Cue cue) {
         if (cue == null) {
@@ -75,18 +74,37 @@ public class AudioController {
     }
     
     /**
-     * Starts the actual audio playback.
+     * Acquires the track, wires completion handling, and starts playback.
      */
     private void startPlayback(Cue cue, String filePath) {
-        
         try {
-            // Get the track before playing to set up listeners
-            // This avoids a race condition with very short audio files
+            // Acquire track before setting up listeners to avoid race conditions
             var audioTrack = audioService.getPlayerPool().acquireTrack(filePath);
             currentTrackId = audioTrack.getTrackId();
 
-            try {
-            // Set up completion listener for this track
+            // Set up listener and start playback with consolidated error handling
+            if (!setupTrackListener(cue, audioTrack)) {
+                return;
+            }
+            if (!startAudioPlayback(cue, audioTrack)) {
+                return;
+            }
+
+            // Notify state change and update status
+            if (stateChangeListener != null) {
+                stateChangeListener.accept(getState());
+            }
+            updateStatus("Playing: " + cue.getName());
+        } catch (Exception exception) {
+            handlePlaybackError(cue, exception);
+        }
+    }
+
+    /**
+     * Attaches completion handling to the acquired track and preserves the pool listener.
+     */
+    private boolean setupTrackListener(Cue cue, AudioTrack audioTrack) {
+        try {
             // Store the pool's original listener to chain them
             var poolTrackEndListener = audioTrack.getOnEndListener();
             audioTrack.setOnEndListener(completedTrack -> {
@@ -95,65 +113,70 @@ public class AudioController {
                     stateChangeListener.accept(getState());
                 }
                 handleCueComplete();
-                try{
                 // Call the pool's listener to properly release the track
-                if (poolTrackEndListener != null) {
-                    poolTrackEndListener.accept(completedTrack);
-                }}catch(Exception exception){
-                    logger.error("Error in pool listener for cue {}: {}", cue.getNumber(), exception.getMessage(), exception);
-                    updateStatus("Error playing audio: " + exception.getMessage());
-                    error = true;
+                try {
+                    if (poolTrackEndListener != null) {
+                        poolTrackEndListener.accept(completedTrack);
+                    }
+                } catch (Exception e) {
+                    logger.error("Error in pool listener for cue {}: {}", cue.getNumber(), e.getMessage(), e);
+                    updateStatus("Error playing audio: " + e.getMessage());
                 }
-            });   
-            } catch (Exception exception) {
-                logger.error("Failed to set up listener for cue {}: {}",cue.getNumber(),exception.getMessage(), exception);
-                updateStatus("Error setting up listener: " + exception.getMessage());
-                error = true;
-                return;
-            }
-
-            try{
-            // Now start playback
-            audioTrack.play();
-            }catch(Exception exception){
-                        logger.error("Error playing cue {}: {}", cue.getNumber(), exception.getMessage(), exception);
-                        updateStatus("Error playing audio: " + exception.getMessage());
-                        error = true;
-                        return;
-            }
-
-            if (stateChangeListener != null) {
-                stateChangeListener.accept(getState());
-            }
-            if (!error) {
-            updateStatus("Playing: " + cue.getName());    
-            error = false;
-            }
+            });
+            return true;
         } catch (Exception exception) {
-            logger.error("Error starting Playback for cue {}:   {}", cue.getNumber(), exception.getMessage(), exception);
-            
-            // Check for Linux-specific MediaException issues
-            String errorMessage = exception.getMessage();
-            
-            if (PlatformIndicatorService.IS_LINUX && (
-                    errorMessage.contains("Could not create player") ||
-                    errorMessage.contains("MediaException") ||
-                exception.getCause() != null && exception.getCause().getMessage() != null && 
-                exception.getCause().getMessage().contains("Could not create player"))) {
-                
-                String linuxErrorMsg = """
-                                       Linux Audio Error: Missing multimedia libraries.
-                                       Please install GStreamer libraries:
-                                       \u2022 Fedora/RHEL: sudo dnf group upgrade multimedia sound-and-video --setopt="install_weak_deps=False" --exclude=PackageKit-gstreamer-plugin && sudo dnf install ffmpeg-libs gstreamer* --allowerasing 
-                                       \u2022 You also need RPM Fusion: sudo dnf install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
-                                       Then restart Win-Labs.""";
-                logger.info(linuxErrorMsg);
-                logger.error("Linux multimedia libraries missing. User should install GStreamer codecs.");
-                updateStatus("Linux multimedia libraries missing. User should install GStreamer codecs.");
-            } else {
-                updateStatus("Error loading audio: " + errorMessage);
-            }
+            logger.error("Failed to set up listener for cue {}: {}", cue.getNumber(), exception.getMessage(), exception);
+            updateStatus("Error setting up listener: " + exception.getMessage());
+            return false;
         }
+    }
+
+    /**
+     * Attempts to start playback on the acquired track.
+     */
+    private boolean startAudioPlayback(Cue cue, AudioTrack audioTrack) {
+        try {
+            audioTrack.play();
+            return true;
+        } catch (Exception exception) {
+            logger.error("Error playing cue {}: {}", cue.getNumber(), exception.getMessage(), exception);
+            updateStatus("Error playing audio: " + exception.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Converts playback startup failures into user-facing status updates.
+     */
+    private void handlePlaybackError(Cue cue, Exception exception) {
+        logger.error("Error starting playback for cue {}: {}", cue.getNumber(), exception.getMessage(), exception);
+
+        // Check for Linux-specific multimedia issues
+        String errorMessage = exception.getMessage();
+        if (PlatformIndicatorService.IS_LINUX && isLinuxMultimediaError(exception, errorMessage)) {
+            String linuxErrorMsg = """
+                                   Linux Audio Error: Missing multimedia libraries.
+                                   Please install GStreamer libraries:
+                                   • Fedora/RHEL: sudo dnf group upgrade multimedia sound-and-video --setopt="install_weak_deps=False" --exclude=PackageKit-gstreamer-plugin && sudo dnf install ffmpeg-libs gstreamer* --allowerasing 
+                                   • You also need RPM Fusion: sudo dnf install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+                                   Then restart Win-Labs.""";
+            logger.info(linuxErrorMsg);
+            updateStatus("Linux multimedia libraries missing. Install GStreamer codecs.");
+        } else {
+            updateStatus("Error loading audio: " + errorMessage);
+        }
+    }
+
+    /**
+     * Checks if an exception is a Linux multimedia library error.
+     */
+    private boolean isLinuxMultimediaError(Exception exception, String errorMessage) {
+        return (errorMessage != null && (
+                    errorMessage.contains("Could not create player") ||
+                    errorMessage.contains("MediaException"))) ||
+               (exception.getCause() != null && 
+                exception.getCause().getMessage() != null && 
+                exception.getCause().getMessage().contains("Could not create player"));
     }
     
     /**
@@ -217,181 +240,84 @@ public class AudioController {
      * Pauses the current playback.
      */
     public void pause() {
-        logger.trace("pause() method entry");
-        logger.debug("Attempting to pause playback");
-        logger.info("Pause requested by user");
-        
         if (audioService.getPlayerPool() != null) {
-            logger.debug("AudioPlayerPool is not null, proceeding to pause all tracks");
-            logger.trace("Calling pauseAll() on player pool");
             audioService.getPlayerPool().pauseAll();
-            logger.debug("All tracks paused successfully");
-        } else {
-            logger.warn("AudioPlayerPool is null, cannot pause tracks");
         }
-        
+
         // Pause any active timers
-        logger.trace("Checking pre-wait timer for pause");
         if (preWaitTimer != null) {
-            logger.debug("Pre-wait timer exists, pausing it. Current status: {}", preWaitTimer.getStatus());
             preWaitTimer.pause();
-            logger.trace("Pre-wait timer paused. New status: {}", preWaitTimer.getStatus());
-        } else {
-            logger.trace("No pre-wait timer to pause");
         }
-        
-        logger.trace("Checking post-wait timer for pause");
         if (postWaitTimer != null) {
-            logger.debug("Post-wait timer exists, pausing it. Current status: {}", postWaitTimer.getStatus());
             postWaitTimer.pause();
-            logger.trace("Post-wait timer paused. New status: {}", postWaitTimer.getStatus());
-        } else {
-            logger.trace("No post-wait timer to pause");
         }
-        
-        logger.trace("Checking for state change listener");
+
+        // Notify state change
         if (stateChangeListener != null) {
-            logger.debug("State change listener exists, notifying with new state");
-            PlaybackState currentState = getState();
-            logger.trace("Current playback state: {}", currentState);
-            stateChangeListener.accept(currentState);
-            logger.debug("State change listener notified successfully");
-        } else {
-            logger.warn("No state change listener registered");
+            stateChangeListener.accept(getState());
         }
-        
-        logger.debug("Updating status to 'Paused'");
+
         updateStatus("Paused");
-        logger.info("Playback paused successfully");
-        logger.trace("pause() method exit");
+        logger.info("Playback paused");
     }
     
     /**
      * Resumes playback.
      */
     public void resume() {
-        logger.trace("resume() method entry");
-        logger.debug("Attempting to resume playback");
-        logger.info("Resume requested by user");
-        
         if (audioService.getPlayerPool() != null) {
-            logger.debug("AudioPlayerPool is not null, proceeding to resume all tracks");
-            logger.trace("Calling resumeAll() on player pool");
             audioService.getPlayerPool().resumeAll();
-            logger.debug("All tracks resumed successfully");
-        } else {
-            logger.warn("AudioPlayerPool is null, cannot resume tracks");
         }
-        
+
         // Resume any paused timers
-        logger.trace("Checking pre-wait timer for resume");
         if (preWaitTimer != null && preWaitTimer.getStatus() == javafx.animation.Animation.Status.PAUSED) {
-            logger.debug("Pre-wait timer is paused, resuming it");
-            logger.trace("Pre-wait timer status before resume: {}", preWaitTimer.getStatus());
             preWaitTimer.play();
-            logger.trace("Pre-wait timer status after resume: {}", preWaitTimer.getStatus());
-            logger.debug("Pre-wait timer resumed successfully");
-        } else if (preWaitTimer != null) {
-            logger.trace("Pre-wait timer exists but not paused. Current status: {}", preWaitTimer.getStatus());
-        } else {
-            logger.trace("No pre-wait timer to resume");
         }
-        
-        logger.trace("Checking post-wait timer for resume");
         if (postWaitTimer != null && postWaitTimer.getStatus() == javafx.animation.Animation.Status.PAUSED) {
-            logger.debug("Post-wait timer is paused, resuming it");
-            logger.trace("Post-wait timer status before resume: {}", postWaitTimer.getStatus());
             postWaitTimer.play();
-            logger.trace("Post-wait timer status after resume: {}", postWaitTimer.getStatus());
-            logger.debug("Post-wait timer resumed successfully");
-        } else if (postWaitTimer != null) {
-            logger.trace("Post-wait timer exists but not paused. Current status: {}", postWaitTimer.getStatus());
-        } else {
-            logger.trace("No post-wait timer to resume");
         }
-        
-        logger.trace("Checking for state change listener");
+
+        // Notify state change
         if (stateChangeListener != null) {
-            logger.debug("State change listener exists, notifying with new state");
-            PlaybackState currentState = getState();
-            logger.trace("Current playback state: {}", currentState);
-            stateChangeListener.accept(currentState);
-            logger.debug("State change listener notified successfully");
-        } else {
-            logger.warn("No state change listener registered");
+            stateChangeListener.accept(getState());
         }
-        
-        logger.debug("Updating status to 'Resumed'");
+
         updateStatus("Resumed");
-        logger.info("Playback resumed successfully");
-        logger.trace("resume() method exit");
+        logger.info("Playback resumed");
     }
     
     /**
      * Stops the current playback.
      */
+    /**
+     * Stops the current playback.
+     */
     public void stop() {
-        logger.trace("stop() method entry");
-        logger.debug("Attempting to stop playback");
-        logger.info("Stop requested by user");
-        logger.trace("Current cue before stop: {}", currentCue != null ? currentCue.getName() : "null");
-        logger.trace("Current track ID before stop: {}", currentTrackId);
-        
         if (audioService.getPlayerPool() != null) {
-            logger.debug("AudioPlayerPool is not null, proceeding to stop all tracks");
-            logger.trace("Calling stopAll() on player pool");
             audioService.getPlayerPool().stopAll();
-            logger.debug("All tracks stopped successfully");
-        } else {
-            logger.warn("AudioPlayerPool is null, cannot stop tracks");
         }
-        
+
         // Stop and clear timers
-        logger.trace("Checking pre-wait timer for cleanup");
         if (preWaitTimer != null) {
-            logger.debug("Pre-wait timer exists, stopping and clearing it. Current status: {}", preWaitTimer.getStatus());
             preWaitTimer.stop();
-            logger.trace("Pre-wait timer stopped");
             preWaitTimer = null;
-            logger.trace("Pre-wait timer reference cleared");
-        } else {
-            logger.trace("No pre-wait timer to cleanup");
         }
-        
-        logger.trace("Checking post-wait timer for cleanup");
         if (postWaitTimer != null) {
-            logger.debug("Post-wait timer exists, stopping and clearing it. Current status: {}", postWaitTimer.getStatus());
             postWaitTimer.stop();
-            logger.trace("Post-wait timer stopped");
             postWaitTimer = null;
-            logger.trace("Post-wait timer reference cleared");
-        } else {
-            logger.trace("No post-wait timer to cleanup");
         }
-        
-        logger.debug("Clearing current cue reference");
+
+        // Clear current playback state
         currentCue = null;
-        logger.trace("Current cue set to null");
-        
-        logger.debug("Clearing current track ID");
         currentTrackId = null;
-        logger.trace("Current track ID set to null");
-        
-        logger.trace("Checking for state change listener");
+
+        // Notify state change
         if (stateChangeListener != null) {
-            logger.debug("State change listener exists, notifying with new state");
-            PlaybackState currentState = getState();
-            logger.trace("Current playback state: {}", currentState);
-            stateChangeListener.accept(currentState);
-            logger.debug("State change listener notified successfully");
-        } else {
-            logger.warn("No state change listener registered");
+            stateChangeListener.accept(getState());
         }
-        
-        logger.debug("Updating status to 'Stopped'");
+
         updateStatus("Stopped");
-        logger.info("Playback stopped successfully");
-        logger.trace("stop() method exit");
+        logger.info("Playback stopped");
     }
     
     /**

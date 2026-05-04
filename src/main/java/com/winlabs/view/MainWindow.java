@@ -23,6 +23,7 @@ import com.winlabs.model.PlaylistSettings;
 import com.winlabs.model.RecentPlaylist;
 import com.winlabs.model.Settings;
 import com.winlabs.service.KeyBindingService;
+import com.winlabs.service.KeyboardManager;
 import com.winlabs.service.PlaylistService;
 import com.winlabs.service.PlaylistSettingsService;
 import com.winlabs.service.SettingsService;
@@ -111,22 +112,10 @@ public class MainWindow extends Stage {
     private SplitPane splitPane;
     private boolean isFileViewVisible = false;
     
-    // Keyboard acceleration state: track last execution time per action to prevent
-    // shortcuts from firing multiple times during a single key hold
-    private final Map<String, Long> lastActionExecutionTime = new HashMap<>();
-    private static final long ACTION_DEBOUNCE_MS = 50; // Minimum ms between same action firings
-    private static final long SEQUENCE_TIMEOUT_MS = 500; // Timeout between keys in multi-key sequence
+    // Keyboard manager for handling accelerators
+    private KeyboardManager keyboardManager;
     
-    // Track accelerators we've added so we can clear them when re-registering
-    private final Set<KeyCombination> registeredAccelerators = new java.util.HashSet<>();
-    
-    // Multi-key sequence tracking
-    private final Map<String, List<KeyCombination>> multiKeySequences = new HashMap<>(); // action -> sequence
-    private final Map<String, Integer> sequenceProgress = new HashMap<>(); // action -> how many keys matched
-    private final Map<String, Long> sequenceTimestamps = new HashMap<>(); // action -> last key press time
-    
-    // Event filter attached to the scene to capture key presses before nodes consume them
-    private EventHandler<KeyEvent> acceleratorEventFilter = null;
+    // Callback handlers
     private Runnable showDocumentationCallback;
     private Runnable showAboutDialogCallback;
     
@@ -142,6 +131,10 @@ public class MainWindow extends Stage {
         this.playlistService = new PlaylistService();
         this.playlistSettingsService = new PlaylistSettingsService();
         this.settingsService = new SettingsService();
+        
+        // Initialize keyboard manager
+        this.keyboardManager = new KeyboardManager();
+        this.keyboardManager.setActionExecutor(this::executeKeyboardAction);
         
         // Load settings
         try {
@@ -165,240 +158,6 @@ public class MainWindow extends Stage {
         initializeUI();
         logger.info("MainWindow initialized successfully");
     }
-
-    /**
-     * Handle an accelerator-invoked action. Respects `allowKeyRepeat` and applies
-     * per-action debouncing when repeats are disabled.
-     */
-    private void handleAcceleratorAction(String actionId) {
-        if (actionId == null || actionId.isEmpty()) return;
-
-        try {
-            logger.debug("Accelerator invoked: {}", actionId);
-            boolean allowRepeat = settings.getApplicationSettings().isAllowKeyRepeat();
-            long now = System.currentTimeMillis();
-
-            if (!allowRepeat) {
-                Long lastExecution = lastActionExecutionTime.get(actionId);
-                if (lastExecution != null && (now - lastExecution) < ACTION_DEBOUNCE_MS) {
-                    logger.trace("Skipping action '{}' due to debounce ({} ms since last)", actionId, (now - lastExecution));
-                    // Skip repeated firing while key is held
-                    return;
-                }
-                lastActionExecutionTime.put(actionId, now);
-            }
-
-            executeKeyboardAction(actionId);
-        } catch (Exception e) {
-            logger.error("Error handling accelerator action {}: {}", actionId, e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Registers keyboard accelerators from application settings.
-     * Supports both single key bindings (e.g., "CTRL+S") and multi-key sequences (e.g., "CTRL+A;B;C").
-     * Parses stored key bindings and registers them on the scene for global key dispatch.
-     * 
-     * Multi-key Sequences Behavior:
-     * - First key MUST match exactly (including modifiers): User presses CTRL+A, system matches CTRL+A
-     * - Subsequent keys match by KEY CODE ONLY (modifiers ignored): User presses B (even while holding CTRL),
-     *   system matches just 'B' code. This is lenient to handle users who don't perfectly release modifiers
-     *   between key presses.
-     * - Timeout: 500ms between keys; if exceeded, sequence resets
-     * 
-     * Example: For binding "CTRL+S;F", user can:
-     * 1. Press CTRL+S (exact match required)
-     * 2. Keep holding CTRL and press F (lenient: F key code matches, CTRL is ignored)
-     * 3. Action triggers after F is pressed
-     */
-    private void registerKeyboardAccelerators(Scene keyboardAccelScene) {
-        if (keyboardAccelScene == null) {
-            logger.warn("Cannot register keyboard accelerators: scene is null");
-            return;
-        }
-
-        // Store for tracking key repeats
-        final Map<KeyCombination, String> actionByKeyCombination = new HashMap<>();
-        final Map<String, String> configuredActionBindings = settings.getApplicationSettings().getKeyBindings();
-
-        if (configuredActionBindings == null || configuredActionBindings.isEmpty()) {
-            logger.debug("No keyboard bindings configured");
-            return;
-        }
-
-        // Clear previous multi-key sequence data
-        multiKeySequences.clear();
-        sequenceProgress.clear();
-        sequenceTimestamps.clear();
-
-        // Parse all bindings
-        for (Map.Entry<String, String> configuredBinding : configuredActionBindings.entrySet()) {
-            String actionId = configuredBinding.getKey();
-            String bindingStr = configuredBinding.getValue();
-
-            if (bindingStr == null || bindingStr.isEmpty()) {
-                continue;
-            }
-
-            try {
-                // Check if this is a multi-key sequence (contains semicolon)
-                if (bindingStr.contains(";")) {
-                    // Parse as multi-key sequence
-                    List<KeyCombination> sequence = KeyBindingService.parseMultiKeySequence(bindingStr);
-                    multiKeySequences.put(actionId, sequence);
-                    sequenceProgress.put(actionId, 0); // Start at 0 keys matched
-                    logger.debug("Registered multi-key sequence for '{}': {} (sequence: {} keys: {})", 
-                        actionId, bindingStr, sequence.size(), 
-                        sequence.stream().map(KeyCombination::getName).toList());
-                } else {
-                    // Parse as single key binding
-                    KeyCombination binding = KeyBindingService.parseBinding(bindingStr);
-                    String existingActionId = actionByKeyCombination.get(binding);
-                    if (existingActionId != null) {
-                        logger.warn("Duplicate keyboard shortcut {} for action {} conflicts with existing action {}; ignoring duplicate binding",
-                                bindingStr, actionId, existingActionId);
-                        continue;
-                    }
-                    actionByKeyCombination.put(binding, actionId);
-                    logger.debug("Registered single keyboard shortcut for '{}': {}", actionId, bindingStr);
-                }
-            } catch (IllegalArgumentException e) {
-                logger.error("Failed to parse keyboard binding for '{}': {} ({})", actionId, bindingStr, e.getMessage());
-            }
-        }
-
-        if (actionByKeyCombination.isEmpty() && multiKeySequences.isEmpty()) {
-            logger.warn("No valid keyboard bindings were registered");
-            return;
-        }
-
-        // Remove any previously registered accelerators to avoid duplicates
-        try {
-            for (KeyCombination keyCombination : registeredAccelerators) {
-                keyboardAccelScene.getAccelerators().remove(keyCombination);
-            }
-            logger.debug("Cleared {} previously registered keyboard accelerators", registeredAccelerators.size());
-        } catch (Exception ex) {
-            logger.warn("Error clearing previous accelerators: {}", ex.getMessage());
-        }
-        registeredAccelerators.clear();
-
-        // Register single-key accelerators on the scene
-        for (Map.Entry<KeyCombination, String> actionEntry : actionByKeyCombination.entrySet()) {
-            KeyCombination keyCombination = actionEntry.getKey();
-            String actionId = actionEntry.getValue();
-            keyboardAccelScene.getAccelerators().put(keyCombination, () -> handleAcceleratorAction(actionId));
-            registeredAccelerators.add(keyCombination);
-            logger.debug("Registered accelerator for action '{}' -> {}", actionId, keyCombination.getName());
-        }
-
-        // Create a copy of single-key bindings and multi-key sequences for event filter
-        final Map<KeyCombination, String> finalActionByKeyCombination = actionByKeyCombination;
-
-        // Add a capturing-level event filter to handle both single and multi-key sequences
-        try {
-            if (acceleratorEventFilter != null) {
-                keyboardAccelScene.removeEventFilter(KeyEvent.KEY_PRESSED, acceleratorEventFilter);
-            }
-        } catch (Exception ex) {
-            logger.debug("Could not remove previous event filter: {}", ex.getMessage());
-        }
-
-        acceleratorEventFilter = keyEvent -> {
-            // Ignore if target is a text input control to not interfere with typing
-            if (keyEvent.getTarget() instanceof TextInputControl) {
-                return;
-            }
-
-            // First, check single-key bindings (capture phase)
-            for (Map.Entry<KeyCombination, String> actionEntry : finalActionByKeyCombination.entrySet()) {
-                try {
-                    if (KeyBindingService.matchesKeyEvent(actionEntry.getKey(), keyEvent)) {
-                        handleAcceleratorAction(actionEntry.getValue());
-                        keyEvent.consume();
-                        return;
-                    }
-                } catch (Exception ex) {
-                    logger.debug("Error checking single-key binding: {}", ex.getMessage());
-                }
-            }
-
-            // Then check multi-key sequences
-            for (Map.Entry<String, List<KeyCombination>> seqEntry : multiKeySequences.entrySet()) {
-                String actionId = seqEntry.getKey();
-                List<KeyCombination> sequence = seqEntry.getValue();
-                
-                long now = System.currentTimeMillis();
-                Integer progress = sequenceProgress.getOrDefault(actionId, 0);
-                Long lastTimestamp = sequenceTimestamps.get(actionId);
-
-                // Check if sequence has timed out
-                if (lastTimestamp != null && (now - lastTimestamp) > SEQUENCE_TIMEOUT_MS) {
-                    logger.debug("Multi-key sequence timeout for action '{}' (timed out after {} ms)", actionId, now - lastTimestamp);
-                    progress = 0; // Reset progress
-                }
-
-                // Check if current key matches the next key in the sequence
-                if (progress < sequence.size()) {
-                    try {
-                        KeyCombination expectedKey = sequence.get(progress);
-                        // For first key (progress=0), match with modifiers. For subsequent keys, match key code only
-                        // because users may still have modifiers held from previous key press
-                        boolean matches = (progress == 0) 
-                            ? KeyBindingService.matchesKeyEvent(expectedKey, keyEvent)
-                            : KeyBindingService.matchesKeyCodeOnly(expectedKey, keyEvent);
-                        
-                        logger.debug("Multi-key sequence '{}': checking key {} of {}, expected: {}, matches: {}", 
-                            actionId, progress, sequence.size(), expectedKey.getName(), matches);
-                        
-                        if (matches) {
-                            progress++;
-                            sequenceTimestamps.put(actionId, now);
-                            sequenceProgress.put(actionId, progress);
-                            
-                            // Check if sequence is complete
-                            if (progress == sequence.size()) {
-                                logger.debug("Multi-key sequence COMPLETED for action: {}", actionId);
-                                handleAcceleratorAction(actionId);
-                                // Reset for next sequence
-                                sequenceProgress.put(actionId, 0);
-                                sequenceTimestamps.remove(actionId);
-                            } else {
-                                logger.debug("Multi-key sequence PROGRESS for {}: {} / {} keys matched", actionId, progress, sequence.size());
-                            }
-                            
-                            keyEvent.consume();
-                            return;
-                        }
-                    } catch (Exception ex) {
-                        logger.debug("Error checking multi-key sequence: {}", ex.getMessage(), ex);
-                    }
-                }
-
-                // If a key doesn't match the expected next key, reset progress for this sequence
-                if (progress > 0) {
-                    // But first check if this key could be the start of a new sequence
-                    try {
-                        KeyCombination firstKey = sequence.get(0);
-                        boolean isRestart = KeyBindingService.matchesKeyEvent(firstKey, keyEvent);
-                        if (!isRestart) {
-                            logger.debug("Multi-key sequence '{}': key didn't match, resetting progress", actionId);
-                            sequenceProgress.put(actionId, 0);
-                            sequenceTimestamps.remove(actionId);
-                        }
-                    } catch (Exception ex) {
-                        logger.debug("Error resetting sequence: {}", ex.getMessage());
-                    }
-                }
-            }
-        };
-
-        keyboardAccelScene.addEventFilter(KeyEvent.KEY_PRESSED, acceleratorEventFilter);
-    }
-
-    // Old key-press dispatch removed. Global accelerators use
-    // `Scene.getAccelerators()` + a capturing event filter and
-    // `handleAcceleratorAction()` to manage per-action debouncing.
 
     /**
      * Executes the action associated with a keyboard shortcut.
@@ -508,7 +267,7 @@ public class MainWindow extends Stage {
         // Left: Cue list table
         VBox cueListContainer = new VBox();
         Label cueListLabel = new Label("Cue List");
-        cueListLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
+        cueListLabel.setStyle(StyleConstants.SECTION_HEADER_LABEL);
         cueListLabel.setPadding(new Insets(5));
         cueListContainer.getChildren().addAll(cueListLabel, createCueTable());
         VBox.setVgrow(cueTable, Priority.ALWAYS);
@@ -516,7 +275,7 @@ public class MainWindow extends Stage {
         // Right: File browser
         fileViewContainer = new VBox();
         Label fileViewLabel = new Label("File Browser");
-        fileViewLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
+        fileViewLabel.setStyle(StyleConstants.SECTION_HEADER_LABEL);
         fileViewLabel.setPadding(new Insets(5));
         fileView = new FileView();
         
@@ -551,7 +310,9 @@ public class MainWindow extends Stage {
         setScene(keyboardAccelScene);
         
         // Register keyboard shortcuts
-        registerKeyboardAccelerators(keyboardAccelScene);
+        Map<String, String> keyBindings = settings.getApplicationSettings().getKeyBindings();
+        keyboardManager.setAllowKeyRepeat(settings.getApplicationSettings().isAllowKeyRepeat());
+        keyboardManager.registerKeyboardAccelerators(keyboardAccelScene, keyBindings);
         
         // Apply saved theme or default to dark
         applyThemeFromSettings();
@@ -966,15 +727,14 @@ public class MainWindow extends Stage {
 
     private void handleChangeFile(Cue cue) {
         if (cue == null) return;
-        FileChooser chooser = new FileChooser();
-        chooser.setTitle("Select Audio File");
+        FileChooser chooser = DialogFactory.createAudioFileChooser();
         File file = chooser.showOpenDialog(this);
         if (file != null) {
             boolean ok = cueController.changeFile(cue, file.toPath());
             if (ok) {
                 updateStatus("Changed file for cue: " + cue.getName());
             } else {
-                showError("Invalid File", "Selected file is not a supported audio file.");
+                DialogFactory.showError(this, "Invalid File", "Selected file is not a supported audio file.");
             }
         }
     }
@@ -1046,8 +806,7 @@ public class MainWindow extends Stage {
         fileField.setEditable(false);
         Button chooseFileBtn = new Button("Choose...");
         chooseFileBtn.setOnAction(e -> {
-            FileChooser chooser = new FileChooser();
-            chooser.setTitle("Select Audio File");
+            FileChooser chooser = DialogFactory.createAudioFileChooser();
             File selectedFile = chooser.showOpenDialog(this);
             if (selectedFile != null) {
                 fileField.setText(selectedFile.toPath().toString());
@@ -1242,22 +1001,22 @@ public class MainWindow extends Stage {
     private HBox createStatusBar() {
         HBox statusBar = new HBox();
         statusBar.setPadding(new Insets(5));
-        statusBar.setStyle("-fx-background-color: #2d2d30;");
+        statusBar.setStyle(StyleConstants.STATUS_BAR_BACKGROUND);
         
         statusLabel = new Label("Ready");
-        statusLabel.setStyle("-fx-text-fill: white;");
+        statusLabel.setStyle(StyleConstants.STATUS_TEXT_WHITE);
         
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         
         cueCountLabel = new Label("Cues: 0");
-        cueCountLabel.setStyle("-fx-text-fill: white;");
+        cueCountLabel.setStyle(StyleConstants.STATUS_TEXT_WHITE);
         updateCueCount();
         
         // File view toggle button
         Button fileViewToggle = new Button("FILE VIEW"); // Placeholder text
         fileViewToggle.setTooltip(new Tooltip("Toggle File View"));
-        fileViewToggle.setStyle("-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 16px;");
+        fileViewToggle.setStyle(StyleConstants.FILE_VIEW_TOGGLE);
         fileViewToggle.setOnAction(e -> toggleFileView());
         
         statusBar.getChildren().addAll(statusLabel, spacer, cueCountLabel, fileViewToggle);
@@ -1574,10 +1333,8 @@ public class MainWindow extends Stage {
      */
     private void showError(String title, String message) {
         logger.error("Error dialog shown: {} - {}", title, message);
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
+        Alert alert = DialogFactory.createErrorAlert(title, message);
+        alert.initOwner(this);
         applyThemeToDialog(alert);
         alert.showAndWait();
     }
@@ -1765,7 +1522,9 @@ public class MainWindow extends Stage {
             // Rebuild keyboard accelerators immediately so changed shortcuts take effect
             Scene currentScene = getScene();
             if (currentScene != null) {
-                registerKeyboardAccelerators(currentScene);
+                Map<String, String> updatedKeyBindings = updatedSettings.getApplicationSettings().getKeyBindings();
+                keyboardManager.setAllowKeyRepeat(updatedSettings.getApplicationSettings().isAllowKeyRepeat());
+                keyboardManager.registerKeyboardAccelerators(currentScene, updatedKeyBindings);
             }
             // Apply audio settings
             if (audioController.getAudioService() != null && 
@@ -1791,7 +1550,7 @@ public class MainWindow extends Stage {
             );
             // Apply theme before showing
             if (playlistSettingsWindow.getDialogPane() != null) {
-                String themePath = "/css/" + settings.getTheme() + "-theme.css";
+                String themePath = StyleConstants.getThemeCssPath(settings.getTheme());
                 playlistSettingsWindow.getDialogPane().getStylesheets().clear();
                 playlistSettingsWindow.getDialogPane().getStylesheets().add(getClass().getResource(themePath).toExternalForm());
             }
@@ -1806,7 +1565,7 @@ public class MainWindow extends Stage {
      * Applies the theme from current settings.
      */
     private void applyThemeFromSettings() {
-        String themePath = "/css/" + settings.getTheme() + "-theme.css";
+        String themePath = StyleConstants.getThemeCssPath(settings.getTheme());
         applyTheme(themePath);
     }
     
@@ -1824,7 +1583,7 @@ public class MainWindow extends Stage {
      */
     private void applyThemeToWindow(Stage window) {
         if (window.getScene() != null) {
-            String themePath = "/css/" + settings.getTheme() + "-theme.css";
+            String themePath = StyleConstants.getThemeCssPath(settings.getTheme());
             window.getScene().getStylesheets().clear();
             window.getScene().getStylesheets().add(getClass().getResource(themePath).toExternalForm());
         }
@@ -1835,7 +1594,7 @@ public class MainWindow extends Stage {
      */
     private void applyThemeToDialog(Dialog<?> dialog) {
         if (dialog.getDialogPane() != null) {
-            String themePath = "/css/" + settings.getTheme() + "-theme.css";
+            String themePath = StyleConstants.getThemeCssPath(settings.getTheme());
             dialog.getDialogPane().getStylesheets().clear();
             dialog.getDialogPane().getStylesheets().add(getClass().getResource(themePath).toExternalForm());
         }
