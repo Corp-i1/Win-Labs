@@ -76,6 +76,20 @@ class CueTest {
         cue.setFilePath(path);
         assertEquals(path, cue.getFilePath());
     }
+
+    @Test
+    void testSetFilePathRejectsNonAudio() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            cue.setFilePath("C:/Documents/readme.txt");
+        });
+        assertTrue(exception.getMessage().contains("filePath"));
+    }
+
+    @Test
+    void testSetFilePathAllowsEmptyString() {
+        cue.setFilePath("");
+        assertEquals("", cue.getFilePath());
+    }
     
     @Test
     void testProperties() {

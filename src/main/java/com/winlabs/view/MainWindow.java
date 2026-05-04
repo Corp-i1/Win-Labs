@@ -6,19 +6,24 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.winlabs.controller.AudioController;
+import com.winlabs.controller.CueController;
 import com.winlabs.model.Cue;
 import com.winlabs.model.PlaybackState;
 import com.winlabs.model.Playlist;
 import com.winlabs.model.PlaylistSettings;
 import com.winlabs.model.RecentPlaylist;
 import com.winlabs.model.Settings;
+import com.winlabs.service.KeyBindingService;
+import com.winlabs.service.KeyboardManager;
 import com.winlabs.service.PlaylistService;
 import com.winlabs.service.PlaylistSettingsService;
 import com.winlabs.service.SettingsService;
@@ -30,6 +35,9 @@ import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.application.Platform;
+import javafx.event.EventHandler;
+
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
@@ -42,10 +50,17 @@ import javafx.scene.control.Separator;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.TableCell;
+import javafx.scene.control.SelectionMode;
+import javafx.scene.control.cell.TextFieldTableCell;
+import javafx.scene.control.ContextMenu;
+import javafx.scene.control.TableRow;
+import javafx.beans.binding.Bindings;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.util.Callback;
 import javafx.scene.control.ToolBar;
 import javafx.scene.control.Tooltip;
+import javafx.scene.control.TextInputControl;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -54,17 +69,17 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-
-//TODO: #69 Add context menu for file operations (open, delete, properties, etc.)
-//TODO: #70 Add drag-and-drop support for adding files to cue list
-//TODO: #71 Add keyboard shortcuts for common actions (go, pause, stop, next cue, etc.) These should be configurable in settings.
+import javafx.scene.control.TextField;
+import javafx.scene.control.CheckBox;
+import javafx.scene.input.KeyCombination;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.geometry.HPos;
 //TODO: #72 Add search/filter functionality to file browser
 //TODO: #78 Add context menu for opening files/folders
 //TODO: #73 Add an inspector panel for editing cue properties
-//TODO: #74 make the cue table columns reorderable and resizable, and save/load their state with the playlist
-//TODO: #75 Add multi-select support for cue table (for batch operations like delete, move, etc.) - make it so that Ctrl+Click and Shift+Click work as expected
 //TODO: #76 Add drag-and-drop reordering of cues in the cue table
-//TODO: #77 Make sure all specific key presses and actions can be remapped in settings
 
 /**
  * Main application window for Win-Labs.
@@ -87,6 +102,7 @@ public class MainWindow extends Stage {
     private Label cueCountLabel;
     
     private AudioController audioController;
+    private CueController cueController;
     private PlaylistService playlistService;
     private PlaylistSettingsService playlistSettingsService;
     private SettingsService settingsService;
@@ -95,7 +111,11 @@ public class MainWindow extends Stage {
     private VBox fileViewContainer;
     private SplitPane splitPane;
     private boolean isFileViewVisible = false;
-
+    
+    // Keyboard manager for handling accelerators
+    private KeyboardManager keyboardManager;
+    
+    // Callback handlers
     private Runnable showDocumentationCallback;
     private Runnable showAboutDialogCallback;
     
@@ -107,9 +127,14 @@ public class MainWindow extends Stage {
         this.playlistSettings = new PlaylistSettings();
         this.currentPlaylistPath = null;
         this.audioController = new AudioController();
+        this.cueController = new CueController(this.audioController);
         this.playlistService = new PlaylistService();
         this.playlistSettingsService = new PlaylistSettingsService();
         this.settingsService = new SettingsService();
+        
+        // Initialize keyboard manager
+        this.keyboardManager = new KeyboardManager();
+        this.keyboardManager.setActionExecutor(this::executeKeyboardAction);
         
         // Load settings
         try {
@@ -132,6 +157,83 @@ public class MainWindow extends Stage {
         
         initializeUI();
         logger.info("MainWindow initialized successfully");
+    }
+
+    /**
+     * Executes the action associated with a keyboard shortcut.
+     */
+    private void executeKeyboardAction(String actionId) {
+        if (actionId == null || actionId.isEmpty()) {
+            return;
+        }
+
+        logger.debug("Executing keyboard action: {}", actionId);
+
+        try {
+            switch (actionId) {
+                case "go":
+                    onGoClicked();
+                    break;
+                case "pause":
+                    onPauseResumeToggle();
+                    break;
+                case "stop":
+                    onStopClicked();
+                    break;
+                case "next":
+                    selectNextCue();
+                    break;
+                case "previous":
+                    selectPreviousCue();
+                    break;
+                case "add":
+                    addNewCue();
+                    break;
+                case "deleteSelected":
+                    deleteSelectedCue();
+                    break;
+                case "duplicateSelected":
+                    handleDuplicateSelectedCues();
+                    break;
+                default:
+                    logger.warn("Unknown keyboard action: {}", actionId);
+            }
+        } catch (Exception e) {
+            logger.error("Error executing keyboard action {}: {}", actionId, e.getMessage(), e);
+        }
+    }
+
+    private void selectNextCue() {
+        if (playlist == null || playlist.size() == 0) {
+            return;
+        }
+        int idx = cueTable.getSelectionModel().getSelectedIndex();
+        if (idx < 0) {
+            cueTable.getSelectionModel().select(0);
+            cueTable.scrollTo(0);
+            return;
+        }
+        if (idx < playlist.size() - 1) {
+            cueTable.getSelectionModel().select(idx + 1);
+            cueTable.scrollTo(idx + 1);
+        }
+    }
+
+    private void selectPreviousCue() {
+        if (playlist == null || playlist.size() == 0) {
+            return;
+        }
+        int idx = cueTable.getSelectionModel().getSelectedIndex();
+        if (idx < 0) {
+            int last = playlist.size() - 1;
+            cueTable.getSelectionModel().select(last);
+            cueTable.scrollTo(last);
+            return;
+        }
+        if (idx > 0) {
+            cueTable.getSelectionModel().select(idx - 1);
+            cueTable.scrollTo(idx - 1);
+        }
     }
     
     /**
@@ -165,7 +267,7 @@ public class MainWindow extends Stage {
         // Left: Cue list table
         VBox cueListContainer = new VBox();
         Label cueListLabel = new Label("Cue List");
-        cueListLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
+        cueListLabel.setStyle(StyleConstants.SECTION_HEADER_LABEL);
         cueListLabel.setPadding(new Insets(5));
         cueListContainer.getChildren().addAll(cueListLabel, createCueTable());
         VBox.setVgrow(cueTable, Priority.ALWAYS);
@@ -173,7 +275,7 @@ public class MainWindow extends Stage {
         // Right: File browser
         fileViewContainer = new VBox();
         Label fileViewLabel = new Label("File Browser");
-        fileViewLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px;");
+        fileViewLabel.setStyle(StyleConstants.SECTION_HEADER_LABEL);
         fileViewLabel.setPadding(new Insets(5));
         fileView = new FileView();
         
@@ -204,8 +306,13 @@ public class MainWindow extends Stage {
         root.setBottom(bottomContainer);
         
         // Create scene
-        Scene scene = new Scene(root);
-        setScene(scene);
+        Scene keyboardAccelScene = new Scene(root);
+        setScene(keyboardAccelScene);
+        
+        // Register keyboard shortcuts
+        Map<String, String> keyBindings = settings.getApplicationSettings().getKeyBindings();
+        keyboardManager.setAllowKeyRepeat(settings.getApplicationSettings().isAllowKeyRepeat());
+        keyboardManager.registerKeyboardAccelerators(keyboardAccelScene, keyBindings);
         
         // Apply saved theme or default to dark
         applyThemeFromSettings();
@@ -289,7 +396,6 @@ public class MainWindow extends Stage {
     /**
      * Creates the toolbar.
      */
-    //TODO: Add More toolbar buttons and functionality
     private ToolBar createToolbar() {
         ToolBar toolbar = new ToolBar();
         
@@ -321,22 +427,47 @@ public class MainWindow extends Stage {
     private TableView<Cue> createCueTable() {
         cueTable = new TableView<>();
         cueTable.setItems(playlist.getCues());
-        
+        cueTable.setPlaceholder(new Label("No cues in playlist"));
+        cueTable.setEditable(true);
+        cueTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        cueTable.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
+
+        setupColumns();
+
+        cueTable.setRowFactory(createRowFactory());
+
+        return cueTable;
+    }
+
+    /**
+     * Set up table columns for the cue table.
+     */
+    private void setupColumns() {
         // Number column
         TableColumn<Cue, Integer> numberCol = new TableColumn<>("No.");
+        numberCol.setId("number");
         numberCol.setCellValueFactory(new PropertyValueFactory<>("number"));
         numberCol.setPrefWidth(50);
-        
-        // Name column
+
+        // Name column (editable inline)
         TableColumn<Cue, String> nameCol = new TableColumn<>("Name");
+        nameCol.setId("name");
         nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
         nameCol.setPrefWidth(250);
-        
+        nameCol.setCellFactory(TextFieldTableCell.forTableColumn());
+        nameCol.setOnEditCommit(evt -> {
+            Cue cue = evt.getRowValue();
+            if (cue != null && evt.getNewValue() != null) {
+                cue.setName(evt.getNewValue());
+                updateStatus("Renamed cue to: " + evt.getNewValue());
+            }
+        });
+
         // Duration column
         TableColumn<Cue, Double> durationCol = new TableColumn<>("Duration");
+        durationCol.setId("duration");
         durationCol.setCellValueFactory(new PropertyValueFactory<>("duration"));
         durationCol.setPrefWidth(80);
-        // Format duration as MM:SS
         durationCol.setCellFactory(col -> new TableCell<Cue, Double>() {
             @Override
             protected void updateItem(Double item, boolean empty) {
@@ -348,9 +479,10 @@ public class MainWindow extends Stage {
                 }
             }
         });
-        
+
         // Pre-wait column
         TableColumn<Cue, Double> preWaitCol = new TableColumn<>("Pre-Wait");
+        preWaitCol.setId("preWait");
         preWaitCol.setCellValueFactory(new PropertyValueFactory<>("preWait"));
         preWaitCol.setPrefWidth(80);
         preWaitCol.setCellFactory(col -> new TableCell<Cue, Double>() {
@@ -364,9 +496,10 @@ public class MainWindow extends Stage {
                 }
             }
         });
-        
+
         // Post-wait column
         TableColumn<Cue, Double> postWaitCol = new TableColumn<>("Post-Wait");
+        postWaitCol.setId("postWait");
         postWaitCol.setCellValueFactory(new PropertyValueFactory<>("postWait"));
         postWaitCol.setPrefWidth(80);
         postWaitCol.setCellFactory(col -> new TableCell<Cue, Double>() {
@@ -380,9 +513,10 @@ public class MainWindow extends Stage {
                 }
             }
         });
-        
+
         // Auto-follow column
         TableColumn<Cue, Boolean> autoFollowCol = new TableColumn<>("Auto-Follow");
+        autoFollowCol.setId("autoFollow");
         autoFollowCol.setCellValueFactory(new PropertyValueFactory<>("autoFollow"));
         autoFollowCol.setPrefWidth(90);
         autoFollowCol.setCellFactory(col -> new TableCell<Cue, Boolean>() {
@@ -396,18 +530,443 @@ public class MainWindow extends Stage {
                 }
             }
         });
-        
-        // File path column
+
+        // File path column - show filename with tooltip for full path
         TableColumn<Cue, String> fileCol = new TableColumn<>("File");
+        fileCol.setId("filePath");
         fileCol.setCellValueFactory(new PropertyValueFactory<>("filePath"));
         fileCol.setPrefWidth(300);
-        
-		cueTable.getColumns().addAll(List.of(
-			numberCol, nameCol, durationCol, preWaitCol, 
-			postWaitCol, autoFollowCol, fileCol
-		));
-        
-        return cueTable;
+        fileCol.setCellFactory(col -> new TableCell<Cue, String>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null || item.isEmpty()) {
+                    setText(null);
+                    setTooltip(null);
+                } else {
+                    try {
+                        String fileName = Paths.get(item).getFileName().toString();
+                        setText(fileName);
+                        Tooltip tip = new Tooltip(item);
+                        setTooltip(tip);
+                    } catch (Exception ex) {
+                        setText(item);
+                        setTooltip(new Tooltip(item));
+                    }
+                }
+            }
+        });
+
+        cueTable.getColumns().setAll(List.of(numberCol, nameCol, durationCol, preWaitCol, postWaitCol, autoFollowCol, fileCol));
+
+        applyCueTableLayoutFromSettings();
+    }
+
+    /**
+     * Captures the current cue table layout into playlist settings.
+     */
+    private void captureCueTableLayoutToSettings() {
+        if (cueTable == null || playlistSettings == null) {
+            return;
+        }
+
+        StringBuilder order = new StringBuilder();
+        StringBuilder widths = new StringBuilder();
+        boolean first = true;
+
+        for (TableColumn<Cue, ?> column : cueTable.getColumns()) {
+            String columnId = column.getId();
+            if (columnId == null || columnId.isEmpty()) {
+                continue;
+            }
+
+            if (!first) {
+                order.append(',');
+                widths.append(',');
+            }
+
+            order.append(columnId);
+            widths.append(columnId).append('=').append(column.getWidth());
+            first = false;
+        }
+
+        playlistSettings.setCueTableColumnOrder(order.toString());
+        playlistSettings.setCueTableColumnWidths(widths.toString());
+    }
+
+    /**
+     * Applies the saved cue table layout from playlist settings.
+     */
+    private void applyCueTableLayoutFromSettings() {
+        if (cueTable == null || playlistSettings == null) {
+            return;
+        }
+
+        String savedOrder = playlistSettings.getCueTableColumnOrder();
+        String savedWidths = playlistSettings.getCueTableColumnWidths();
+        if ((savedOrder == null || savedOrder.isEmpty()) && (savedWidths == null || savedWidths.isEmpty())) {
+            return;
+        }
+
+        Map<String, TableColumn<Cue, ?>> columnsById = new HashMap<>();
+        for (TableColumn<Cue, ?> column : cueTable.getColumns()) {
+            if (column.getId() != null) {
+                columnsById.put(column.getId(), column);
+            }
+        }
+
+        if (savedWidths != null && !savedWidths.isEmpty()) {
+            for (String entry : savedWidths.split(",")) {
+                String[] parts = entry.split("=", 2);
+                if (parts.length != 2) {
+                    continue;
+                }
+
+                TableColumn<Cue, ?> column = columnsById.get(parts[0]);
+                if (column != null) {
+                    try {
+                        column.setPrefWidth(Double.parseDouble(parts[1]));
+                    } catch (NumberFormatException ex) {
+                        logger.debug("Ignoring invalid stored width for column {}", parts[0]);
+                    }
+                }
+            }
+        }
+
+        if (savedOrder != null && !savedOrder.isEmpty()) {
+            List<TableColumn<Cue, ?>> orderedColumns = new ArrayList<>();
+            for (String id : savedOrder.split(",")) {
+                TableColumn<Cue, ?> column = columnsById.get(id);
+                if (column != null && !orderedColumns.contains(column)) {
+                    orderedColumns.add(column);
+                }
+            }
+
+            for (TableColumn<Cue, ?> column : cueTable.getColumns()) {
+                if (!orderedColumns.contains(column)) {
+                    orderedColumns.add(column);
+                }
+            }
+
+            cueTable.getColumns().setAll(orderedColumns);
+        }
+    }
+
+    /**
+     * Creates a row factory that attaches a context menu and double-click handler.
+     */
+    private Callback<TableView<Cue>, TableRow<Cue>> createRowFactory() {
+        return table -> {
+            TableRow<Cue> row = new TableRow<>();
+            ContextMenu rowMenu = new ContextMenu();
+
+            MenuItem playItem = new MenuItem("Play");
+            playItem.setOnAction(e -> handlePlayCue(row.getItem()));
+
+            MenuItem changeFileItem = new MenuItem("Change File...");
+            changeFileItem.setOnAction(e -> handleChangeFile(row.getItem()));
+
+            MenuItem duplicateSelectedItem = new MenuItem("Duplicate Selected");
+            duplicateSelectedItem.setOnAction(e -> handleDuplicateSelectedCues());
+
+            MenuItem openFileItem = new MenuItem("Open File Location");
+            openFileItem.setOnAction(e -> handleOpenFileLocation(row.getItem()));
+
+            MenuItem deleteSelectedItem = new MenuItem("Delete Selected");
+            deleteSelectedItem.setOnAction(e -> handleDeleteSelectedCues());
+
+            MenuItem propertiesItem = new MenuItem("Properties...");
+            propertiesItem.setOnAction(e -> handleEditProperties(row.getItem()));
+
+            MenuItem propertiesSelectedItem = new MenuItem("Edit Selected Properties...");
+            propertiesSelectedItem.setOnAction(e -> handleEditSelectedProperties());
+
+            rowMenu.getItems().addAll(
+                playItem,
+                new SeparatorMenuItem(),
+                changeFileItem,
+                propertiesItem,
+                duplicateSelectedItem,
+                propertiesSelectedItem,
+                new SeparatorMenuItem(),
+                openFileItem,
+                new SeparatorMenuItem(),
+                deleteSelectedItem
+            );
+
+            duplicateSelectedItem.disableProperty().bind(Bindings.size(cueTable.getSelectionModel().getSelectedItems()).lessThan(1));
+            deleteSelectedItem.disableProperty().bind(Bindings.size(cueTable.getSelectionModel().getSelectedItems()).lessThan(1));
+            propertiesSelectedItem.disableProperty().bind(Bindings.size(cueTable.getSelectionModel().getSelectedItems()).lessThan(1));
+
+            row.contextMenuProperty().bind(Bindings.when(row.emptyProperty()).then((ContextMenu) null).otherwise(rowMenu));
+
+            row.setOnContextMenuRequested(event -> {
+                if (row.isEmpty()) return;
+                if (!row.isSelected()) {
+                    cueTable.getSelectionModel().clearAndSelect(row.getIndex());
+                }
+            });
+
+            row.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2 && !row.isEmpty()) {
+                    handlePlayCue(row.getItem());
+                }
+            });
+
+            return row;
+        };
+    }
+
+    // Action handlers extracted for easier testing and separation
+    private void handlePlayCue(Cue cue) {
+        if (cue == null) return;
+        cueTable.getSelectionModel().select(cue);
+        cueController.play(cue);
+        updateStatus("Playing: " + cue.getName());
+    }
+
+    private void handleChangeFile(Cue cue) {
+        if (cue == null) return;
+        FileChooser chooser = DialogFactory.createAudioFileChooser();
+        File file = chooser.showOpenDialog(this);
+        if (file != null) {
+            boolean ok = cueController.changeFile(cue, file.toPath());
+            if (ok) {
+                updateStatus("Changed file for cue: " + cue.getName());
+            } else {
+                DialogFactory.showError(this, "Invalid File", "Selected file is not a supported audio file.");
+            }
+        }
+    }
+
+    private void handleEditProperties(Cue cue) {
+        if (cue == null) return;
+        List<Cue> single = List.of(cue);
+        PropertiesResult res = showCuePropertiesDialog(single);
+        if (res == null) return; // cancelled
+
+        applyPropertiesToCue(cue, res);
+        updateStatus("Updated properties for: " + cue.getName());
+    }
+
+    private void handleEditSelectedProperties() {
+        List<Cue> selected = getSelectedCuesSnapshot();
+        if (selected.isEmpty()) return;
+        PropertiesResult res = showCuePropertiesDialog(selected);
+        if (res == null) return;
+
+        for (Cue cue : selected) {
+            applyPropertiesToCue(cue, res);
+        }
+        updateStatus("Applied properties to " + selected.size() + " selected cue(s)");
+    }
+
+    /**
+     * Shows a dialog allowing editing of cue properties. For multi-edit, if all selected cues share
+     * the same value for a property it will be pre-filled; otherwise left blank (skipped).
+     * Returns null if dialog was cancelled.
+     */
+    private PropertiesResult showCuePropertiesDialog(List<Cue> targetCues) {
+        Dialog<PropertiesResult> dialog = new Dialog<>();
+        dialog.setTitle(targetCues.size() == 1 ? "Cue Properties" : "Edit Properties for Selected Cues");
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+        applyThemeToDialog(dialog);
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+
+        Label nameLabel = new Label("Name:");
+        TextField nameField = new TextField();
+        grid.add(nameLabel, 0, 0);
+        grid.add(nameField, 1, 0);
+
+        Label durationLabel = new Label("Duration (s):");
+        TextField durationField = new TextField();
+        grid.add(durationLabel, 0, 1);
+        grid.add(durationField, 1, 1);
+
+        Label preLabel = new Label("Pre-Wait (s):");
+        TextField preField = new TextField();
+        grid.add(preLabel, 0, 2);
+        grid.add(preField, 1, 2);
+
+        Label postLabel = new Label("Post-Wait (s):");
+        TextField postField = new TextField();
+        grid.add(postLabel, 0, 3);
+        grid.add(postField, 1, 3);
+
+        Label autoLabel = new Label("Auto-Follow:");
+        CheckBox autoBox = new CheckBox();
+        grid.add(autoLabel, 0, 4);
+        grid.add(autoBox, 1, 4);
+
+        Label fileLabel = new Label("File:");
+        TextField fileField = new TextField();
+        fileField.setEditable(false);
+        Button chooseFileBtn = new Button("Choose...");
+        chooseFileBtn.setOnAction(e -> {
+            FileChooser chooser = DialogFactory.createAudioFileChooser();
+            File selectedFile = chooser.showOpenDialog(this);
+            if (selectedFile != null) {
+                fileField.setText(selectedFile.toPath().toString());
+            }
+        });
+        grid.add(fileLabel, 0, 5);
+        grid.add(fileField, 1, 5);
+        grid.add(chooseFileBtn, 2, 5);
+
+        // Pre-fill fields when possible
+        if (targetCues.size() == 1) {
+            Cue c = targetCues.get(0);
+            nameField.setText(c.getName());
+            durationField.setText(String.valueOf(c.getDuration()));
+            preField.setText(String.valueOf(c.getPreWait()));
+            postField.setText(String.valueOf(c.getPostWait()));
+            autoBox.setSelected(c.isAutoFollow());
+            fileField.setText(c.getFilePath());
+        } else if (!targetCues.isEmpty()) {
+            // For multi-edit, only prefill if all equal
+            Cue first = targetCues.get(0);
+            boolean allSameName = targetCues.stream().allMatch(x -> x.getName().equals(first.getName()));
+            if (allSameName) nameField.setText(first.getName());
+
+            boolean allSameDuration = targetCues.stream().allMatch(x -> Double.compare(x.getDuration(), first.getDuration()) == 0);
+            if (allSameDuration) durationField.setText(String.valueOf(first.getDuration()));
+
+            boolean allSamePre = targetCues.stream().allMatch(x -> Double.compare(x.getPreWait(), first.getPreWait()) == 0);
+            if (allSamePre) preField.setText(String.valueOf(first.getPreWait()));
+
+            boolean allSamePost = targetCues.stream().allMatch(x -> Double.compare(x.getPostWait(), first.getPostWait()) == 0);
+            if (allSamePost) postField.setText(String.valueOf(first.getPostWait()));
+
+            boolean allSameAuto = targetCues.stream().allMatch(x -> x.isAutoFollow() == first.isAutoFollow());
+            if (allSameAuto) autoBox.setSelected(first.isAutoFollow());
+
+            boolean allSameFile = targetCues.stream().allMatch(x -> x.getFilePath().equals(first.getFilePath()));
+            if (allSameFile) fileField.setText(first.getFilePath());
+        }
+
+        dialog.getDialogPane().setContent(grid);
+
+        dialog.setResultConverter(btn -> {
+            if (btn == ButtonType.OK) {
+                PropertiesResult r = new PropertiesResult();
+                r.name = nameField.getText() != null && !nameField.getText().isEmpty() ? nameField.getText() : null;
+                try {
+                    r.duration = durationField.getText() != null && !durationField.getText().isEmpty() ? Double.parseDouble(durationField.getText()) : null;
+                    if (r.duration != null && r.duration < 0) {
+                        showError("Invalid value", "Duration must be zero or greater");
+                        return null;
+                    }
+                } catch (NumberFormatException ex) {
+                    showError("Invalid value", "Duration must be a number");
+                    return null;
+                }
+                try {
+                    r.preWait = preField.getText() != null && !preField.getText().isEmpty() ? Double.parseDouble(preField.getText()) : null;
+                    if (r.preWait != null && r.preWait < 0) {
+                        showError("Invalid value", "Pre-Wait must be zero or greater");
+                        return null;
+                    }
+                } catch (NumberFormatException ex) {
+                    showError("Invalid value", "Pre-Wait must be a number");
+                    return null;
+                }
+                try {
+                    r.postWait = postField.getText() != null && !postField.getText().isEmpty() ? Double.parseDouble(postField.getText()) : null;
+                    if (r.postWait != null && r.postWait < 0) {
+                        showError("Invalid value", "Post-Wait must be zero or greater");
+                        return null;
+                    }
+                } catch (NumberFormatException ex) {
+                    showError("Invalid value", "Post-Wait must be a number");
+                    return null;
+                }
+                r.autoFollow = autoBox.isSelected();
+                r.filePath = fileField.getText() != null && !fileField.getText().isEmpty() ? fileField.getText() : null;
+                return r;
+            }
+            return null;
+        });
+
+        return dialog.showAndWait().orElse(null);
+    }
+
+    private static class PropertiesResult {
+        String name;
+        Double duration;
+        Double preWait;
+        Double postWait;
+        Boolean autoFollow;
+        String filePath;
+    }
+
+    private void applyPropertiesToCue(Cue cue, PropertiesResult res) {
+        if (cue == null || res == null) return;
+
+        if (res.name != null) cue.setName(res.name);
+        if (res.duration != null) cue.setDuration(res.duration);
+        if (res.preWait != null) cue.setPreWait(res.preWait);
+        if (res.postWait != null) cue.setPostWait(res.postWait);
+        if (res.autoFollow != null) cue.setAutoFollow(res.autoFollow);
+        if (res.filePath != null) cue.setFilePath(res.filePath);
+    }
+
+    private void handleDuplicateSelectedCues() {
+        List<Cue> selectedCues = getSelectedCuesSnapshot();
+        if (selectedCues.isEmpty()) {
+            return;
+        }
+
+        List<Cue> duplicates = cueController.duplicateSelected(playlist, selectedCues);
+        if (!duplicates.isEmpty()) {
+            updateCueCount();
+            cueTable.getSelectionModel().clearSelection();
+            for (Cue cue : duplicates) {
+                cueTable.getSelectionModel().select(cue);
+            }
+            updateStatus("Duplicated " + duplicates.size() + " selected cues");
+        }
+    }
+
+    private void handleDeleteSelectedCues() {
+        List<Cue> selectedCues = getSelectedCuesSnapshot();
+        if (selectedCues.isEmpty()) {
+            return;
+        }
+
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Delete Selected Cues");
+        confirm.setHeaderText("Delete " + selectedCues.size() + " selected cue(s)?");
+        confirm.setContentText("This will remove all currently selected cues from the playlist.");
+        applyThemeToDialog(confirm);
+        confirm.showAndWait().ifPresent(resp -> {
+            if (resp == ButtonType.OK) {
+                cueController.deleteSelected(playlist, selectedCues);
+                updateCueCount();
+                cueTable.getSelectionModel().clearSelection();
+                updateStatus("Deleted " + selectedCues.size() + " selected cue(s)");
+            }
+        });
+    }
+
+    private List<Cue> getSelectedCuesSnapshot() {
+        return new ArrayList<>(cueTable.getSelectionModel().getSelectedItems());
+    }
+
+    private void handleOpenFileLocation(Cue cue) {
+        if (cue == null) return;
+        String fp = cue.getFilePath();
+        if (fp != null && !fp.isEmpty()) {
+            try {
+                cueController.openFileLocation(cue);
+            } catch (UnsupportedOperationException ex) {
+                showError("Unsupported", "Desktop operations are not supported on this platform.");
+            } catch (Exception ex) {
+                showError("Failed to open file location", ex.getMessage());
+            }
+        }
     }
     
     /**
@@ -442,22 +1001,22 @@ public class MainWindow extends Stage {
     private HBox createStatusBar() {
         HBox statusBar = new HBox();
         statusBar.setPadding(new Insets(5));
-        statusBar.setStyle("-fx-background-color: #2d2d30;");
+        statusBar.setStyle(StyleConstants.STATUS_BAR_BACKGROUND);
         
         statusLabel = new Label("Ready");
-        statusLabel.setStyle("-fx-text-fill: white;");
+        statusLabel.setStyle(StyleConstants.STATUS_TEXT_WHITE);
         
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         
         cueCountLabel = new Label("Cues: 0");
-        cueCountLabel.setStyle("-fx-text-fill: white;");
+        cueCountLabel.setStyle(StyleConstants.STATUS_TEXT_WHITE);
         updateCueCount();
         
         // File view toggle button
         Button fileViewToggle = new Button("FILE VIEW"); // Placeholder text
         fileViewToggle.setTooltip(new Tooltip("Toggle File View"));
-        fileViewToggle.setStyle("-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 16px;");
+        fileViewToggle.setStyle(StyleConstants.FILE_VIEW_TOGGLE);
         fileViewToggle.setOnAction(e -> toggleFileView());
         
         statusBar.getChildren().addAll(statusLabel, spacer, cueCountLabel, fileViewToggle);
@@ -486,25 +1045,34 @@ public class MainWindow extends Stage {
      * Adds a new empty cue to the playlist.
      */
     private void addNewCue() {
-        int nextNumber = playlist.size() + 1;
-        Cue newCue = new Cue(nextNumber, "New Cue", "");
-        playlist.addCue(newCue);
+        Cue newCue = cueController.createNewCue(playlist);
+        if (newCue == null) {
+            return;
+        }
         updateCueCount();
         updateStatus("Added new cue");
-        logger.debug("Added new cue with number {}", nextNumber);
+        logger.debug("Added new cue with number {}", newCue.getNumber());
     }
     
     /**
      * Deletes the selected cue from the playlist.
      */
     private void deleteSelectedCue() {
-        Cue selectedCue = cueTable.getSelectionModel().getSelectedItem();
-        if (selectedCue != null) {
-            playlist.removeCue(selectedCue);
-            playlist.renumberCues();
-            updateCueCount();
-            updateStatus("Deleted cue: " + selectedCue.getName());
+        List<Cue> selectedCues = getSelectedCuesSnapshot();
+        if (selectedCues.isEmpty()) {
+            return;
         }
+
+        if (selectedCues.size() > 1) {
+            handleDeleteSelectedCues();
+            return;
+        }
+
+        Cue selectedCue = selectedCues.get(0);
+        cueController.delete(playlist, selectedCue);
+        updateCueCount();
+        cueTable.getSelectionModel().clearSelection();
+        updateStatus("Deleted cue: " + selectedCue.getName());
     }
     
     /**
@@ -515,12 +1083,11 @@ public class MainWindow extends Stage {
         Cue selectedCue = cueTable.getSelectionModel().getSelectedItem();
         if (selectedCue != null) {
             // Play the selected cue
-            audioController.playCue(selectedCue);
+            cueController.play(selectedCue);
             
             // Immediately advance to next cue
-            int currentIndex = playlist.getCues().indexOf(selectedCue);
-            if (currentIndex >= 0 && currentIndex < playlist.size() - 1) {
-                Cue nextCue = playlist.getCue(currentIndex + 1);
+            Cue nextCue = cueController.getNextCue(playlist, selectedCue);
+            if (nextCue != null) {
                 cueTable.getSelectionModel().select(nextCue);
                 updateStatus("Playing: " + selectedCue.getName() + " | Next: " + nextCue.getName());
             } else {
@@ -558,12 +1125,10 @@ public class MainWindow extends Stage {
         if (currentCue == null) {
             return;
         }
-        
-        int currentIndex = playlist.getCues().indexOf(currentCue);
-        if (currentIndex >= 0 && currentIndex < playlist.size() - 1) {
-            Cue nextCue = playlist.getCue(currentIndex + 1);
+        Cue nextCue = cueController.getNextCue(playlist, currentCue);
+        if (nextCue != null) {
             cueTable.getSelectionModel().select(nextCue);
-            audioController.playCue(nextCue);
+            cueController.play(nextCue);
         }
     }
     
@@ -610,20 +1175,12 @@ public class MainWindow extends Stage {
     private void handleFileDoubleClick() {
         Path selectedPath = fileView.getSelectedPath();
         if (selectedPath != null && PathUtil.isAudioFile(selectedPath)) {
-            addCueFromFile(selectedPath);
+            Cue newCue = cueController.createCueFromFile(playlist, selectedPath);
+            if (newCue != null) {
+                updateCueCount();
+                updateStatus("Added cue: " + PathUtil.getFileNameWithoutExtension(selectedPath));
+            }
         }
-    }
-    
-    /**
-     * Adds a cue from a file path.
-     */
-    private void addCueFromFile(Path filePath) {
-        int nextNumber = playlist.size() + 1;
-        String fileName = PathUtil.getFileNameWithoutExtension(filePath);
-        Cue newCue = new Cue(nextNumber, fileName, filePath.toString());
-        playlist.addCue(newCue);
-        updateCueCount();
-        updateStatus("Added cue: " + fileName);
     }
     
     /**
@@ -700,6 +1257,7 @@ public class MainWindow extends Stage {
                 currentPlaylistPath = filePath;
                 playlistSettings = playlistSettingsService.load(filePath);
                 playlistInitialized = true;
+                applyCueTableLayoutFromSettings();
                 
                 // Add to recent files
                 settings.addRecentFile(filePath.toString());
@@ -725,6 +1283,7 @@ public class MainWindow extends Stage {
             savePlaylistAs();
         } else {
             try {
+                captureCueTableLayoutToSettings();
                 playlistService.save(playlist, playlist.getFilePath());
                 playlistSettingsService.save(currentPlaylistPath, playlistSettings);
                 updateStatus("Playlist saved");
@@ -749,6 +1308,7 @@ public class MainWindow extends Stage {
         if (file != null) {
             try {
                 Path filePath = file.toPath();
+                captureCueTableLayoutToSettings();
                 playlistService.save(playlist, filePath.toString());
                 playlistSettings.setPlaylistName(playlist.getName());
                 playlistSettingsService.save(filePath, playlistSettings);
@@ -773,10 +1333,8 @@ public class MainWindow extends Stage {
      */
     private void showError(String title, String message) {
         logger.error("Error dialog shown: {} - {}", title, message);
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
+        Alert alert = DialogFactory.createErrorAlert(title, message);
+        alert.initOwner(this);
         applyThemeToDialog(alert);
         alert.showAndWait();
     }
@@ -961,6 +1519,13 @@ public class MainWindow extends Stage {
             applyThemeFromSettings();
             // Also update the settings window's theme
             applyThemeToWindow(settingsWindow);
+            // Rebuild keyboard accelerators immediately so changed shortcuts take effect
+            Scene currentScene = getScene();
+            if (currentScene != null) {
+                Map<String, String> updatedKeyBindings = updatedSettings.getApplicationSettings().getKeyBindings();
+                keyboardManager.setAllowKeyRepeat(updatedSettings.getApplicationSettings().isAllowKeyRepeat());
+                keyboardManager.registerKeyboardAccelerators(currentScene, updatedKeyBindings);
+            }
             // Apply audio settings
             if (audioController.getAudioService() != null && 
                 audioController.getAudioService().getPlayerPool() != null) {
@@ -985,7 +1550,7 @@ public class MainWindow extends Stage {
             );
             // Apply theme before showing
             if (playlistSettingsWindow.getDialogPane() != null) {
-                String themePath = "/css/" + settings.getTheme() + "-theme.css";
+                String themePath = StyleConstants.getThemeCssPath(settings.getTheme());
                 playlistSettingsWindow.getDialogPane().getStylesheets().clear();
                 playlistSettingsWindow.getDialogPane().getStylesheets().add(getClass().getResource(themePath).toExternalForm());
             }
@@ -1000,7 +1565,7 @@ public class MainWindow extends Stage {
      * Applies the theme from current settings.
      */
     private void applyThemeFromSettings() {
-        String themePath = "/css/" + settings.getTheme() + "-theme.css";
+        String themePath = StyleConstants.getThemeCssPath(settings.getTheme());
         applyTheme(themePath);
     }
     
@@ -1008,9 +1573,9 @@ public class MainWindow extends Stage {
      * Applies a theme to the window.
      */
     private void applyTheme(String themePath) {
-        Scene scene = getScene();
-        scene.getStylesheets().clear();
-        scene.getStylesheets().add(getClass().getResource(themePath).toExternalForm());
+        Scene currentScene = getScene();
+        currentScene.getStylesheets().clear();
+        currentScene.getStylesheets().add(getClass().getResource(themePath).toExternalForm());
     }
     
     /**
@@ -1018,7 +1583,7 @@ public class MainWindow extends Stage {
      */
     private void applyThemeToWindow(Stage window) {
         if (window.getScene() != null) {
-            String themePath = "/css/" + settings.getTheme() + "-theme.css";
+            String themePath = StyleConstants.getThemeCssPath(settings.getTheme());
             window.getScene().getStylesheets().clear();
             window.getScene().getStylesheets().add(getClass().getResource(themePath).toExternalForm());
         }
@@ -1029,7 +1594,7 @@ public class MainWindow extends Stage {
      */
     private void applyThemeToDialog(Dialog<?> dialog) {
         if (dialog.getDialogPane() != null) {
-            String themePath = "/css/" + settings.getTheme() + "-theme.css";
+            String themePath = StyleConstants.getThemeCssPath(settings.getTheme());
             dialog.getDialogPane().getStylesheets().clear();
             dialog.getDialogPane().getStylesheets().add(getClass().getResource(themePath).toExternalForm());
         }
@@ -1056,6 +1621,13 @@ public class MainWindow extends Stage {
             for (Cue cue : loadedPlaylist.getCues()) {
                 playlist.addCue(cue);
             }
+            // Ensure playlist metadata is set and saved layout applied
+            playlist.setName(loadedPlaylist.getName());
+            playlist.setFilePath(filePath);
+            // Load and apply playlist-specific settings (column order/widths)
+            playlistSettings = playlistSettingsService.load(currentPlaylistPath);
+            applyCueTableLayoutFromSettings();
+
             playlistInitialized = true;
             updateStatus("Opened playlist: " + filePath);
         } catch (IOException e) {
@@ -1160,6 +1732,8 @@ public class MainWindow extends Stage {
             currentPlaylistPath = path;
             playlistSettings = playlistSettingsService.load(path);
             playlistInitialized = true;
+            // Apply saved cue table layout when opening recent files
+            applyCueTableLayoutFromSettings();
             
             // Move to front of recent files list
             settings.addRecentFile(filePath);

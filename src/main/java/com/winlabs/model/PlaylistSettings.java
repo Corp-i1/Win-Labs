@@ -21,6 +21,10 @@ public class PlaylistSettings {
     private final StringProperty playlistName;
     private final LongProperty lastModified;
     private final BooleanProperty isPinned;
+
+    // Cue table layout
+    private final StringProperty cueTableColumnOrder;
+    private final StringProperty cueTableColumnWidths;
     
     public PlaylistSettings() {
         this.masterVolume = new SimpleDoubleProperty(1.0);
@@ -31,6 +35,8 @@ public class PlaylistSettings {
         this.playlistName = new SimpleStringProperty("");
         this.lastModified = new SimpleLongProperty(System.currentTimeMillis());
         this.isPinned = new SimpleBooleanProperty(false);
+        this.cueTableColumnOrder = new SimpleStringProperty("");
+        this.cueTableColumnWidths = new SimpleStringProperty("");
     }
     
     // Master Volume (0.0 - 1.0)
@@ -136,6 +142,32 @@ public class PlaylistSettings {
     public void setIsPinned(boolean pinned) {
         isPinned.set(pinned);
     }
+
+    // Cue table column order (comma-separated column ids)
+    public StringProperty cueTableColumnOrderProperty() {
+        return cueTableColumnOrder;
+    }
+
+    public String getCueTableColumnOrder() {
+        return cueTableColumnOrder.get();
+    }
+
+    public void setCueTableColumnOrder(String columnOrder) {
+        cueTableColumnOrder.set(columnOrder != null ? columnOrder : "");
+    }
+
+    // Cue table column widths (comma-separated id=width entries)
+    public StringProperty cueTableColumnWidthsProperty() {
+        return cueTableColumnWidths;
+    }
+
+    public String getCueTableColumnWidths() {
+        return cueTableColumnWidths.get();
+    }
+
+    public void setCueTableColumnWidths(String columnWidths) {
+        cueTableColumnWidths.set(columnWidths != null ? columnWidths : "");
+    }
     
     /**
      * Resets all settings to their defaults.
@@ -147,5 +179,7 @@ public class PlaylistSettings {
         setDefaultPostWait(0.0);
         setDefaultAutoFollow(false);
         setLastModified(System.currentTimeMillis());
+        setCueTableColumnOrder("");
+        setCueTableColumnWidths("");
     }
 }

@@ -1,10 +1,24 @@
 package com.winlabs.model;
 
-import javafx.beans.property.*;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 
 /**
  * Settings for application-level preferences.
@@ -37,6 +51,25 @@ public class ApplicationSettings {
     private final DoubleProperty postWaitDefault;
     private final BooleanProperty autoFollowDefault;
     
+    // Keyboard shortcuts settings
+    private final BooleanProperty allowKeyRepeat;
+    // Key bindings: actionId -> KeyCombination string (e.g. "CTRL+G")
+    private final Map<String, String> keyBindings;
+    private static final Map<String, String> DEFAULT_KEY_BINDINGS = createDefaultKeyBindings();
+
+    private static Map<String, String> createDefaultKeyBindings() {
+        Map<String, String> defaults = new LinkedHashMap<>();
+        defaults.put("go", "SPACE");
+        defaults.put("pause", "P");
+        defaults.put("stop", "ESC");
+        defaults.put("next", ",");
+        defaults.put("previous", ".");
+        defaults.put("add", "CTRL+N");
+        defaults.put("deleteSelected", "DELETE");
+        defaults.put("duplicateSelected", "CTRL+D");
+        return Collections.unmodifiableMap(defaults);
+    }
+    
     /**
      * Creates default application settings.
      */
@@ -58,6 +91,9 @@ public class ApplicationSettings {
         this.preWaitDefault = new SimpleDoubleProperty(0.0);
         this.postWaitDefault = new SimpleDoubleProperty(0.0);
         this.autoFollowDefault = new SimpleBooleanProperty(false);
+        this.allowKeyRepeat = new SimpleBooleanProperty(false);
+        this.keyBindings = new HashMap<>();
+        this.keyBindings.putAll(DEFAULT_KEY_BINDINGS);
     }
     
     // Theme property
@@ -344,6 +380,7 @@ public class ApplicationSettings {
         setPreWaitDefault(0.0);
         setPostWaitDefault(0.0);
         setAutoFollowDefault(false);
+        setAllowKeyRepeat(false);
         setLoggingEnabled(true);
         setLogLevel(LogLevel.INFO);
         setLogDirectory(System.getProperty("user.home") + "/.winlabs/logs");
@@ -351,5 +388,62 @@ public class ApplicationSettings {
         setLogRetentionDays(5);
         clearRecentFiles();
         clearPinnedPlaylists();
+        clearKeyBindings();
+        this.keyBindings.putAll(DEFAULT_KEY_BINDINGS);
+    }
+
+    /**
+     * Gets a copy of the key bindings map.
+     */
+    public Map<String, String> getKeyBindings() {
+        return new HashMap<>(keyBindings);
+    }
+
+    /**
+     * Replaces all key bindings with the provided map.
+     */
+    public void setKeyBindings(Map<String, String> bindings) {
+        keyBindings.clear();
+        if (bindings != null) {
+            keyBindings.putAll(bindings);
+        }
+    }
+
+    /**
+     * Returns the default key binding for a given action id without modifying current settings.
+     */
+    public String getDefaultKeyBinding(String actionId) {
+        if (actionId == null) return null;
+        return DEFAULT_KEY_BINDINGS.get(actionId);
+    }
+
+    public String getKeyBinding(String actionId) {
+        return keyBindings.get(actionId);
+    }
+
+    public void setKeyBinding(String actionId, String binding) {
+        if (actionId == null) return;
+        if (binding == null) {
+            keyBindings.remove(actionId);
+        } else {
+            keyBindings.put(actionId, binding);
+        }
+    }
+
+    public void clearKeyBindings() {
+        keyBindings.clear();
+    }
+    
+    // Allow key repeat property
+    public BooleanProperty allowKeyRepeatProperty() {
+        return allowKeyRepeat;
+    }
+    
+    public boolean isAllowKeyRepeat() {
+        return allowKeyRepeat.get();
+    }
+    
+    public void setAllowKeyRepeat(boolean allow) {
+        allowKeyRepeat.set(allow);
     }
 }

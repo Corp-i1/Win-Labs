@@ -2,6 +2,9 @@ package com.winlabs.model;
 
 import java.util.Objects;
 
+import com.winlabs.util.PathUtil;
+import java.nio.file.Paths;
+
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.IntegerProperty;
@@ -11,9 +14,6 @@ import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 
-/*
-     * TODO: Add unit tests covering all Cue factory methods and initialization paths.
- */
 /**
  * Represents a single cue in the playlist.
  * Uses JavaFX properties for automatic UI binding.
@@ -199,7 +199,13 @@ public final class Cue {
     }
     
     public void setFilePath(String value) {
-        filePath.set(requireNonNull(value, "filePath"));
+        String nonNullFilePath = requireNonNull(value, "filePath");
+        // Allow empty string to represent no file; otherwise require a supported audio file
+        if (nonNullFilePath.isEmpty() || PathUtil.isAudioFile(Paths.get(nonNullFilePath))) {
+            filePath.set(nonNullFilePath);
+        } else {
+            throw new IllegalArgumentException("filePath must be empty or a supported audio file");
+        }
     }
     
     public StringProperty filePathProperty() {

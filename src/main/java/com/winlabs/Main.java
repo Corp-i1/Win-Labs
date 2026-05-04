@@ -42,8 +42,8 @@ public class Main extends Application {
         Settings settings;
         try {
             settings = settingsService.load();
-        } catch (IOException e) {
-            logger.error("Failed to load settings, using defaults: {}", e.getMessage(), e);
+        } catch (IOException exception) {
+            logger.error("Failed to load settings, using defaults: {}", exception.getMessage(), exception);
             settings = new Settings();
         }
         
@@ -82,12 +82,12 @@ public class Main extends Application {
                     if (welcomeScreen != null) {
                         welcomeScreen.closeWelcomeScreen();
                     }
-                } catch (Exception e) {
-                    logger.error("Failed to open recent playlist: {}", filePath, e);
+                } catch (Exception exception) {
+                    logger.error("Failed to open recent playlist: {}", filePath, exception);
                     Alert alert = new Alert(Alert.AlertType.ERROR);
                     alert.setTitle("Error");
                     alert.setHeaderText("Failed to Open Playlist");
-                    alert.setContentText("Could not open playlist: " + e.getMessage());
+                    alert.setContentText("Could not open playlist: " + exception.getMessage());
                     alert.showAndWait();
                 }
             });
@@ -105,16 +105,16 @@ public class Main extends Application {
                     // Load pinned playlists
                     Set<String> pinnedFiles = updatedSettings.getPinnedPlaylists();
                     if (pinnedFiles != null) {
-                        for (String path : pinnedFiles) {
+                        for (String playlistPath : pinnedFiles) {
                             try {
-                                Path p = Paths.get(path);
-                                String fileName = p.getFileName().toString();
+                                Path pinnedPlaylistPath = Paths.get(playlistPath);
+                                String fileName = pinnedPlaylistPath.getFileName().toString();
                                 String playlistName = fileName.replaceFirst("[.][^.]+$", "");
-                                RecentPlaylist playlist = new RecentPlaylist(playlistName, path);
+                                RecentPlaylist playlist = new RecentPlaylist(playlistName, playlistPath);
                                 playlist.setIsPinned(true);
                                 refreshedPlaylists.add(playlist);
-                            } catch (Exception e) {
-                                logger.warn("Failed to add pinned playlist: {}", path, e);
+                            } catch (Exception exception) {
+                                logger.warn("Failed to add pinned playlist: {}", playlistPath, exception);
                             }
                         }
                     }
@@ -122,26 +122,26 @@ public class Main extends Application {
                     // Load recent playlists
                     List<String> recentFiles = updatedSettings.getRecentFiles();
                     if (recentFiles != null) {
-                        for (String path : recentFiles) {
-                            if (pinnedFiles != null && pinnedFiles.contains(path)) {
+                        for (String playlistPath : recentFiles) {
+                            if (pinnedFiles != null && pinnedFiles.contains(playlistPath)) {
                                 continue;
                             }
                             try {
-                                Path p = Paths.get(path);
-                                String fileName = p.getFileName().toString();
+                                Path recentPlaylistPath = Paths.get(playlistPath);
+                                String fileName = recentPlaylistPath.getFileName().toString();
                                 String playlistName = fileName.replaceFirst("[.][^.]+$", "");
-                                RecentPlaylist playlist = new RecentPlaylist(playlistName, path);
+                                RecentPlaylist playlist = new RecentPlaylist(playlistName, playlistPath);
                                 playlist.setIsPinned(false);
                                 refreshedPlaylists.add(playlist);
-                            } catch (Exception e) {
-                                logger.warn("Failed to add recent playlist: {}", path, e);
+                            } catch (Exception exception) {
+                                logger.warn("Failed to add recent playlist: {}", playlistPath, exception);
                             }
                         }
                     }
                     
                     welcomeScreen.updateRecentPlaylists(refreshedPlaylists);
-                } catch (IOException e) {
-                    logger.error("Failed to toggle pin status: {}", filePath, e);
+                } catch (IOException exception) {
+                    logger.error("Failed to toggle pin status: {}", filePath, exception);
                 }
             });
             
@@ -162,8 +162,8 @@ public class Main extends Application {
                         playlist.setIsPinned(true);
                         allPlaylists.add(playlist);
                         logger.debug("Added pinned playlist at startup: {}", filePath);
-                    } catch (Exception e) {
-                        logger.warn("Failed to add pinned playlist at startup: {}", filePath, e);
+                    } catch (Exception exception) {
+                        logger.warn("Failed to add pinned playlist at startup: {}", filePath, exception);
                     }
                 }
             }
@@ -186,8 +186,8 @@ public class Main extends Application {
                         RecentPlaylist playlist = new RecentPlaylist(playlistName, filePath);
                         playlist.setIsPinned(false);
                         allPlaylists.add(playlist);
-                    } catch (Exception e) {
-                        logger.warn("Failed to add recent playlist at startup: {}", filePath, e);
+                    } catch (Exception exception) {
+                        logger.warn("Failed to add recent playlist at startup: {}", filePath, exception);
                     }
                 }
             }
@@ -215,8 +215,8 @@ public class Main extends Application {
                 // User cancelled - close the empty window
                 mainWindow.close();
             }
-        } catch (Exception e) {
-            logger.error("Error creating new playlist: {}", e.getMessage(), e);
+        } catch (Exception exception) {
+            logger.error("Error creating new playlist: {}", exception.getMessage(), exception);
         }
     }
     
@@ -238,8 +238,8 @@ public class Main extends Application {
                 // User cancelled the file dialog - close the empty window, keep welcome screen
                 mainWindow.close();
             }
-        } catch (Exception e) {
-            logger.error("Error opening playlist: {}", e.getMessage(), e);
+        } catch (Exception exception) {
+            logger.error("Error opening playlist: {}", exception.getMessage(), exception);
         }
     }
     
@@ -252,8 +252,8 @@ public class Main extends Application {
             Settings settings = settingsService.load();
             MainWindow tempWindow = new MainWindow(this::showDocumentation, this::showAboutDialog);
             tempWindow.openSettings(settings, settingsService);
-        } catch (IOException e) {
-            logger.error("Error opening settings: {}", e.getMessage(), e);
+        } catch (IOException exception) {
+            logger.error("Error opening settings: {}", exception.getMessage(), exception);
         }
     }
     
@@ -278,8 +278,8 @@ public class Main extends Application {
                                  
                                  For more information, visit the repository.""");
             alert.showAndWait();
-        } catch (Exception e) {
-            logger.error("Error showing documentation: {}", e.getMessage(), e);
+        } catch (Exception exception) {
+            logger.error("Error showing documentation: {}", exception.getMessage(), exception);
         }
     }
 

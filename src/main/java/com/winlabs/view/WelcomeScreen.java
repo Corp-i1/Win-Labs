@@ -368,14 +368,14 @@ public class WelcomeScreen extends Stage {
                                 }
                             );
                             recentPlaylistsContainer.getChildren().add(card);
-                        } catch (Exception ex) {
-                            logger.error("Failed to create card for recent playlist: {}", ex.getMessage(), ex);
+                        } catch (Exception exception) {
+                            logger.error("Failed to create card for recent playlist: {}", exception.getMessage(), exception);
                         }
                     }
                 }
             }
-        } catch (Exception e) {
-            logger.error("Error updating recent playlists: {}", e.getMessage(), e);
+        } catch (Exception exception) {
+            logger.error("Error updating recent playlists: {}", exception.getMessage(), exception);
         }
     }
     
@@ -394,8 +394,8 @@ public class WelcomeScreen extends Stage {
             if (resource != null) {
                 getScene().getStylesheets().add(resource);
             }
-        } catch (Exception e) {
-            logger.warn("Failed to apply theme '{}': {}", themeName, e.getMessage(), e);
+        } catch (Exception exception) {
+            logger.warn("Failed to apply theme '{}': {}", themeName, exception.getMessage(), exception);
             // Fall back to no stylesheet rather than crashing
         }
     }
@@ -411,8 +411,8 @@ public class WelcomeScreen extends Stage {
             alert.setHeaderText(null);
             alert.setContentText(message != null ? message : "An unknown error occurred");
             alert.showAndWait();
-        } catch (Exception e) {
-            logger.error("{}: {}", title, message, e);
+        } catch (Exception exception) {
+            logger.error("{}: {}", title, message, exception);
         }
     }
     
